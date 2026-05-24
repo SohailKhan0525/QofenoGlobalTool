@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, CheckCircle2, ArrowLeft, ShieldCheck, Download, Heart, Eye, PlayCircle, HelpCircle, X, ChevronDown, Share2, Loader2, ChevronRight, Maximize, FileText, Facebook, Twitter, Linkedin, Copy, Search } from 'lucide-react';
-import { ALL_TOOLS } from './ToolsCatalog';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
+import { Query } from 'appwrite';
+import { account, databases, DATABASE_ID, runBase64Encoder, runJsonFormatter, runWordCounter, trackEvent } from '../../lib/qofeno-appwrite';
+import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
 
 // Shadcn imports
 import { Progress } from "@/components/ui/progress";
@@ -14,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { SEO } from '../../components/SEO';
 
 export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void }) {
+  const { tools } = useToolCatalog();
   const [likes, setLikes] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [views, setViews] = useState(0);
@@ -21,13 +24,25 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [isLoadingTool, setIsLoadingTool] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Fetch tool data
-  const toolId = localStorage.getItem('selected_tool_id') || '1';
-  const tool = ALL_TOOLS.find(t => t.id === toolId) || ALL_TOOLS[0];
+  const toolId = localStorage.getItem('selected_tool_id') || 'json-formatter';
+  const tool = tools.find(t => t.id === toolId) || FALLBACK_TOOLS.find(t => t.id === toolId) || tools[0] || FALLBACK_TOOLS[0];
   const ToolIcon = tool.icon;
+  const toolSlug = tool.slug || tool.id;
 
   useEffect(() => {
+    const syncUser = async () => {
+      try {
+        const user = await account.get();
+        setCurrentUserId(user.$id);
+      } catch {
+        setCurrentUserId(localStorage.getItem('appwrite_user_id'));
+      }
+    };
+    void syncUser();
+
     // Add to recently viewed
     try {
       const rv = JSON.parse(localStorage.getItem('recently_viewed') || '[]');
@@ -44,28 +59,82 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   }, [toolId]);
 
   useEffect(() => {
-    const savedLikes = localStorage.getItem(`tool_likes_${toolId}`);
-    if (savedLikes) {
-      setLikes(parseInt(savedLikes));
-      setHasLiked(true);
-    } else {
-      setLikes(0); // Removing fake data
-    }
-    
-    // Simulate a view event
-    setViews(prev => prev + 1);
-  }, [toolId]);
+    let cancelled = false;
+
+    const syncStats = async () => {
+      try {
+        const [viewsResp, likesResp] = await Promise.all([
+          databases.listDocuments(DATABASE_ID, 'tool_views', [Query.equal('tool_slug', toolSlug)]),
+          databases.listDocuments(DATABASE_ID, 'tool_likes', [Query.equal('tool_slug', toolSlug)]),
+        ]);
+
+        if (cancelled) return;
+        setViews(viewsResp.total || 0);
+        setLikes(likesResp.total || 0);
+
+        if (currentUserId) {
+          const userLikes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
+            Query.equal('tool_slug', toolSlug),
+            Query.equal('user_id', currentUserId),
+          ]);
+          if (!cancelled) {
+            setHasLiked(userLikes.total > 0);
+          }
+        } else if (!cancelled) {
+          setHasLiked(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setViews(0);
+          setLikes(0);
+          setHasLiked(false);
+        }
+      }
+    };
+
+    void syncStats();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [toolSlug, currentUserId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const sendView = async () => {
+      try {
+        await trackEvent('view', toolSlug, currentUserId || undefined);
+        if (cancelled) return;
+        if (currentUserId) {
+          // mark recently viewed for logged-in users
+          await trackEvent('recent', toolSlug, currentUserId);
+        } else {
+          // localStorage fallback for anonymous users
+          try {
+            const rv = JSON.parse(localStorage.getItem('recently_viewed') || '[]');
+            const newRv = [toolId, ...rv.filter((id: string) => id !== toolId)].slice(0, 4);
+            localStorage.setItem('recently_viewed', JSON.stringify(newRv));
+          } catch {}
+        }
+      } catch {}
+    };
+
+    void sendView();
+
+    return () => { cancelled = true };
+  }, [toolSlug, currentUserId]);
 
   const toggleLike = () => {
-    if (!hasLiked) {
-      setLikes(prev => prev + 1);
-      setHasLiked(true);
-      localStorage.setItem(`tool_likes_${toolId}`, (likes + 1).toString());
-    } else {
-      setLikes(prev => prev - 1);
-      setHasLiked(false);
-      localStorage.removeItem(`tool_likes_${toolId}`);
+    if (!currentUserId) {
+      toast.info('Log in to save likes.');
+      return;
     }
+
+    const eventType = hasLiked ? 'unlike' : 'like';
+    void trackEvent(eventType, toolSlug, currentUserId).then(() => {
+      setHasLiked(!hasLiked);
+      setLikes((prev) => Math.max(0, prev + (hasLiked ? -1 : 1)));
+    });
   };
 
   const [inputText, setInputText] = useState('');
@@ -116,68 +185,92 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
   // Real-time processing
   useEffect(() => {
-    if (toolId === '3') {
-      const text = inputText.trim();
-      const words = text ? text.split(/\s+/).length : 0;
-      const chars = inputText.length;
-      setStatsObj({ words, chars, readingTime: Math.ceil(words / 200) });
-      return;
-    }
+    let cancelled = false;
 
     if (!inputText) {
       setOutputText('');
+      setStatsObj({ words: 0, chars: 0, readingTime: 0 });
       setIsProcessing(false);
       return;
     }
 
     setIsProcessing(true);
-    const timer = setTimeout(() => {
+    const timer = window.setTimeout(async () => {
       try {
-        if (toolId === '1') {
-          if (!inputText.trim()) {
-            setOutputText('');
-            return;
-          }
-          const parsed = JSON.parse(inputText);
-          setOutputText(JSON.stringify(parsed, null, 2));
-        } else if (toolId === '2') {
-          if (!inputText) {
-            setOutputText('');
-            return;
-          }
-          if (actionMode === 'encode') {
-            setOutputText(btoa(inputText));
+        if (toolSlug === 'json-formatter') {
+          const result = await runJsonFormatter(inputText, 'format');
+          if (cancelled) return;
+          if (result?.success) {
+            setOutputText(result.result || '');
           } else {
-            setOutputText(atob(inputText));
+            setOutputText(result?.error ? `// ${result.error}` : '// Invalid JSON');
+          }
+        } else if (toolSlug === 'base64-encoder') {
+          try {
+            const result = await runBase64Encoder(inputText, actionMode);
+            if (cancelled) return;
+            if (result?.success) {
+              setOutputText(result.result || '');
+            } else {
+              setOutputText(result?.error ? `// ${result.error}` : '// Error processing input.');
+            }
+          } catch {
+            if (cancelled) return;
+            if (actionMode === 'encode') {
+              setOutputText(btoa(inputText));
+            } else {
+              setOutputText(atob(inputText));
+            }
+          }
+        } else if (toolSlug === 'word-counter') {
+          const result = await runWordCounter(inputText);
+          if (cancelled) return;
+          if (result?.success !== false) {
+            setStatsObj({
+              words: Number(result?.words || 0),
+              chars: Number(result?.characters || result?.chars || 0),
+              readingTime: Number(result?.reading_time_minutes || result?.readingTime || 0),
+            });
           }
         }
       } catch (e: any) {
-        if (toolId === '1') {
+        if (cancelled) return;
+        if (toolSlug === 'json-formatter') {
           setOutputText('// Invalid JSON');
-        } else if (toolId === '2' && actionMode === 'decode') {
+        } else if (toolSlug === 'base64-encoder' && actionMode === 'decode') {
           setOutputText('// Invalid Base64 string');
+        } else if (toolSlug === 'word-counter') {
+          const text = inputText.trim();
+          const words = text ? text.split(/\s+/).length : 0;
+          const chars = inputText.length;
+          setStatsObj({ words, chars, readingTime: Math.ceil(words / 200) });
         } else {
-          setOutputText("// Error processing input.");
+          setOutputText('// Error processing input.');
         }
       } finally {
-        setIsProcessing(false);
+        if (!cancelled) {
+          setIsProcessing(false);
+        }
       }
     }, 180);
 
-    return () => clearTimeout(timer);
-  }, [inputText, actionMode, toolId]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [inputText, actionMode, toolSlug]);
 
   const [docSearchQuery, setDocSearchQuery] = useState('');
 
   const getInstructions = (id: string) => {
-    if (id === '1') {
+    if (id === 'json-formatter') {
       return [
         { q: "How to parse and format JSON data?", a: "Paste standard raw or minified JSON text into the Input text area. The parser will immediately clean, structure, validate and format indentations dynamically in real-time." },
         { q: "How to fix invalid JSON syntax errors or warnings?", a: "If the output text displays '// Invalid JSON', review your input block for issues such as missing double quotes around keys, unclosed brackets, or dangling trailing commas." },
         { q: "How to copy and download formatted JSON results?", a: "Click the 'Copy Result' button to add the formatted code directly to your clipboard, or click 'Download' to save the beautified code as a file locally." },
         { q: "How is local security policy handled for files?", a: "Your JSON data is parsed entirely locally in your browser workspace memory. Absolutely no JSON input drafts leave your computer." }
       ];
-    } else if (id === '2') {
+    } else if (id === 'base64-encoder') {
       return [
         { q: "How to Encode regular text characters to Base64 format?", a: "Set operations mode to 'Encode Base64', input standard plain text inside the input box, and copy the safe encoded characters instantly." },
         { q: "How to Decode a Base64 string back to human-readable text?", a: "Set status mode to 'Decode Base64', input standard Base64 string content, and standard text output is returned immediately on the flyer." },
@@ -292,7 +385,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 </div>
               ) : (
                 <div className="flex flex-col gap-6">
-                  {toolId === '2' && (
+                    {toolSlug === 'base64-encoder' && (
                     <div className="flex gap-2">
                       <button onClick={() => setActionMode('encode')} className={cn("px-4 py-2 rounded-lg text-sm font-bold border transition-colors", actionMode === 'encode' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-neutral-600 border-neutral-200')}>Encode Base64</button>
                       <button onClick={() => setActionMode('decode')} className={cn("px-4 py-2 rounded-lg text-sm font-bold border transition-colors", actionMode === 'decode' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-neutral-600 border-neutral-200')}>Decode Base64</button>
@@ -313,7 +406,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                       />
                     </div>
 
-                    {toolId === '3' ? (
+                    {toolSlug === 'word-counter' ? (
                     <motion.div 
                       key="stats"
                       layout

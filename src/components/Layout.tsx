@@ -12,7 +12,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <ReactLenis root options={{ lerp: 0.1, duration: 1.5, smoothTouch: false }}>
+    <ReactLenis root options={{ lerp: 0.1, duration: 1.5, smoothTouch: false } as any}>
       <div className="bg-white text-neutral-900 min-h-screen overflow-hidden selection:bg-neutral-900 selection:text-white">
         {children}
       </div>

@@ -9,6 +9,7 @@ import gsap from 'gsap';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
+import { useToolCatalog } from '../../lib/toolCatalog';
 
 // Types and props
 interface HomeProps {
@@ -17,10 +18,13 @@ interface HomeProps {
 }
 
 
-const CATEGORIES = [
-  { icon: Code2, title: 'Developer Tools', count: 2, color: 'text-cyan-600 bg-cyan-50', tools: ['JSON Formatter', 'Base64 Encoder'] },
-  { icon: Cpu, title: 'AI & Automation', count: 1, color: 'text-amber-600 bg-amber-50', tools: ['Text Counter'] }
-];
+const HOME_CATEGORY_META: Record<string, { icon: any; color: string }> = {
+  'Developer Tools': { icon: Code2, color: 'text-cyan-600 bg-cyan-50' },
+  'AI & Automation': { icon: Cpu, color: 'text-amber-600 bg-amber-50' },
+  'PDF & Documents': { icon: FileText, color: 'text-purple-600 bg-purple-50' },
+  'Image Tools': { icon: ImageIcon, color: 'text-pink-600 bg-pink-50' },
+  'Video Tools': { icon: Video, color: 'text-red-600 bg-red-50' },
+};
 
 const STORY_STEPS = [
   {
@@ -40,12 +44,6 @@ const STORY_STEPS = [
   }
 ];
 
-const FEATURED_TOOLS = [
-  { id: '1', icon: Code2, name: "JSON Parser & Formatter", category: "Developer", usage: "1.2M", desc: "Format, validate, and beautify your JSON data." },
-  { id: '2', icon: Code2, name: "Base64 Native Encoder", category: "Developer", usage: "900K", desc: "Securely encode or decode text strings." },
-  { id: '3', icon: Code2, name: "Text Word & Character Counter", category: "AI Tools", usage: "200K", desc: "Count words, characters, and reading time instantly." }
-];
-
 const PERSONAS = [
   { id: 'students', label: '🎓 Students', title: 'Ace your study sessions', desc: 'Compress files, generate citations, convert formats, and create study planners. Everything you need to finish assignments ahead of schedule without installing clunky software.', bgClass: 'bg-gradient-to-br from-purple-100 to-pink-100', icon: GraduationCap, iconColor: 'text-purple-600' },
   { id: 'devs', label: '👨‍💻 Developers', title: 'Slick daily utilities', desc: 'Format JSON, encode/decode, generate regex, test APIs, and clean payloads. All the key tools dev teams use daily in an intuitive UI, running securely on our servers.', bgClass: 'bg-gradient-to-br from-cyan-100 to-blue-100', icon: Code2, iconColor: 'text-cyan-600' },
@@ -54,6 +52,7 @@ const PERSONAS = [
 ];
 
 export function Home({ onNavigate, onRequestTool }: HomeProps) {
+  const { tools, featuredTools, categoryCards } = useToolCatalog();
   const [activePersona, setActivePersona] = useState('students');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategoryTab, setActiveCategoryTab] = useState('All');
@@ -111,10 +110,24 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
   }, []);
 
   // Filter categories helper
-  const filteredCategories = useMemo(() => CATEGORIES.filter(c => 
-    c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    c.tools.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-  ), [searchQuery]);
+  const filteredCategories = useMemo(() => {
+    const source = categoryCards.filter((category) => category.name !== 'All Tools');
+    return source
+      .map((category) => {
+        const meta = HOME_CATEGORY_META[category.name] || { icon: Code2, color: 'text-neutral-600 bg-neutral-50' };
+        const categoryTools = tools.filter((tool) => tool.category === category.name);
+        return {
+          ...category,
+          title: category.name,
+          ...meta,
+          tools: categoryTools.slice(0, 3).map((tool) => tool.name),
+        };
+      })
+      .filter((category) =>
+        category.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        category.tools.some((tool: string) => tool.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+  }, [searchQuery, categoryCards, tools]);
 
   return (
     <div ref={sectionRef} className="relative overflow-hidden w-full">
@@ -283,7 +296,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                 <motion.div
                   key={idx}
                   onClick={() => {
-                    localStorage.setItem('selected_category_filter', cat.title);
+                    localStorage.setItem('selected_category_filter', cat.name);
                     onNavigate('tools');
                   }}
                   className="group relative bg-[#FAFAFA] border border-neutral-100 hover:border-purple-200/60 p-6 rounded-3xl cursor-pointer hover:bg-white transition-all duration-300"
@@ -297,7 +310,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                       {cat.count} tools
                     </span>
                   </div>
-                  <h3 className="font-display text-xl font-bold text-[#0F0A1E] mb-2">{cat.title}</h3>
+                  <h3 className="font-display text-xl font-bold text-[#0F0A1E] mb-2">{cat.name}</h3>
                   
                   {/* Popular tools previews */}
                   <div className="mt-4 flex flex-col gap-2">
@@ -431,7 +444,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
           </div>
 
           <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-thin">
-            {FEATURED_TOOLS.map((tool, index) => {
+            {featuredTools.map((tool, index) => {
               const ToolIcon = tool.icon;
               return (
                 <div key={index} className="w-[320px] shrink-0 bg-[#FAFAFA] border border-neutral-100 hover:border-purple-200 hover:bg-white p-6 rounded-3xl snap-start flex flex-col justify-between transition-all duration-300">

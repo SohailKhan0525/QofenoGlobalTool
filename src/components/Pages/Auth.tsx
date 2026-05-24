@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { FaToolbox } from 'react-icons/fa6';
+import { ID, OAuthProvider } from 'appwrite';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
+import { account } from '../../lib/qofeno-appwrite';
 
 export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigate: (page: string) => void }) {
   const [isLogin, setIsLogin] = useState(type === 'login');
@@ -13,29 +15,39 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate network request
-    setTimeout(() => {
-      setIsLoading(false);
-      if (!isLogin) {
+    try {
+      if (isLogin) {
+        const session = await account.createEmailPasswordSession(email, password);
         localStorage.setItem('isLoggedIn', 'true');
-        onNavigate('payment');
+        localStorage.setItem('appwrite_user_id', session.userId);
       } else {
+        const newAccount = await account.create(ID.unique(), email, password, name);
+        const session = await account.createEmailPasswordSession(email, password);
         localStorage.setItem('isLoggedIn', 'true');
-        onNavigate('payment');
+        localStorage.setItem('appwrite_user_id', session.userId || newAccount.$id);
       }
-    }, 1500);
+      onNavigate('payment');
+    } catch (err) {
+      console.error(err);
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('appwrite_user_id');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      await account.createOAuth2Session(OAuthProvider.Google, window.location.origin, window.location.origin);
+    } catch (err) {
+      console.error(err);
+    } finally {
       setIsLoading(false);
-      localStorage.setItem('isLoggedIn', 'true');
-      onNavigate('payment');
-    }, 1500);
+    }
   };
 
   return (

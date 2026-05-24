@@ -18,7 +18,6 @@ import { Terms } from './components/Pages/Terms';
 import { Policy } from './components/Pages/Policy';
 import { FaGithub, FaInstagram } from 'react-icons/fa';
 import { FaToolbox } from 'react-icons/fa6';
-import { ALL_TOOLS } from './components/Pages/ToolsCatalog';
 
 // shadcn / UI components
 import { Toaster } from '@/components/ui/sonner';
@@ -30,13 +29,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import { cn } from './lib/utils';
 import { toast } from 'sonner';
+import { account } from './lib/qofeno-appwrite';
+import { FALLBACK_TOOLS, useToolCatalog } from './lib/toolCatalog';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Page Transitions config as specified:
 // Exit: opacity: 1→0, translateY: 0→-20, scale: 1→0.98, duration: 350ms
 // Enter: opacity: 0→1, translateY: 20→0, scale: 0.98→1, duration: 550ms, delay: 50ms
-const PAGE_VARIANTS = {
+const PAGE_VARIANTS: any = {
   initial: {
     opacity: 0,
     y: 20,
@@ -67,6 +68,7 @@ const PAGE_VARIANTS = {
 };
 
 export default function App() {
+  const { tools } = useToolCatalog();
   const [activeTab, setActiveTab] = useState('home'); // home, tools, pricing, dashboard, blog, about, contact
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [requestToolName, setRequestToolName] = useState('');
@@ -95,6 +97,8 @@ export default function App() {
   const [prefAppUpdates, setPrefAppUpdates] = useState(true);
   const [prefMarketing, setPrefMarketing] = useState(false);
   const [prefSecurityAlerts, setPrefSecurityAlerts] = useState(true);
+
+  const appTools = tools.length > 0 ? tools : FALLBACK_TOOLS;
 
   // Refs for click outside handling
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -141,7 +145,18 @@ export default function App() {
 
   // Sync auth state
   useEffect(() => {
-    setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
+    const syncAuthState = async () => {
+      try {
+        const user = await account.get();
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('appwrite_user_id', user.$id);
+        setIsLoggedIn(true);
+      } catch {
+        setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
+      }
+    };
+
+    void syncAuthState();
   }, [activeTab]);
 
   // Watch scroll values to apply navbar background saturates & blur checks
@@ -381,7 +396,7 @@ export default function App() {
                 {/* Available Tools */}
                 <div className="col-span-2 border-l border-neutral-100 pl-8 space-y-4">
                   <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-4">Available Tools</h4>
-                  {ALL_TOOLS.map((tool) => (
+                  {appTools.map((tool) => (
                     <div 
                       key={tool.id} 
                       onClick={() => {
@@ -556,12 +571,12 @@ export default function App() {
                 >
                   <div className="max-h-80 overflow-y-auto">
                     {navbarSearchText.length > 0 ? (
-                      ALL_TOOLS.filter(t => t.name.toLowerCase().includes(navbarSearchText.toLowerCase()) || t.desc.toLowerCase().includes(navbarSearchText.toLowerCase())).length > 0 ? (
+                      appTools.filter(t => t.name.toLowerCase().includes(navbarSearchText.toLowerCase()) || t.desc.toLowerCase().includes(navbarSearchText.toLowerCase())).length > 0 ? (
                         <>
                           <div className="p-2 border-b border-neutral-100 bg-neutral-50">
                             <span className="text-[10px] uppercase font-bold text-neutral-400 px-2 tracking-widest leading-none">Suggestions</span>
                           </div>
-                          {ALL_TOOLS.filter(t => t.name.toLowerCase().includes(navbarSearchText.toLowerCase()) || t.desc.toLowerCase().includes(navbarSearchText.toLowerCase())).slice(0, 5).map(tool => (
+                          {appTools.filter(t => t.name.toLowerCase().includes(navbarSearchText.toLowerCase()) || t.desc.toLowerCase().includes(navbarSearchText.toLowerCase())).slice(0, 5).map(tool => (
                             <button
                               key={tool.id}
                               className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-purple-50 transition-colors border-b border-neutral-50 last:border-0 cursor-pointer group"
@@ -588,7 +603,7 @@ export default function App() {
                       ) : (
                         <div className="p-4 text-center">
                           <p className="text-xs font-bold text-neutral-400 mb-2">No tools found for "{navbarSearchText}". Popular right now:</p>
-                          {ALL_TOOLS.filter(t => t.isPopular).slice(0, 3).map(tool => (
+                          {appTools.filter(t => t.isPopular).slice(0, 3).map(tool => (
                             <button
                               key={tool.id}
                               className="w-full mt-2 text-left px-3 py-2 border border-neutral-100 rounded-lg flex items-center gap-2 hover:bg-purple-50 transition-colors cursor-pointer group"
@@ -610,7 +625,7 @@ export default function App() {
                         <div className="p-2 border-b border-neutral-100 bg-neutral-50 mb-1">
                           <span className="text-[10px] uppercase font-bold text-neutral-400 px-2 tracking-widest leading-none">Popular Forms</span>
                         </div>
-                        {ALL_TOOLS.filter(t => t.isPopular).slice(0, 5).map(tool => (
+                        {appTools.filter(t => t.isPopular).slice(0, 5).map(tool => (
                           <button
                             key={tool.id}
                             className="w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-purple-50 transition-colors cursor-pointer group"

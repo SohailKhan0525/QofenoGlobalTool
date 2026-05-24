@@ -1,19 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Search, FileText, Image as ImageIcon, Video, Cpu, Code2, Sparkles, 
-  BarChart3, GraduationCap, Scale, ShieldAlert, Mail, Laptop,
-  ChevronDown, ChevronRight, Check, Flame, SlidersHorizontal, Globe, Play, Settings, Heart
+import {
+  Search,
+  ChevronDown,
+  ChevronRight,
+  Check,
+  Flame,
+  SlidersHorizontal,
+  Settings,
+  Heart,
+  Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 import { Skeleton } from "@/components/ui/skeleton";
+import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
+import { account, databases, DATABASE_ID, trackEvent } from '../../lib/qofeno-appwrite';
+import { Query } from 'appwrite';
 
-export const ALL_TOOLS = [
-  { id: '1', name: 'JSON Parser & Formatter', category: 'Developer Tools', subcategory: 'Parsers', type: 'Free', isNew: true, isPopular: true, runs: '0', desc: 'Format, validate, and beautify your JSON data directly in your browser. No data leaves your machine.', icon: Code2, imageUrl: null, schemaMarkup: JSON.stringify({ "@context": "https://schema.org", "@type": "SoftwareApplication", "name": "JSON Parser & Formatter", "applicationCategory": "DeveloperApplication", "operatingSystem": "Web", "description": "Format, validate, and beautify your JSON data directly in your browser." }) },
-  { id: '2', name: 'Base64 Native Encoder', category: 'Developer Tools', subcategory: 'Encoders', type: 'Free', isNew: false, isPopular: true, runs: '0', desc: 'Securely encode or decode text and strings into Base64 format locally.', icon: Code2, imageUrl: null, schemaMarkup: JSON.stringify({ "@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Base64 Native Encoder", "applicationCategory": "UtilityApplication", "operatingSystem": "Web", "description": "Securely encode or decode text and strings into Base64 format locally." }) },
-  { id: '3', name: 'Text Word & Character Counter', category: 'AI & Automation', subcategory: 'Text AI', type: 'Free', isNew: false, isPopular: false, runs: '0', desc: 'Instantly count words, characters, and reading time for any block of text.', icon: Code2, imageUrl: null, schemaMarkup: JSON.stringify({ "@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Text Word & Character Counter", "applicationCategory": "UtilityApplication", "operatingSystem": "Web", "description": "Instantly count words, characters, and reading time for any block of text." }) }
-];
+export const ALL_TOOLS = FALLBACK_TOOLS;
 
 const ImageWithFallback = ({ src, icon: Icon, alt }: { src?: string | null, icon: any, alt: string }) => {
   const [imgError, setImgError] = useState(false);
@@ -46,17 +51,12 @@ const ImageWithFallback = ({ src, icon: Icon, alt }: { src?: string | null, icon
   );
 };
 
-const CATEGORY_TREE = [
-  { name: 'All Tools', count: 3 },
-  { name: 'Developer Tools', count: 2, sub: ['Parsers', 'Encoders'] },
-  { name: 'AI & Automation', count: 1, sub: ['Text AI'] }
-];
-
 interface ToolsCatalogProps {
   onNavigate: (page: string) => void;
 }
 
 export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
+  const { tools, categoryCards } = useToolCatalog();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Tools');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
@@ -68,6 +68,18 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
+  const getOrCreateAnonId = () => {
+    try {
+      let aid = localStorage.getItem('anon_user_id');
+      if (!aid) {
+        // lightweight UUID v4
+        aid = 'anon-' + ([1e7]+-1e3+-4e3+-8e3+-1e11).toString().replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+        localStorage.setItem('anon_user_id', aid);
+      }
+      return aid;
+    } catch { return null }
+  };
+
   useEffect(() => {
     setIsFiltering(true);
     const t = setTimeout(() => setIsFiltering(false), 300);
@@ -75,15 +87,61 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   }, [searchQuery, selectedCategory, selectedSubCategory, activeFilterTag]);
 
   useEffect(() => {
-    try {
-      const favs = JSON.parse(localStorage.getItem('favorite_tools') || '[]');
-      setFavorites(favs);
-    } catch {}
-    
-    try {
-      const rv = JSON.parse(localStorage.getItem('recently_viewed') || '[]');
-      setRecentlyViewed(rv);
-    } catch {}
+    let cancelled = false;
+
+    const loadLocal = () => {
+      try {
+        const favs = JSON.parse(localStorage.getItem('favorite_tools') || '[]');
+        setFavorites(favs);
+      } catch {}
+      try {
+        const rv = JSON.parse(localStorage.getItem('recently_viewed') || '[]');
+        setRecentlyViewed(rv);
+      } catch {}
+    };
+
+    // use outer getOrCreateAnonId
+
+    const loadRemote = async () => {
+      try {
+        const user = await account.get();
+        const userId = user?.$id;
+
+        const effectiveId = userId || getOrCreateAnonId();
+
+        if (!effectiveId) return;
+
+        // Likes
+        try {
+          const likes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [Query.equal('user_id', effectiveId), Query.limit(1000)]);
+          const likedSlugs = (likes.documents || []).map((d: any) => String(d.tool_slug));
+          if (!cancelled) setFavorites(likedSlugs);
+        } catch {
+          // ignore
+        }
+
+        // Recently viewed
+        try {
+          const rv = await databases.listDocuments(DATABASE_ID, 'recently_viewed', [Query.equal('user_id', effectiveId), Query.orderDesc('viewed_at'), Query.limit(20)]);
+          const recentIds = (rv.documents || []).map((d: any) => String(d.tool_slug));
+          if (!cancelled) setRecentlyViewed(recentIds.slice(0, 4));
+        } catch {}
+      } catch {
+        // Could not get account — still attempt anon
+        const anon = getOrCreateAnonId();
+        if (!anon) return;
+        try {
+          const likes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [Query.equal('user_id', anon), Query.limit(1000)]);
+          const likedSlugs = (likes.documents || []).map((d: any) => String(d.tool_slug));
+          if (!cancelled) setFavorites(likedSlugs);
+        } catch {}
+      }
+    };
+
+    loadLocal();
+    void loadRemote();
+
+    return () => { cancelled = true };
 
     const initialCategory = localStorage.getItem('selected_category_filter');
     if (initialCategory) {
@@ -97,8 +155,33 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
     }
   }, []);
 
-  const toggleFavorite = (e: React.MouseEvent, id: string) => {
+  const toggleFavorite = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    try {
+      const user = await account.get();
+      if (user && user.$id) {
+        const userId = user.$id;
+        const isFav = favorites.includes(id);
+        await trackEvent(isFav ? 'unlike' : 'like', id, userId);
+        setFavorites(prev => isFav ? prev.filter(f => f !== id) : [...prev, id]);
+        return;
+      }
+    } catch {
+      // not logged in — try anonymous server-side user
+    }
+    try {
+      const anon = getOrCreateAnonId();
+      const isFav = favorites.includes(id);
+      if (anon) {
+        await trackEvent(isFav ? 'unlike' : 'like', id, anon);
+        setFavorites(prev => isFav ? prev.filter(f => f !== id) : [...prev, id]);
+        // also persist locally for quick read
+        localStorage.setItem('favorite_tools', JSON.stringify(favorites));
+        return;
+      }
+    } catch {}
+
+    // final fallback: localStorage toggle
     setFavorites(prev => {
       const isFav = prev.includes(id);
       const newFavs = isFav ? prev.filter(f => f !== id) : [...prev, id];
@@ -116,7 +199,8 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
   // Filtering Logic
   const filteredTools = useMemo(() => {
-    return ALL_TOOLS.filter(tool => {
+    const sourceTools = tools.length > 0 ? tools : FALLBACK_TOOLS;
+    return sourceTools.filter(tool => {
       // Search query check
       const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             tool.desc.toLowerCase().includes(searchQuery.toLowerCase());
@@ -149,7 +233,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
       return matchesSearch && matchesCategory && matchesSub && matchesTag;
     });
-  }, [searchQuery, selectedCategory, selectedSubCategory, activeFilterTag, favorites]);
+  }, [searchQuery, selectedCategory, selectedSubCategory, activeFilterTag, favorites, tools]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-24 md:pt-40 md:pb-32 px-6 md:px-12">
@@ -206,7 +290,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
             </h2>
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x custom-scrollbar">
               {recentlyViewed.map(id => {
-                const tool = ALL_TOOLS.find(t => t.id === id);
+                const tool = tools.find(t => t.id === id) || FALLBACK_TOOLS.find(t => t.id === id);
                 if (!tool) return null;
                 const ToolIcon = tool.icon;
                 return (
@@ -242,7 +326,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
             </h3>
             
             <nav className="flex flex-col gap-2">
-              {CATEGORY_TREE.map((cat, idx) => {
+              {categoryCards.map((cat, idx) => {
                 const isSelected = selectedCategory === cat.name;
                 const hasSub = cat.sub && cat.sub.length > 0;
                 const isExpanded = expandedCats[cat.name];
@@ -493,7 +577,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
               {/* Mobile filter copy from desktop */}
               <nav className="flex flex-col gap-2 mb-6">
-              {CATEGORY_TREE.map((cat, idx) => {
+              {categoryCards.map((cat, idx) => {
                 const isSelected = selectedCategory === cat.name;
                 const hasSub = cat.sub && cat.sub.length > 0;
                 const isExpanded = expandedCats[cat.name];

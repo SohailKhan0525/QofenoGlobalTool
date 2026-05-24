@@ -1,0 +1,49 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: QofenoGlobalTool/package-lock.json
+
+      - name: Install dependencies
+        working-directory: QofenoGlobalTool
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: QofenoGlobalTool
+        env:
+          VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
+          VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
+          VITE_APPWRITE_DATABASE_ID: ${{ secrets.VITE_APPWRITE_DATABASE_ID }}
+          VITE_APPWRITE_FUNCTION_JSON_FORMATTER_ID: ${{ secrets.VITE_APPWRITE_FUNCTION_JSON_FORMATTER_ID }}
+          VITE_APPWRITE_FUNCTION_WORD_COUNTER_ID: ${{ secrets.VITE_APPWRITE_FUNCTION_WORD_COUNTER_ID }}
+          VITE_APPWRITE_FUNCTION_BASE64_ENCODER_ID: ${{ secrets.VITE_APPWRITE_FUNCTION_BASE64_ENCODER_ID }}
+          VITE_APPWRITE_FUNCTION_TEXT_CASE_CONVERTER_ID: ${{ secrets.VITE_APPWRITE_FUNCTION_TEXT_CASE_CONVERTER_ID }}
+          VITE_APPWRITE_FUNCTION_TRACK_EVENT_ID: ${{ secrets.VITE_APPWRITE_FUNCTION_TRACK_EVENT_ID }}
+          VITE_APPWRITE_FUNCTION_AUTH_WEBHOOK_ID: ${{ secrets.VITE_APPWRITE_FUNCTION_AUTH_WEBHOOK_ID }}
+          VITE_APPWRITE_FUNCTION_PAYMENT_WEBHOOK_ID: ${{ secrets.VITE_APPWRITE_FUNCTION_PAYMENT_WEBHOOK_ID }}
+          VITE_APPWRITE_FUNCTION_CREATE_DOWNLOAD_LINK_ID: ${{ secrets.VITE_APPWRITE_FUNCTION_CREATE_DOWNLOAD_LINK_ID }}
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
+          directory: QofenoGlobalTool/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
