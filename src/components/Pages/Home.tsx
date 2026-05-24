@@ -41,9 +41,9 @@ const STORY_STEPS = [
 ];
 
 const FEATURED_TOOLS = [
-  { icon: Code2, name: "JSON Parser & Formatter", category: "Developer", usage: "1.2M", desc: "Format, validate, and beautify your JSON data." },
-  { icon: Code2, name: "Base64 Native Encoder", category: "Developer", usage: "900K", desc: "Securely encode or decode text strings." },
-  { icon: Code2, name: "Text Word & Character Counter", category: "AI Tools", usage: "200K", desc: "Count words, characters, and reading time instantly." }
+  { id: '1', icon: Code2, name: "JSON Parser & Formatter", category: "Developer", usage: "1.2M", desc: "Format, validate, and beautify your JSON data." },
+  { id: '2', icon: Code2, name: "Base64 Native Encoder", category: "Developer", usage: "900K", desc: "Securely encode or decode text strings." },
+  { id: '3', icon: Code2, name: "Text Word & Character Counter", category: "AI Tools", usage: "200K", desc: "Count words, characters, and reading time instantly." }
 ];
 
 const PERSONAS = [
@@ -447,7 +447,10 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   </div>
                   <div className="flex items-center justify-between pt-4 border-t border-neutral-100">
                     <button 
-                      onClick={() => onNavigate('tools')}
+                      onClick={() => {
+                        localStorage.setItem('selected_tool_id', tool.id);
+                        onNavigate('tool');
+                      }}
                       className="text-purple-600 font-semibold text-xs flex items-center hover:translate-x-1 transition-transform cursor-pointer"
                     >
                       Try Free →

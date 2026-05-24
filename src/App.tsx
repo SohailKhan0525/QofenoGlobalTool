@@ -378,13 +378,26 @@ export default function App() {
                   </div>
                   <div onClick={() => setActiveTab('tools')} className="text-sm font-bold text-purple-600 cursor-pointer pt-4 inline-block hover:underline">Explore all categories →</div>
                 </div>
-                {/* Recently Added */}
+                {/* Available Tools */}
                 <div className="col-span-2 border-l border-neutral-100 pl-8 space-y-4">
-                  <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-4">Recently Added</h4>
-                  {['Vector SVG Converter', 'AI Copywriting Assistant', 'JSON Validator'].map((t, i) => (
-                    <div key={i} onClick={() => setActiveTab('tools')} className="group flex items-center justify-between cursor-pointer py-1">
-                      <span className="text-sm font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors">{t}</span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-4">Available Tools</h4>
+                  {ALL_TOOLS.map((tool) => (
+                    <div 
+                      key={tool.id} 
+                      onClick={() => {
+                        localStorage.setItem('selected_tool_id', tool.id);
+                        setActiveTab('tool');
+                      }} 
+                      className="group flex items-center justify-between cursor-pointer py-1.5"
+                    >
+                      <span className="text-sm font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors">{tool.name}</span>
+                      {tool.isNew ? (
+                        <span className="text-[9px] font-black text-white bg-purple-600 rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0 shadow-sm">New</span>
+                      ) : tool.isPopular ? (
+                        <span className="text-[9px] font-black text-white bg-amber-500 rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0 shadow-sm">Popular</span>
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      )}
                     </div>
                   ))}
                   <div className="mt-6 pt-4 border-t border-neutral-100">
