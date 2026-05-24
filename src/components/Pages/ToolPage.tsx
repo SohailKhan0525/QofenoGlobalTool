@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ArrowLeft, ShieldCheck, Download, Heart, Eye, PlayCircle, HelpCircle, X, ChevronDown, Share2, Loader2, ChevronRight, Maximize, FileText, Facebook, Twitter, Linkedin, Copy } from 'lucide-react';
+import { UploadCloud, CheckCircle2, ArrowLeft, ShieldCheck, Download, Heart, Eye, PlayCircle, HelpCircle, X, ChevronDown, Share2, Loader2, ChevronRight, Maximize, FileText, Facebook, Twitter, Linkedin, Copy, Search } from 'lucide-react';
 import { ALL_TOOLS } from './ToolsCatalog';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
@@ -70,6 +70,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
   const [inputText, setInputText] = useState('');
   const [outputText, setOutputText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const [statsObj, setStatsObj] = useState<any>({ words: 0, chars: 0, readingTime: 0 });
   const [actionMode, setActionMode] = useState<'encode' | 'decode'>('encode');
   
@@ -115,44 +116,84 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
   // Real-time processing
   useEffect(() => {
-    try {
-      if (toolId === '1') {
-        if (!inputText.trim()) {
-          setOutputText('');
-          return;
-        }
-        const parsed = JSON.parse(inputText);
-        setOutputText(JSON.stringify(parsed, null, 2));
-      } else if (toolId === '2') {
-        if (!inputText) {
-          setOutputText('');
-          return;
-        }
-        if (actionMode === 'encode') {
-          setOutputText(btoa(inputText));
-        } else {
-          setOutputText(atob(inputText));
-        }
-      } else if (toolId === '3') {
-        const text = inputText.trim();
-        const words = text ? text.split(/\s+/).length : 0;
-        const chars = inputText.length;
-        setStatsObj({ words, chars, readingTime: Math.ceil(words / 200) });
-      }
-    } catch (e: any) {
-      if (toolId === '1') {
-        setOutputText('// Invalid JSON');
-      } else if (toolId === '2' && actionMode === 'decode') {
-        setOutputText('// Invalid Base64 string');
-      } else {
-        setOutputText("// Error processing input.");
-      }
+    if (toolId === '3') {
+      const text = inputText.trim();
+      const words = text ? text.split(/\s+/).length : 0;
+      const chars = inputText.length;
+      setStatsObj({ words, chars, readingTime: Math.ceil(words / 200) });
+      return;
     }
+
+    if (!inputText) {
+      setOutputText('');
+      setIsProcessing(false);
+      return;
+    }
+
+    setIsProcessing(true);
+    const timer = setTimeout(() => {
+      try {
+        if (toolId === '1') {
+          if (!inputText.trim()) {
+            setOutputText('');
+            return;
+          }
+          const parsed = JSON.parse(inputText);
+          setOutputText(JSON.stringify(parsed, null, 2));
+        } else if (toolId === '2') {
+          if (!inputText) {
+            setOutputText('');
+            return;
+          }
+          if (actionMode === 'encode') {
+            setOutputText(btoa(inputText));
+          } else {
+            setOutputText(atob(inputText));
+          }
+        }
+      } catch (e: any) {
+        if (toolId === '1') {
+          setOutputText('// Invalid JSON');
+        } else if (toolId === '2' && actionMode === 'decode') {
+          setOutputText('// Invalid Base64 string');
+        } else {
+          setOutputText("// Error processing input.");
+        }
+      } finally {
+        setIsProcessing(false);
+      }
+    }, 180);
+
+    return () => clearTimeout(timer);
   }, [inputText, actionMode, toolId]);
 
+  const [docSearchQuery, setDocSearchQuery] = useState('');
+
+  const getInstructions = (id: string) => {
+    if (id === '1') {
+      return [
+        { q: "How to parse and format JSON data?", a: "Paste standard raw or minified JSON text into the Input text area. The parser will immediately clean, structure, validate and format indentations dynamically in real-time." },
+        { q: "How to fix invalid JSON syntax errors or warnings?", a: "If the output text displays '// Invalid JSON', review your input block for issues such as missing double quotes around keys, unclosed brackets, or dangling trailing commas." },
+        { q: "How to copy and download formatted JSON results?", a: "Click the 'Copy Result' button to add the formatted code directly to your clipboard, or click 'Download' to save the beautified code as a file locally." },
+        { q: "How is local security policy handled for files?", a: "Your JSON data is parsed entirely locally in your browser workspace memory. Absolutely no JSON input drafts leave your computer." }
+      ];
+    } else if (id === '2') {
+      return [
+        { q: "How to Encode regular text characters to Base64 format?", a: "Set operations mode to 'Encode Base64', input standard plain text inside the input box, and copy the safe encoded characters instantly." },
+        { q: "How to Decode a Base64 string back to human-readable text?", a: "Set status mode to 'Decode Base64', input standard Base64 string content, and standard text output is returned immediately on the flyer." },
+        { q: "How does local sandboxed Base64 conversion process work?", a: "All conversion procedures are performed entirely in-memory using native browser APIs with high performance. Offline compatible and 100% private." }
+      ];
+    } else {
+      return [
+        { q: "How do I measure copywriting stats like word count?", a: "Type draft paragraphs of text inside the text input field. Calculated metrics like words index, character length, and estimated reading time are measured dynamically." },
+        { q: "How is the estimated human reading session calculated?", a: "Calculations assume an average human reading index speed of 200 words-per-minute for standard accuracy." }
+      ];
+    }
+  };
+
   const FAQs = [
-    { q: `How do I use this ${tool.name}?`, a: "Simply paste your input or upload the required file, configure any available options, and click to process. The result will instantly appear." },
-    { q: "Is my data secure?", a: "Yes. All processing is either executed completely locally within your browser or securely transmitted and instantly deleted from our servers." },
+    { q: `How do I use this ${tool.name}?`, a: "Simply paste your input text or upload the required raw file, configure any available mode options, and click to process. The result will instantly appear." },
+    { q: "Is my data secure?", a: "Yes. All processing is either executed completely locally within your browser sandbox or securely transmitted and instantly deleted from our servers." },
     { q: `What formats does ${tool.name} support?`, a: "We support all standard formats required for this operation. The platform accepts valid input seamlessly." },
     { q: "Is there a usage limit?", a: "You can use this tool repeatedly. However, for extremely large datasets or files, you might need a Pro plan to bypass standard limitations." },
     { q: "Who can I contact if I face an issue?", a: "You can reach out to our support team via the Contact Page, and we'll be happy to assist you immediately." },
@@ -319,15 +360,27 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                       <div className="w-full h-64 border border-neutral-200 bg-white rounded-xl overflow-hidden relative">
                         <div className="w-full h-full p-4 overflow-auto font-mono text-sm whitespace-pre-wrap break-all">
                            <AnimatePresence mode="wait">
-                              {outputText ? (
+                              {isProcessing ? (
                                  <motion.div
-                                   key="output"
-                                   initial={{ opacity: 0, y: 10 }}
-                                   animate={{ opacity: 1, y: 0 }}
-                                   exit={{ opacity: 0, y: -10 }}
-                                   transition={{ duration: 0.2 }}
+                                   key="processing"
+                                   initial={{ opacity: 0, scale: 0.98 }}
+                                   animate={{ opacity: 0.75, scale: 1 }}
+                                   exit={{ opacity: 0, scale: 0.98 }}
+                                   transition={{ duration: 0.15 }}
+                                   className="flex items-center gap-2 text-neutral-400 font-sans italic"
                                  >
-                                   {outputText}
+                                   <Loader2 className="w-4 h-4 text-purple-600 animate-spin shrink-0" />
+                                   Computing formatted output...
+                                 </motion.div>
+                              ) : outputText ? (
+                                 <motion.div
+                                   key={outputText}
+                                   initial={{ opacity: 0, y: 8, filter: 'blur(3px)' }}
+                                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                                   exit={{ opacity: 0, y: -8, filter: 'blur(3px)' }}
+                                   transition={{ duration: 0.25, ease: "easeOut" }}
+                                 >
+                                    {outputText}
                                  </motion.div>
                               ) : (
                                  <motion.span
@@ -446,42 +499,146 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
           </div>
         </div>
 
-        {/* FAQs */}
+        {/* Documentation & FAQs with Live Filtering Search Input */}
         <div className="mt-16 bg-white border border-neutral-200/80 rounded-3xl p-5 md:p-10 shadow-sm">
-          <div className="flex items-center gap-3 mb-8">
-            <HelpCircle className="w-6 h-6 text-[#0F0A1E]" />
-            <h2 className="text-xl md:text-2xl font-black text-[#0F0A1E]">Frequently Asked Questions</h2>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-neutral-100">
+            <div className="flex items-center gap-3">
+              <HelpCircle className="w-6 h-6 text-[#0F0A1E]" />
+              <div>
+                <h2 className="text-xl md:text-2xl font-black text-[#0F0A1E]">Documentation & FAQ</h2>
+                <p className="text-neutral-500 text-xs mt-0.5">Explore search-guided instructions and answers for {tool.name}</p>
+              </div>
+            </div>
+
+            {/* Live Search Input */}
+            <div className="relative w-full md:w-80 shrink-0">
+              <span className="absolute inset-y-0 left-3.5 flex items-center text-neutral-400">
+                <Search className="w-4 h-4 text-purple-600" />
+              </span>
+              <input
+                type="text"
+                placeholder="Search instructions or FAQs..."
+                value={docSearchQuery}
+                onChange={(e) => {
+                  setDocSearchQuery(e.target.value);
+                  // Reset accordion when user types to avoid conflicting states
+                  setActiveFaq(null);
+                }}
+                className="w-full bg-[#FAFAFA] hover:bg-neutral-50 focus:bg-white text-sm font-semibold text-[#0F0A1E] outline-none border border-neutral-200 focus:border-purple-500 rounded-xl py-2.5 pl-10 pr-10 transition-all placeholder:text-neutral-400"
+              />
+              {docSearchQuery && (
+                <button
+                  onClick={() => setDocSearchQuery('')}
+                  className="absolute inset-y-0 right-3 flex items-center text-neutral-400 hover:text-neutral-600 transition-colors p-1"
+                >
+                  <X className="w-4 h-4 cursor-pointer" />
+                </button>
+              )}
+            </div>
           </div>
-          <div className="space-y-4">
-            {FAQs.map((faq, idx) => {
-              const isOpen = activeFaq === idx;
+
+          {(() => {
+            const combinedDocs = [
+              ...getInstructions(toolId).map((item, idx) => ({ ...item, uniqueKey: `inst-${idx}`, category: "Instructions" })),
+              ...FAQs.map((item, idx) => ({ ...item, uniqueKey: `faq-${idx}`, category: "FAQ" }))
+            ];
+            
+            const filteredDocs = combinedDocs.filter(doc => {
+              const q = doc.q.toLowerCase();
+              const a = doc.a.toLowerCase();
+              const query = docSearchQuery.toLowerCase().trim();
+              return q.includes(query) || a.includes(query);
+            });
+
+            if (filteredDocs.length > 0) {
               return (
-                <div key={idx} className="border border-neutral-200/50 bg-[#FAFAFA] rounded-2xl overflow-hidden transition-all duration-300">
-                  <button
-                    onClick={() => setActiveFaq(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between p-4 sm:p-6 text-left font-bold text-[#0F0A1E] hover:bg-neutral-100 transition-colors cursor-pointer gap-4 text-sm sm:text-base"
-                  >
-                    <span>{faq.q}</span>
-                    <ChevronDown className={cn("w-5 h-5 text-purple-600 transition-transform duration-300 shrink-0", isOpen ? "rotate-180" : "")} />
-                  </button>
-                  <AnimatePresence initial={false}>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <div className="p-4 sm:p-6 pt-0 text-xs sm:text-sm text-neutral-500 leading-relaxed bg-white border-t border-neutral-200/50">
-                          {faq.a}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                <div className="space-y-4">
+                  {filteredDocs.map((doc, idx) => {
+                    const isSearching = docSearchQuery.trim().length > 0;
+                    const isOpen = isSearching || activeFaq === idx;
+
+                    // Light highlighting element
+                    const highlightText = (text: string, highlight: string) => {
+                      if (!highlight.trim()) return text;
+                      const parts = text.split(new RegExp(`(${highlight.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'));
+                      return (
+                        <span>
+                          {parts.map((part, i) => 
+                            part.toLowerCase() === highlight.toLowerCase() ? (
+                              <mark key={i} className="bg-purple-100 text-purple-900 px-1 rounded font-black font-sans">
+                                {part}
+                              </mark>
+                            ) : (
+                              part
+                            )
+                          )}
+                        </span>
+                      );
+                    };
+
+                    return (
+                      <div key={doc.uniqueKey} className="border border-neutral-200/50 bg-[#FAFAFA] rounded-2xl overflow-hidden transition-all duration-300">
+                        <button
+                          onClick={() => {
+                            if (!isSearching) {
+                              setActiveFaq(activeFaq === idx ? null : idx);
+                            }
+                          }}
+                          className={cn(
+                            "w-full flex items-center justify-between p-4 sm:p-6 text-left font-bold text-[#0F0A1E] transition-colors gap-4 text-sm sm:text-base",
+                            isSearching ? "cursor-default" : "hover:bg-neutral-100 cursor-pointer"
+                          )}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <span className={cn(
+                              "px-2 py-0.5 rounded-lg text-[9px] uppercase font-black tracking-wider w-fit shrink-0",
+                              doc.category === "Instructions" ? "bg-purple-100 text-purple-700" : "bg-neutral-200 text-neutral-700"
+                            )}>
+                              {doc.category}
+                            </span>
+                            <span className="text-[#0F0A1E] font-extrabold">{highlightText(doc.q, docSearchQuery)}</span>
+                          </div>
+                          {!isSearching && (
+                            <ChevronDown className={cn("w-5 h-5 text-purple-600 transition-transform duration-300 shrink-0", isOpen ? "rotate-180" : "")} />
+                          )}
+                        </button>
+                        <AnimatePresence initial={false}>
+                          {isOpen && (
+                            <motion.div
+                              initial={isSearching ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <div className="p-4 sm:p-6 pt-0 text-xs sm:text-sm text-neutral-500 leading-relaxed bg-white border-t border-neutral-200/50">
+                                {highlightText(doc.a, docSearchQuery)}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
                 </div>
               );
-            })}
-          </div>
+            }
+
+            return (
+              <div className="text-center py-12 px-4 bg-[#FAFAFA] rounded-2xl border border-dashed border-neutral-200">
+                <Search className="w-8 h-8 text-neutral-400 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-neutral-800 mb-1">No matches found</h3>
+                <p className="text-xs text-neutral-500 max-w-sm mx-auto mb-4">
+                  No instructions or FAQs matched your query "{docSearchQuery}". Try general keywords like "format", "locally", or "secure".
+                </p>
+                <button
+                  onClick={() => setDocSearchQuery('')}
+                  className="bg-[#0F0A1E] hover:bg-neutral-850 text-white font-bold text-xs py-2 px-4 rounded-xl transition-colors cursor-pointer"
+                >
+                  Clear search filters
+                </button>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
