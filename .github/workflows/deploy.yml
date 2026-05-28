@@ -16,9 +16,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: npm
-          # cache-dependency-path removed to avoid cache resolution failures
-          # when the repository layout doesn't expose the path during checkout
 
       - name: Install dependencies
         working-directory: QofenoGlobalTool
