@@ -1,0 +1,147 @@
+﻿2026-05-28T04:22:43.9299515Z Current runner version: '2.334.0'
+2026-05-28T04:22:43.9353961Z ##[group]Runner Image Provisioner
+2026-05-28T04:22:43.9355502Z Hosted Compute Agent
+2026-05-28T04:22:43.9356810Z Version: 20260520.533
+2026-05-28T04:22:43.9378515Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+2026-05-28T04:22:43.9380001Z Build Date: 2026-05-20T17:44:04Z
+2026-05-28T04:22:43.9381536Z Worker ID: {c0afdf74-34a2-43b2-b71c-5c48c4df9076}
+2026-05-28T04:22:43.9382887Z Azure Region: westcentralus
+2026-05-28T04:22:43.9384156Z ##[endgroup]
+2026-05-28T04:22:43.9386501Z ##[group]Operating System
+2026-05-28T04:22:43.9388634Z Ubuntu
+2026-05-28T04:22:43.9389689Z 24.04.4
+2026-05-28T04:22:43.9390858Z LTS
+2026-05-28T04:22:43.9391858Z ##[endgroup]
+2026-05-28T04:22:43.9392939Z ##[group]Runner Image
+2026-05-28T04:22:43.9394271Z Image: ubuntu-24.04
+2026-05-28T04:22:43.9395322Z Version: 20260525.161.1
+2026-05-28T04:22:43.9397667Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260525.161/images/ubuntu/Ubuntu2404-Readme.md
+2026-05-28T04:22:43.9438654Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260525.161
+2026-05-28T04:22:43.9440587Z ##[endgroup]
+2026-05-28T04:22:43.9442875Z ##[group]GITHUB_TOKEN Permissions
+2026-05-28T04:22:43.9445790Z Contents: read
+2026-05-28T04:22:43.9446976Z Metadata: read
+2026-05-28T04:22:43.9448425Z Packages: read
+2026-05-28T04:22:43.9449549Z ##[endgroup]
+2026-05-28T04:22:43.9452680Z Secret source: Actions
+2026-05-28T04:22:43.9454216Z Prepare workflow directory
+2026-05-28T04:22:44.0024980Z Prepare all required actions
+2026-05-28T04:22:44.0083257Z Getting action download info
+2026-05-28T04:22:44.5077817Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-05-28T04:22:44.6358607Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-05-28T04:22:44.7292957Z Download action repository 'cloudflare/pages-action@v1' (SHA:f0a1cd58cd66095dee69bfa18fa5efd1dde93bca)
+2026-05-28T04:22:45.3407196Z Complete job name: build-and-deploy
+2026-05-28T04:22:45.4146730Z ##[group]Run actions/checkout@v4
+2026-05-28T04:22:45.4147720Z with:
+2026-05-28T04:22:45.4148702Z   repository: SohailKhan0525/QofenoGlobalTool
+2026-05-28T04:22:45.4149585Z   token: ***
+2026-05-28T04:22:45.4150100Z   ssh-strict: true
+2026-05-28T04:22:45.4150613Z   ssh-user: git
+2026-05-28T04:22:45.4151138Z   persist-credentials: true
+2026-05-28T04:22:45.4151708Z   clean: true
+2026-05-28T04:22:45.4152243Z   sparse-checkout-cone-mode: true
+2026-05-28T04:22:45.4152858Z   fetch-depth: 1
+2026-05-28T04:22:45.4153370Z   fetch-tags: false
+2026-05-28T04:22:45.4153896Z   show-progress: true
+2026-05-28T04:22:45.4154422Z   lfs: false
+2026-05-28T04:22:45.4154918Z   submodules: false
+2026-05-28T04:22:45.4155453Z   set-safe-directory: true
+2026-05-28T04:22:45.4156363Z ##[endgroup]
+2026-05-28T04:22:45.5340105Z Syncing repository: SohailKhan0525/QofenoGlobalTool
+2026-05-28T04:22:45.5343528Z ##[group]Getting Git version info
+2026-05-28T04:22:45.5345264Z Working directory is '/home/runner/work/QofenoGlobalTool/QofenoGlobalTool'
+2026-05-28T04:22:45.5347576Z [command]/usr/bin/git version
+2026-05-28T04:22:45.5416190Z git version 2.54.0
+2026-05-28T04:22:45.5446035Z ##[endgroup]
+2026-05-28T04:22:45.5463274Z Temporarily overriding HOME='/home/runner/work/_temp/a54ac3c4-b7f4-4cf7-80ba-f5f752c36d9b' before making global git config changes
+2026-05-28T04:22:45.5466830Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-28T04:22:45.5483829Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/QofenoGlobalTool/QofenoGlobalTool
+2026-05-28T04:22:45.5532431Z Deleting the contents of '/home/runner/work/QofenoGlobalTool/QofenoGlobalTool'
+2026-05-28T04:22:45.5543001Z ##[group]Initializing the repository
+2026-05-28T04:22:45.5545373Z [command]/usr/bin/git init /home/runner/work/QofenoGlobalTool/QofenoGlobalTool
+2026-05-28T04:22:45.5655067Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-05-28T04:22:45.5657937Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-05-28T04:22:45.5660476Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-05-28T04:22:45.5664419Z hint: call:
+2026-05-28T04:22:45.5679907Z hint:
+2026-05-28T04:22:45.5681758Z hint: 	git config --global init.defaultBranch <name>
+2026-05-28T04:22:45.5684011Z hint:
+2026-05-28T04:22:45.5685584Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-05-28T04:22:45.5688660Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-05-28T04:22:45.5690796Z hint:
+2026-05-28T04:22:45.5692923Z hint: 	git branch -m <name>
+2026-05-28T04:22:45.5694520Z hint:
+2026-05-28T04:22:45.5697033Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-05-28T04:22:45.5700233Z Initialized empty Git repository in /home/runner/work/QofenoGlobalTool/QofenoGlobalTool/.git/
+2026-05-28T04:22:45.5706099Z [command]/usr/bin/git remote add origin https://github.com/SohailKhan0525/QofenoGlobalTool
+2026-05-28T04:22:45.5732726Z ##[endgroup]
+2026-05-28T04:22:45.5734972Z ##[group]Disabling automatic garbage collection
+2026-05-28T04:22:45.5738680Z [command]/usr/bin/git config --local gc.auto 0
+2026-05-28T04:22:45.5772139Z ##[endgroup]
+2026-05-28T04:22:45.5774786Z ##[group]Setting up auth
+2026-05-28T04:22:45.5780085Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-28T04:22:45.5821608Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-28T04:22:45.6192010Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-28T04:22:45.6207837Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-28T04:22:45.6440754Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-28T04:22:45.6490467Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-28T04:22:45.6723437Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-05-28T04:22:45.6761030Z ##[endgroup]
+2026-05-28T04:22:45.6763278Z ##[group]Fetching the repository
+2026-05-28T04:22:45.6773179Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +8f8d3d748482fc5236ed2a0aae118eb6cf0407de:refs/remotes/origin/main
+2026-05-28T04:22:46.2575829Z From https://github.com/SohailKhan0525/QofenoGlobalTool
+2026-05-28T04:22:46.2579584Z  * [new ref]         8f8d3d748482fc5236ed2a0aae118eb6cf0407de -> origin/main
+2026-05-28T04:22:46.2623343Z ##[endgroup]
+2026-05-28T04:22:46.2625176Z ##[group]Determining the checkout info
+2026-05-28T04:22:46.2627180Z ##[endgroup]
+2026-05-28T04:22:46.2628916Z [command]/usr/bin/git sparse-checkout disable
+2026-05-28T04:22:46.2675060Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-05-28T04:22:46.2715357Z ##[group]Checking out the ref
+2026-05-28T04:22:46.2718456Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-05-28T04:22:46.2826836Z Switched to a new branch 'main'
+2026-05-28T04:22:46.2830809Z branch 'main' set up to track 'origin/main'.
+2026-05-28T04:22:46.2843174Z ##[endgroup]
+2026-05-28T04:22:46.2883003Z [command]/usr/bin/git log -1 --format=%H
+2026-05-28T04:22:46.2909886Z 8f8d3d748482fc5236ed2a0aae118eb6cf0407de
+2026-05-28T04:22:46.3329214Z ##[group]Run actions/setup-node@v4
+2026-05-28T04:22:46.3331311Z with:
+2026-05-28T04:22:46.3332892Z   node-version: 18
+2026-05-28T04:22:46.3334669Z   cache: npm
+2026-05-28T04:22:46.3336198Z   always-auth: false
+2026-05-28T04:22:46.3337319Z   check-latest: false
+2026-05-28T04:22:46.3339470Z   token: ***
+2026-05-28T04:22:46.3340466Z ##[endgroup]
+2026-05-28T04:22:46.5208819Z Attempting to download 18...
+2026-05-28T04:22:47.4228689Z Acquiring 18.20.8 - x64 from https://github.com/actions/node-versions/releases/download/18.20.8-14110393767/node-18.20.8-linux-x64.tar.gz
+2026-05-28T04:22:48.2599357Z Extracting ...
+2026-05-28T04:22:48.2710824Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/f5e6710d-9857-491d-8190-a30467368973 -f /home/runner/work/_temp/5db11a24-d65d-4425-af9f-349fbfaae42a
+2026-05-28T04:22:49.3636168Z Adding to the cache ...
+2026-05-28T04:22:51.6130689Z ##[group]Environment details
+2026-05-28T04:22:51.8990204Z node: v18.20.8
+2026-05-28T04:22:51.8991132Z npm: 10.8.2
+2026-05-28T04:22:51.9004125Z yarn: 1.22.22
+2026-05-28T04:22:51.9009184Z ##[endgroup]
+2026-05-28T04:22:51.9029028Z [command]/opt/hostedtoolcache/node/18.20.8/x64/bin/npm config get cache
+2026-05-28T04:22:52.0200929Z /home/runner/.npm
+2026-05-28T04:22:52.2328788Z npm cache is not found
+2026-05-28T04:22:52.2494929Z ##[group]Run npm ci
+2026-05-28T04:22:52.2495263Z [36;1mnpm ci[0m
+2026-05-28T04:22:52.2527392Z shell: /usr/bin/bash -e {0}
+2026-05-28T04:22:52.2527716Z ##[endgroup]
+2026-05-28T04:22:52.2690272Z ##[error]An error occurred trying to start process '/usr/bin/bash' with working directory '/home/runner/work/QofenoGlobalTool/QofenoGlobalTool/QofenoGlobalTool'. No such file or directory
+2026-05-28T04:22:52.2826123Z Post job cleanup.
+2026-05-28T04:22:52.3820608Z [command]/usr/bin/git version
+2026-05-28T04:22:52.3855944Z git version 2.54.0
+2026-05-28T04:22:52.3904037Z Temporarily overriding HOME='/home/runner/work/_temp/c69699b1-d893-412c-af9f-51c064f07d44' before making global git config changes
+2026-05-28T04:22:52.3905995Z Adding repository directory to the temporary git global config as a safe directory
+2026-05-28T04:22:52.3911199Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/QofenoGlobalTool/QofenoGlobalTool
+2026-05-28T04:22:52.3956785Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-05-28T04:22:52.3993871Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-05-28T04:22:52.4230806Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-05-28T04:22:52.4256700Z http.https://github.com/.extraheader
+2026-05-28T04:22:52.4273447Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-05-28T04:22:52.4308780Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-05-28T04:22:52.4547872Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-05-28T04:22:52.4574796Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-05-28T04:22:52.4908883Z Cleaning up orphan processes
+2026-05-28T04:22:52.5100758Z ##[warning]Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Node.js 20 will be removed from the runner on September 16th, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

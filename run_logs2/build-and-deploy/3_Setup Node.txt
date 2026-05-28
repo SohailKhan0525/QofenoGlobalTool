@@ -1,0 +1,22 @@
+﻿2026-05-28T04:20:29.6323289Z ##[group]Run actions/setup-node@v4
+2026-05-28T04:20:29.6324026Z with:
+2026-05-28T04:20:29.6324495Z   node-version: 18
+2026-05-28T04:20:29.6324999Z   cache: npm
+2026-05-28T04:20:29.6325659Z   cache-dependency-path: QofenoGlobalTool/package-lock.json
+2026-05-28T04:20:29.6326672Z   always-auth: false
+2026-05-28T04:20:29.6327208Z   check-latest: false
+2026-05-28T04:20:29.6333049Z   token: ***
+2026-05-28T04:20:29.6333558Z ##[endgroup]
+2026-05-28T04:20:29.8230921Z Attempting to download 18...
+2026-05-28T04:20:30.4092282Z Acquiring 18.20.8 - x64 from https://github.com/actions/node-versions/releases/download/18.20.8-14110393767/node-18.20.8-linux-x64.tar.gz
+2026-05-28T04:20:30.8745812Z Extracting ...
+2026-05-28T04:20:30.8895391Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/c758b6ec-dd31-4a59-a0b8-b2e3ed0f3da2 -f /home/runner/work/_temp/fa4fea7c-a6dc-403d-8b72-0e641703bada
+2026-05-28T04:20:31.9455886Z Adding to the cache ...
+2026-05-28T04:20:33.3229641Z ##[group]Environment details
+2026-05-28T04:20:33.5948681Z node: v18.20.8
+2026-05-28T04:20:33.5950007Z npm: 10.8.2
+2026-05-28T04:20:33.5950663Z yarn: 1.22.22
+2026-05-28T04:20:33.5951714Z ##[endgroup]
+2026-05-28T04:20:33.5972625Z [command]/opt/hostedtoolcache/node/18.20.8/x64/bin/npm config get cache
+2026-05-28T04:20:33.7053506Z /home/runner/.npm
+2026-05-28T04:20:33.7176475Z ##[error]Some specified paths were not resolved, unable to cache dependencies.

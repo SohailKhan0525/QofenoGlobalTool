@@ -1,0 +1,5 @@
+﻿2026-05-28T04:22:52.2494913Z ##[group]Run npm ci
+2026-05-28T04:22:52.2495259Z [36;1mnpm ci[0m
+2026-05-28T04:22:52.2527361Z shell: /usr/bin/bash -e {0}
+2026-05-28T04:22:52.2527711Z ##[endgroup]
+2026-05-28T04:22:52.2690252Z ##[error]An error occurred trying to start process '/usr/bin/bash' with working directory '/home/runner/work/QofenoGlobalTool/QofenoGlobalTool/QofenoGlobalTool'. No such file or directory

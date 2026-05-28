@@ -1,0 +1,26 @@
+ Volume in drive C has no label.
+ Volume Serial Number is D654-1036
+
+ Directory of C:\CodeTut_SOHAIL\labsqofenotools\QofenoGlobalTool\run_logs2
+
+05/28/2026  09:51 AM    <DIR>          .
+05/28/2026  09:51 AM    <DIR>          ..
+01/01/1980  12:00 AM            12,043 0_build-and-deploy.txt
+05/28/2026  09:51 AM    <DIR>          build-and-deploy
+               1 File(s)         12,043 bytes
+
+ Directory of C:\CodeTut_SOHAIL\labsqofenotools\QofenoGlobalTool\run_logs2\build-and-deploy
+
+05/28/2026  09:51 AM    <DIR>          .
+05/28/2026  09:51 AM    <DIR>          ..
+01/01/1980  12:00 AM             1,727 12_Post Checkout.txt
+01/01/1980  12:00 AM               873 13_Complete job.txt
+01/01/1980  12:00 AM             2,130 1_Set up job.txt
+01/01/1980  12:00 AM             5,820 2_Checkout.txt
+01/01/1980  12:00 AM             1,505 3_Setup Node.txt
+01/01/1980  12:00 AM               595 system.txt
+               6 File(s)         12,650 bytes
+
+     Total Files Listed:
+               7 File(s)         24,693 bytes
+               5 Dir(s)  300,542,844,928 bytes free

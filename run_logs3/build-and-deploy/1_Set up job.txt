@@ -1,0 +1,33 @@
+﻿2026-05-28T04:22:43.9297863Z Current runner version: '2.334.0'
+2026-05-28T04:22:43.9353933Z ##[group]Runner Image Provisioner
+2026-05-28T04:22:43.9355482Z Hosted Compute Agent
+2026-05-28T04:22:43.9356793Z Version: 20260520.533
+2026-05-28T04:22:43.9378483Z Commit: 189110e25284a9812c124fd27b339e2fb4f2f9db
+2026-05-28T04:22:43.9379984Z Build Date: 2026-05-20T17:44:04Z
+2026-05-28T04:22:43.9381524Z Worker ID: {c0afdf74-34a2-43b2-b71c-5c48c4df9076}
+2026-05-28T04:22:43.9382877Z Azure Region: westcentralus
+2026-05-28T04:22:43.9384146Z ##[endgroup]
+2026-05-28T04:22:43.9386480Z ##[group]Operating System
+2026-05-28T04:22:43.9388608Z Ubuntu
+2026-05-28T04:22:43.9389675Z 24.04.4
+2026-05-28T04:22:43.9390840Z LTS
+2026-05-28T04:22:43.9391845Z ##[endgroup]
+2026-05-28T04:22:43.9392923Z ##[group]Runner Image
+2026-05-28T04:22:43.9394261Z Image: ubuntu-24.04
+2026-05-28T04:22:43.9395313Z Version: 20260525.161.1
+2026-05-28T04:22:43.9397413Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260525.161/images/ubuntu/Ubuntu2404-Readme.md
+2026-05-28T04:22:43.9438624Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260525.161
+2026-05-28T04:22:43.9440576Z ##[endgroup]
+2026-05-28T04:22:43.9442863Z ##[group]GITHUB_TOKEN Permissions
+2026-05-28T04:22:43.9445763Z Contents: read
+2026-05-28T04:22:43.9446967Z Metadata: read
+2026-05-28T04:22:43.9448408Z Packages: read
+2026-05-28T04:22:43.9449538Z ##[endgroup]
+2026-05-28T04:22:43.9452656Z Secret source: Actions
+2026-05-28T04:22:43.9454192Z Prepare workflow directory
+2026-05-28T04:22:44.0024954Z Prepare all required actions
+2026-05-28T04:22:44.0083226Z Getting action download info
+2026-05-28T04:22:44.5077785Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-05-28T04:22:44.6358578Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-05-28T04:22:44.7292920Z Download action repository 'cloudflare/pages-action@v1' (SHA:f0a1cd58cd66095dee69bfa18fa5efd1dde93bca)
+2026-05-28T04:22:45.3407172Z Complete job name: build-and-deploy
