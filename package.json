@@ -9,6 +9,7 @@
     "start": "vite preview --port=3000 --host=0.0.0.0",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
+    "deploy:pages": "node scripts/deploy_pages.mjs",
     "provision:appwrite": "node scripts/provision_appwrite.mjs",
     "provision:project": "node scripts/provision_project.mjs",
     "lint": "tsc --noEmit"
