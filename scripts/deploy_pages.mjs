@@ -30,9 +30,10 @@ if (!existsSync(DIST_DIR)) {
 
 console.log('Deploying', DIST_DIR, 'to Cloudflare Pages project', PROJECT);
 
-const child = spawn('npx', ['-y', 'wrangler@3', 'pages', 'deploy', DIST_DIR, '--project-name', PROJECT, '--branch', 'main'], {
+const child = spawn('npx -y wrangler@3 pages deploy "' + DIST_DIR + '" --project-name ' + PROJECT + ' --branch main', {
   stdio: 'inherit',
-  env: { ...process.env, CLOUDFLARE_API_TOKEN }
+  env: { ...process.env, CLOUDFLARE_API_TOKEN },
+  shell: true
 });
 
 child.on('exit', (code) => {
