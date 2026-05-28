@@ -18,11 +18,9 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        working-directory: QofenoGlobalTool
         run: npm ci
 
       - name: Build frontend
-        working-directory: QofenoGlobalTool
         env:
           VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
           VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
@@ -43,5 +41,5 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
-          directory: QofenoGlobalTool/dist
+          directory: dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
