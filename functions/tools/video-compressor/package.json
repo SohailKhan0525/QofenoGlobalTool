@@ -1,0 +1,10 @@
+{
+  "name": "video-compressor",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "node-appwrite": "^25.2.0"
+  }
+}

@@ -14,9 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 import { SEO } from '../../components/SEO';
+import { FILE_TOOL_SLUGS, FileToolWorkspace } from './FileToolWorkspace';
+import { useAuth } from '../../context/AuthContext';
 
 export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { tools } = useToolCatalog();
+  const { user } = useAuth();
   const [likes, setLikes] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [views, setViews] = useState(0);
@@ -34,12 +37,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
   useEffect(() => {
     const syncUser = async () => {
-      try {
-        const user = await account.get();
-        setCurrentUserId(user.$id);
-      } catch {
-        setCurrentUserId(localStorage.getItem('appwrite_user_id'));
-      }
+      setCurrentUserId(user?.id || null);
     };
     void syncUser();
 
@@ -56,23 +54,23 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
       setIsLoadingTool(false);
     }, 800);
     return () => clearTimeout(timer);
-  }, [toolId]);
+  }, [toolId, user?.id]);
 
   useEffect(() => {
     let cancelled = false;
 
     const syncStats = async () => {
       try {
-        const [viewsResp, likesResp] = await Promise.all([
-          databases.listDocuments(DATABASE_ID, 'tool_views', [Query.equal('tool_slug', toolSlug)]),
-          databases.listDocuments(DATABASE_ID, 'tool_likes', [Query.equal('tool_slug', toolSlug)]),
-        ]);
+        const viewsResp = await databases.listDocuments(DATABASE_ID, 'tool_views', [Query.equal('tool_slug', toolSlug)]);
 
         if (cancelled) return;
         setViews(viewsResp.total || 0);
-        setLikes(likesResp.total || 0);
 
         if (currentUserId) {
+          const likesResp = await databases.listDocuments(DATABASE_ID, 'tool_likes', [Query.equal('tool_slug', toolSlug)]);
+          if (cancelled) return;
+          setLikes(likesResp.total || 0);
+
           const userLikes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
             Query.equal('tool_slug', toolSlug),
             Query.equal('user_id', currentUserId),
@@ -81,6 +79,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
             setHasLiked(userLikes.total > 0);
           }
         } else if (!cancelled) {
+          setLikes(0);
           setHasLiked(false);
         }
       } catch {
@@ -291,6 +290,253 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     { q: "Is there a usage limit?", a: "You can use this tool repeatedly. However, for extremely large datasets or files, you might need a Pro plan to bypass standard limitations." },
     { q: "Who can I contact if I face an issue?", a: "You can reach out to our support team via the Contact Page, and we'll be happy to assist you immediately." },
   ];
+
+  const isFileTool = FILE_TOOL_SLUGS.has(toolSlug);
+
+  if (isFileTool) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] pt-28 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">
+        <SEO title={tool.name} description={tool.desc} />
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <nav className="flex items-center gap-2 text-sm font-bold text-neutral-500 min-w-0">
+              <button onClick={() => onNavigate('home')} className="hover:text-purple-600 transition-colors cursor-pointer">Home</button>
+              <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+              <button onClick={() => onNavigate('tools')} className="hover:text-purple-600 transition-colors cursor-pointer">Tools</button>
+              <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+              <span className="text-[#0F0A1E] truncate max-w-[180px] md:max-w-[320px]">{tool.name}</span>
+            </nav>
+
+            <button
+              onClick={() => onNavigate('tools')}
+              className="inline-flex items-center gap-2 text-neutral-500 hover:text-purple-600 transition-colors font-bold text-sm cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to Tools
+            </button>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] items-start">
+            <div className="space-y-6">
+              <div className="bg-white border border-neutral-200/80 rounded-3xl p-5 md:p-8 shadow-sm">
+                <div className="flex flex-col md:flex-row gap-5 md:items-start md:justify-between mb-6">
+                  <div className="flex items-start gap-4 min-w-0">
+                    <div className="w-14 h-14 shrink-0 bg-purple-50 rounded-2xl flex items-center justify-center">
+                      <ToolIcon className="w-7 h-7 text-purple-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <h1 className="text-2xl md:text-3xl font-black text-[#0F0A1E] mb-2">{tool.name}</h1>
+                      <p className="text-neutral-500 text-sm leading-relaxed max-w-2xl">{tool.desc}</p>
+                    </div>
+                  </div>
+
+                  <Tooltip>
+                    <TooltipTrigger
+                      className="self-start p-2 rounded-xl border border-neutral-200 text-neutral-500 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 transition-all cursor-pointer"
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: tool.name,
+                            text: tool.desc,
+                            url: window.location.href,
+                          }).catch((err) => {
+                            if (err.name !== 'AbortError') console.error(err);
+                          });
+                        } else {
+                          setIsShareModalOpen(true);
+                        }
+                      }}
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Share this tool</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+
+                <FileToolWorkspace tool={tool} userId={currentUserId} />
+
+                <div className="mt-6 pt-6 border-t border-neutral-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400">
+                    <ShieldCheck className="w-4 h-4 text-green-500" />
+                    Result auto-deletes in 30 mins
+                  </div>
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <PlayCircle className="w-4 h-4" /> How it works
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 shadow-sm">
+                <h3 className="font-bold text-[#0F0A1E] text-sm uppercase tracking-wider mb-4">Tool Stats</h3>
+                <div className="flex justify-between items-center py-3 border-b border-neutral-100">
+                  <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
+                    <Eye className="w-4 h-4" /> Views
+                  </span>
+                  <span className="font-bold text-[#0F0A1E]">{views.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center py-3">
+                  <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
+                    <Heart className="w-4 h-4" /> Likes
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-[#0F0A1E]">{likes.toLocaleString()}</span>
+                    <button
+                      onClick={toggleLike}
+                      className={cn(
+                        "p-2 rounded-full transition-all cursor-pointer",
+                        hasLiked ? "bg-pink-100 text-pink-600 shadow-sm" : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600"
+                      )}
+                    >
+                      <Heart className={cn("w-4 h-4", hasLiked && "fill-current")} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-purple-50 border border-purple-100 rounded-3xl p-6 shadow-sm">
+                <h3 className="font-bold text-purple-900 mb-2">Upgrade to Pro</h3>
+                <p className="text-xs text-purple-700 leading-relaxed mb-4">
+                  Get unlimited bulk processing, secure API access, and no file size limits.
+                </p>
+                <button
+                  onClick={() => onNavigate('pricing')}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-colors cursor-pointer text-sm"
+                >
+                  View Plans
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-[#0F0A1E]/40 backdrop-blur-sm pointer-events-auto"
+                onClick={() => setIsModalOpen(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white max-w-lg w-full rounded-3xl p-8 shadow-2xl relative z-10 pointer-events-auto"
+              >
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="absolute top-6 right-6 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors"
+                >
+                  <X className="w-4 h-4 cursor-pointer" />
+                </button>
+
+                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
+                  <ShieldCheck className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-black text-2xl text-[#0F0A1E] mb-3">Privacy & Security Assured</h3>
+                <p className="text-neutral-500 text-sm leading-relaxed mb-6">
+                  Your data and privacy are strictly protected and never used by us.
+                  Any files you upload are processed securely and deleted automatically
+                  within 30 minutes from our servers.
+                </p>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-full bg-[#0F0A1E] hover:bg-neutral-800 text-white font-bold py-3.5 rounded-xl transition-colors cursor-pointer"
+                >
+                  Got it
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {isShareModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-[#0F0A1E]/40 backdrop-blur-sm pointer-events-auto"
+                onClick={() => setIsShareModalOpen(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="bg-white max-w-md w-full rounded-3xl p-8 shadow-2xl relative z-10 pointer-events-auto"
+              >
+                <button
+                  onClick={() => setIsShareModalOpen(false)}
+                  className="absolute top-6 right-6 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4 cursor-pointer" />
+                </button>
+
+                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
+                  <Share2 className="w-6 h-6 text-blue-600" />
+                </div>
+
+                <h2 className="font-black text-2xl text-[#0F0A1E] mb-2">Share this tool</h2>
+                <p className="text-neutral-500 text-sm mb-6">Let your friends or colleagues know about this awesome tool.</p>
+
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <a
+                    href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors cursor-pointer"
+                  >
+                    <Facebook className="w-6 h-6" />
+                    <span className="text-xs font-bold">Facebook</span>
+                  </a>
+                  <a
+                    href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(tool.desc)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-sky-50 text-sky-500 hover:bg-sky-100 transition-colors cursor-pointer"
+                  >
+                    <Twitter className="w-6 h-6" />
+                    <span className="text-xs font-bold">Twitter</span>
+                  </a>
+                  <a
+                    href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(window.location.href)}&title=${encodeURIComponent(tool.name)}&summary=${encodeURIComponent(tool.desc)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors cursor-pointer"
+                  >
+                    <Linkedin className="w-6 h-6" />
+                    <span className="text-xs font-bold">LinkedIn</span>
+                  </a>
+                </div>
+
+                <div className="flex items-center gap-3 w-full bg-neutral-50 p-2.5 rounded-xl border border-neutral-200">
+                  <div className="flex-1 overflow-hidden px-1">
+                    <p className="text-xs text-neutral-500 truncate whitespace-nowrap">{window.location.href}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.href);
+                      toast.success("Link copied to clipboard!");
+                      setIsShareModalOpen(false);
+                    }}
+                    className="flex bg-white items-center gap-1.5 py-1.5 px-3 hover:bg-neutral-100 shadow-sm border border-neutral-200 rounded-lg text-neutral-700 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Copy
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-32 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">

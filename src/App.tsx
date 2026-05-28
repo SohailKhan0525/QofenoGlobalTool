@@ -16,6 +16,12 @@ import { Payment } from './components/Pages/Payment';
 import { ToolPage } from './components/Pages/ToolPage';
 import { Terms } from './components/Pages/Terms';
 import { Policy } from './components/Pages/Policy';
+import { ForgotPassword } from './components/Pages/ForgotPassword';
+import { AuthCallback } from './components/Pages/AuthCallback';
+import { Dashboard } from './components/Pages/Dashboard';
+import { Profile } from './components/Pages/Profile';
+import { Settings } from './components/Pages/Settings';
+import { NotFound } from './components/Pages/NotFound';
 import { FaGithub, FaInstagram } from 'react-icons/fa';
 import { FaToolbox } from 'react-icons/fa6';
 
@@ -29,8 +35,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import { cn } from './lib/utils';
 import { toast } from 'sonner';
-import { account } from './lib/qofeno-appwrite';
 import { FALLBACK_TOOLS, useToolCatalog } from './lib/toolCatalog';
+import { getPathForPage, parseRoute } from './lib/appRouter';
+import { useAuth } from './context/AuthContext';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -68,8 +75,11 @@ const PAGE_VARIANTS: any = {
 };
 
 export default function App() {
+  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
   const { tools } = useToolCatalog();
-  const [activeTab, setActiveTab] = useState('home'); // home, tools, pricing, dashboard, blog, about, contact
+  const initialRoute = parseRoute(window.location.pathname, window.location.search);
+  const [activeTab, setActiveTabState] = useState(initialRoute.page);
+  const [currentToolSlug, setCurrentToolSlug] = useState(initialRoute.toolSlug || localStorage.getItem('selected_tool_id') || 'json-formatter');
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [requestToolName, setRequestToolName] = useState('');
   const [requestToolDesc, setRequestToolDesc] = useState('');
@@ -80,7 +90,6 @@ export default function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [navbarSearchText, setNavbarSearchText] = useState('');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
@@ -99,6 +108,41 @@ export default function App() {
   const [prefSecurityAlerts, setPrefSecurityAlerts] = useState(true);
 
   const appTools = tools.length > 0 ? tools : FALLBACK_TOOLS;
+
+  const setActiveTab = (page: string) => {
+    if (page.startsWith('/')) {
+      const route = parseRoute(page, '');
+      if (route.page === 'tool') {
+        const slug = route.toolSlug || currentToolSlug || 'json-formatter';
+        setCurrentToolSlug(slug);
+        localStorage.setItem('selected_tool_id', slug);
+      }
+      window.history.pushState({}, '', page);
+      setActiveTabState(route.page);
+      return;
+    }
+
+    if (page === 'tool') {
+      const slug = localStorage.getItem('selected_tool_id') || currentToolSlug || 'json-formatter';
+      setCurrentToolSlug(slug);
+      window.history.pushState({}, '', getPathForPage('tool', slug));
+      setActiveTabState('tool');
+      return;
+    }
+
+    window.history.pushState({}, '', getPathForPage(page as any));
+    setActiveTabState(page as any);
+  };
+
+  const goToProCheckout = () => {
+    if (isAuthenticated) {
+      setActiveTab('payment');
+      return;
+    }
+
+    window.history.pushState({}, '', '/login?redirect=/checkout/pro');
+    setActiveTabState('login');
+  };
 
   // Refs for click outside handling
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -143,21 +187,30 @@ export default function App() {
     });
   }, [theme]);
 
-  // Sync auth state
   useEffect(() => {
-    const syncAuthState = async () => {
-      try {
-        const user = await account.get();
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('appwrite_user_id', user.$id);
-        setIsLoggedIn(true);
-      } catch {
-        setIsLoggedIn(localStorage.getItem('isLoggedIn') === 'true');
+    const syncRoute = () => {
+      const route = parseRoute(window.location.pathname, window.location.search);
+      if (route.page === 'tool' && route.toolSlug) {
+        setCurrentToolSlug(route.toolSlug);
+        localStorage.setItem('selected_tool_id', route.toolSlug);
       }
+      setActiveTabState(route.page);
     };
 
-    void syncAuthState();
-  }, [activeTab]);
+    window.addEventListener('popstate', syncRoute);
+    syncRoute();
+    return () => window.removeEventListener('popstate', syncRoute);
+  }, []);
+
+  useEffect(() => {
+    if (isAuthLoading) return;
+    const route = parseRoute(window.location.pathname, window.location.search);
+    if (['dashboard', 'profile', 'settings', 'payment'].includes(route.page) && !isAuthenticated) {
+      const redirect = `${window.location.pathname}${window.location.search}`;
+      window.history.replaceState({}, '', `/login?redirect=${encodeURIComponent(redirect)}`);
+      setActiveTabState('login');
+    }
+  }, [isAuthenticated, isAuthLoading]);
 
   // Watch scroll values to apply navbar background saturates & blur checks
   useEffect(() => {
@@ -170,8 +223,16 @@ export default function App() {
 
   // Back to top function on route tab changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
   }, [activeTab]);
+
+  const handleLogout = async () => {
+    await logout();
+    localStorage.removeItem('appwrite_user_id');
+    localStorage.removeItem('isLoggedIn');
+    window.history.pushState({}, '', '/');
+    setActiveTabState('home');
+  };
 
   const handleRequestToolSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -667,14 +728,15 @@ export default function App() {
             </button>
           </div>
 
-          {isLoggedIn ? (
+          {isAuthenticated ? (
             <div className="hidden lg:block relative" ref={profileContainerRef}>
               <button 
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 px-4 py-2 rounded-xl transition-colors cursor-pointer"
               >
-                <div className="w-6 h-6 rounded-md bg-purple-600 flex items-center justify-center text-white text-[10px] font-bold">JD</div>
-                <span className="text-sm font-bold text-[#0F0A1E]">John Doe</span>
+                <div className="w-6 h-6 rounded-md bg-purple-600 flex items-center justify-center text-white text-[10px] font-bold">{(user?.name || 'User').slice(0, 2).toUpperCase()}</div>
+                <span className="text-sm font-bold text-[#0F0A1E]">{user?.name || 'User'}</span>
+                <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-purple-700">{user?.plan === 'pro' ? 'Pro' : 'Free'}</span>
                 <ChevronDown className="w-3 h-3 text-neutral-500" />
               </button>
               
@@ -687,7 +749,7 @@ export default function App() {
                     className="absolute top-full mt-2 right-0 w-48 bg-white border border-neutral-200 shadow-xl rounded-xl p-2 z-50 pointer-events-auto"
                   >
                     <div className="px-3 py-2 border-b border-neutral-100 mb-2">
-                      <p className="text-xs font-bold text-[#0F0A1E]">Pro Account</p>
+                      <p className="text-xs font-bold text-[#0F0A1E]">{user?.plan === 'pro' ? 'Pro Account' : 'Free Account'}</p>
                     </div>
                     <button 
                       onClick={() => { setShowProfileMenu(false); setShowPreferences(true); }}
@@ -697,10 +759,8 @@ export default function App() {
                     </button>
                     <button 
                       onClick={() => {
-                        localStorage.removeItem('isLoggedIn');
-                        setIsLoggedIn(false);
                         setShowProfileMenu(false);
-                        setActiveTab('home');
+                        void handleLogout();
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                     >
@@ -714,7 +774,7 @@ export default function App() {
             <motion.button 
               whileHover={{ scale: 1.04, boxShadow: '0 8px 24px rgba(124,58,237,0.35)' }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => setActiveTab('pricing')}
+              onClick={goToProCheckout}
               className="hidden lg:block px-6 py-2.5 bg-gradient-to-br from-[#7C3AED] to-[#A78BFA] text-white text-sm font-bold rounded-xl cursor-pointer"
             >
               Get Pro
@@ -787,7 +847,7 @@ export default function App() {
 
               <div className="mt-auto pt-6 border-t border-neutral-100 flex flex-col gap-3">
                 <button 
-                  onClick={() => { setIsMobileNavOpen(false); setActiveTab('pricing'); }}
+                  onClick={() => { setIsMobileNavOpen(false); goToProCheckout(); }}
                   className="w-full py-3.5 rounded-xl font-bold text-white bg-purple-600 transition-colors cursor-pointer"
                 >
                   Get Pro
@@ -820,7 +880,7 @@ export default function App() {
               {activeTab === 'tools' && (
                 <ToolsCatalog onNavigate={(page) => setActiveTab(page)} />
               )}
-              {activeTab === 'pricing' && <PricingView onNavigate={(page) => setActiveTab(page)} />}
+              {activeTab === 'pricing' && <PricingView onNavigate={(page) => setActiveTab(page)} onGetPro={goToProCheckout} />}
               {activeTab === 'whats-new' && <BlogDocs />}
               {activeTab === 'about' && <About onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'contact' && <Contact />}
@@ -828,9 +888,15 @@ export default function App() {
               {activeTab === 'login' && <Auth type="login" onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'signup' && <Auth type="signup" onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'payment' && <Payment onNavigate={(page) => setActiveTab(page)} />}
+              {activeTab === 'forgot-password' && <ForgotPassword onNavigate={(page) => setActiveTab(page)} />}
+              {activeTab === 'auth-callback' && <AuthCallback onNavigate={(page) => setActiveTab(page)} />}
+              {activeTab === 'dashboard' && <Dashboard />}
+              {activeTab === 'profile' && <Profile />}
+              {activeTab === 'settings' && <Settings />}
               {activeTab === 'coming-soon' && <ComingSoon onBack={() => setActiveTab('home')} />}
               {activeTab === 'terms' && <Terms />}
               {activeTab === 'policy' && <Policy />}
+              {activeTab === 'not-found' && <NotFound onNavigate={(page) => setActiveTab(page)} />}
             </motion.div>
           </AnimatePresence>
         </ErrorBoundary>
@@ -979,8 +1045,8 @@ export default function App() {
           <div>
             <h4 className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-6">Account</h4>
             <ul className="space-y-3.5 text-neutral-400 text-xs font-semibold">
-              {!isLoggedIn && <li><button onClick={() => setActiveTab('pricing')} className="hover:text-white transition-colors cursor-pointer">Get Pro</button></li>}
-              {isLoggedIn && <li><button className="text-purple-400 cursor-default">Pro Active</button></li>}
+              {!isAuthenticated && <li><button onClick={() => setActiveTab('pricing')} className="hover:text-white transition-colors cursor-pointer">Get Pro</button></li>}
+              {isAuthenticated && <li><button className="text-purple-400 cursor-default">{user?.plan === 'pro' ? 'Pro Active' : 'Signed In'}</button></li>}
             </ul>
           </div>
         </div>

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CreditCard, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
-import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 
 export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) {
@@ -51,11 +50,10 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
     setTimeout(() => {
       setIsLoading(false);
       setIsSuccess(true);
-      localStorage.setItem('isLoggedIn', 'true');
       
       // Auto redirect to home after success
       setTimeout(() => {
-        onNavigate('home');
+        onNavigate('dashboard');
       }, 2000);
     }, 2000);
   };

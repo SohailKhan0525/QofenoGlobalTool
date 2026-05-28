@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Mail, MessageSquare, Phone, Globe, Send, Loader2, CheckCircle2, 
   HelpCircle, AlertCircle
@@ -20,6 +20,26 @@ export function Contact() {
 
   // Confetti particles for success feedback
   const [showConfetti, setShowConfetti] = useState(false);
+  const confettiParticles = useMemo(() => [...Array(30)].map((_, i) => (
+    <motion.div
+      key={i}
+      className="absolute w-2.5 h-2.5 rounded-full"
+      style={{
+        backgroundColor: ['#A78BFA', '#F59E0B', '#10B981', '#EC4899'][i % 4],
+        left: `${Math.random() * 100}%`,
+        top: '-10px',
+      }}
+      animate={{
+        y: '100vh',
+        x: `${Math.random() * 30 - 15}vw`,
+        rotate: [0, 360],
+      }}
+      transition={{
+        duration: Math.random() * 1.5 + 1.2,
+        ease: 'easeOut',
+      }}
+    />
+  )), []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,26 +70,7 @@ export function Contact() {
       <AnimatePresence>
         {showConfetti && (
           <div className="fixed inset-0 pointer-events-none z-50 flex justify-center items-center overflow-hidden">
-            {React.useMemo(() => [...Array(30)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-2.5 h-2.5 rounded-full"
-                style={{
-                  backgroundColor: ['#A78BFA', '#F59E0B', '#10B981', '#EC4899'][i % 4],
-                  left: `${Math.random() * 100}%`,
-                  top: '-10px',
-                }}
-                animate={{
-                  y: '100vh',
-                  x: `${Math.random() * 30 - 15}vw`,
-                  rotate: [0, 360],
-                }}
-                transition={{
-                  duration: Math.random() * 1.5 + 1.2,
-                  ease: 'easeOut',
-                }}
-              />
-            )), [])}
+            {confettiParticles}
           </div>
         )}
       </AnimatePresence>

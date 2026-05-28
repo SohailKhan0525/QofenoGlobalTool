@@ -89,6 +89,17 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   useEffect(() => {
     let cancelled = false;
 
+    const initialCategory = localStorage.getItem('selected_category_filter');
+    if (initialCategory) {
+      setSelectedCategory(initialCategory);
+      localStorage.removeItem('selected_category_filter');
+    }
+    const initialSearch = localStorage.getItem('qofeno_initial_search');
+    if (initialSearch) {
+      setSearchQuery(initialSearch);
+      localStorage.removeItem('qofeno_initial_search');
+    }
+
     const loadLocal = () => {
       try {
         const favs = JSON.parse(localStorage.getItem('favorite_tools') || '[]');
@@ -106,35 +117,17 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
       try {
         const user = await account.get();
         const userId = user?.$id;
+        if (!userId) return;
 
-        const effectiveId = userId || getOrCreateAnonId();
+        const likes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [Query.equal('user_id', userId), Query.limit(1000)]);
+        const likedSlugs = (likes.documents || []).map((d: any) => String(d.tool_slug));
+        if (!cancelled) setFavorites(likedSlugs);
 
-        if (!effectiveId) return;
-
-        // Likes
-        try {
-          const likes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [Query.equal('user_id', effectiveId), Query.limit(1000)]);
-          const likedSlugs = (likes.documents || []).map((d: any) => String(d.tool_slug));
-          if (!cancelled) setFavorites(likedSlugs);
-        } catch {
-          // ignore
-        }
-
-        // Recently viewed
-        try {
-          const rv = await databases.listDocuments(DATABASE_ID, 'recently_viewed', [Query.equal('user_id', effectiveId), Query.orderDesc('viewed_at'), Query.limit(20)]);
-          const recentIds = (rv.documents || []).map((d: any) => String(d.tool_slug));
-          if (!cancelled) setRecentlyViewed(recentIds.slice(0, 4));
-        } catch {}
+        const rv = await databases.listDocuments(DATABASE_ID, 'recently_viewed', [Query.equal('user_id', userId), Query.orderDesc('viewed_at'), Query.limit(20)]);
+        const recentIds = (rv.documents || []).map((d: any) => String(d.tool_slug));
+        if (!cancelled) setRecentlyViewed(recentIds.slice(0, 4));
       } catch {
-        // Could not get account — still attempt anon
-        const anon = getOrCreateAnonId();
-        if (!anon) return;
-        try {
-          const likes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [Query.equal('user_id', anon), Query.limit(1000)]);
-          const likedSlugs = (likes.documents || []).map((d: any) => String(d.tool_slug));
-          if (!cancelled) setFavorites(likedSlugs);
-        } catch {}
+        // Anonymous visitors fall back to local storage only.
       }
     };
 
@@ -142,17 +135,6 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
     void loadRemote();
 
     return () => { cancelled = true };
-
-    const initialCategory = localStorage.getItem('selected_category_filter');
-    if (initialCategory) {
-      setSelectedCategory(initialCategory);
-      localStorage.removeItem('selected_category_filter');
-    }
-    const initialSearch = localStorage.getItem('qofeno_initial_search');
-    if (initialSearch) {
-      setSearchQuery(initialSearch);
-      localStorage.removeItem('qofeno_initial_search');
-    }
   }, []);
 
   const toggleFavorite = async (e: React.MouseEvent, id: string) => {
@@ -173,10 +155,10 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
       const anon = getOrCreateAnonId();
       const isFav = favorites.includes(id);
       if (anon) {
+        const nextFavs = isFav ? favorites.filter(f => f !== id) : [...favorites, id];
         await trackEvent(isFav ? 'unlike' : 'like', id, anon);
-        setFavorites(prev => isFav ? prev.filter(f => f !== id) : [...prev, id]);
-        // also persist locally for quick read
-        localStorage.setItem('favorite_tools', JSON.stringify(favorites));
+        setFavorites(nextFavs);
+        localStorage.setItem('favorite_tools', JSON.stringify(nextFavs));
         return;
       }
     } catch {}

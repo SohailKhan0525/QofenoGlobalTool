@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { Check, HelpCircle, ChevronDown, Sparkles, AlertCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext';
 
 const FAQ_ITEMS = [
   { q: "Is Qofeno free?", a: "Yes, we provide essential tools completely free of charge. We also have a Pro plan for heavy users requiring advanced options and priority processing." },
@@ -31,7 +32,8 @@ const PLAN_FEATURES = [
 
 import { SEO } from '../../components/SEO';
 
-export function PricingView({ onNavigate }: { onNavigate?: (p: string) => void }) {
+export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string) => void; onGetPro?: () => void }) {
+  const { isAuthenticated } = useAuth();
   const [isYearly, setIsYearly] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -190,7 +192,7 @@ export function PricingView({ onNavigate }: { onNavigate?: (p: string) => void }
                 <span className="text-purple-300 font-semibold ml-1">/{isYearly ? 'mo billed year' : 'mo'}</span>
               </div>
 
-              <button onClick={() => onNavigate && onNavigate('signup')} className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity cursor-pointer">
+              <button onClick={() => (onGetPro ? onGetPro() : onNavigate && onNavigate(isAuthenticated ? 'payment' : 'login'))} className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity cursor-pointer">
                 Get Pro
               </button>
 

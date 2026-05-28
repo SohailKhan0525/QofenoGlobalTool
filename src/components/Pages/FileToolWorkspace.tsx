@@ -1,0 +1,688 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  AlertCircle,
+  CheckCircle2,
+  Copy,
+  FileText,
+  Image as ImageIcon,
+  Loader2,
+  LucideIcon,
+  Plus,
+  Trash2,
+  UploadCloud,
+  Video,
+  Download,
+  Sparkles,
+  SlidersHorizontal,
+} from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { cn } from '../../lib/utils';
+import { toast } from 'sonner';
+import { executeJsonFunction, FUNCTION_IDS } from '../../lib/qofeno-appwrite';
+import type { ToolCard } from '../../lib/toolCatalog';
+
+export const FILE_TOOL_SLUGS = new Set([
+  'pdf-compressor',
+  'pdf-merger',
+  'pdf-splitter',
+  'pdf-to-word',
+  'image-resizer',
+  'image-compressor',
+  'image-converter',
+  'image-bg-remover',
+  'video-compressor',
+  'video-trimmer',
+]);
+
+type FileToolSlug = typeof FILE_TOOL_SLUGS extends Set<infer T> ? T : string;
+
+type FileToolResult = {
+  success?: boolean;
+  download_url?: string;
+  output_filename?: string;
+  output_size?: number;
+  duration_ms?: number;
+  outputs?: Array<{
+    download_url?: string;
+    output_filename?: string;
+    output_size?: number;
+    page_start?: number;
+    page_end?: number;
+    file_id?: string;
+  }>;
+  error?: string;
+};
+
+type FileToolField =
+  | { key: 'page_ranges'; label: string; placeholder: string; helper: string }
+  | { key: 'output_format'; label: string; options: string[] }
+  | { key: 'quality'; label: string; min: number; max: number; step: number }
+  | { key: 'width'; label: string; placeholder: string }
+  | { key: 'height'; label: string; placeholder: string }
+  | { key: 'start_time'; label: string; placeholder: string }
+  | { key: 'end_time'; label: string; placeholder: string }
+  | { key: 'threshold'; label: string; min: number; max: number; step: number };
+
+type FileToolConfig = {
+  icon: LucideIcon;
+  accept: string;
+  multiple: boolean;
+  helper: string;
+  description: string;
+  processLabel: string;
+  functionId: string;
+  fields: FileToolField[];
+  maxFiles?: number;
+};
+
+const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
+  'pdf-compressor': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Drop a PDF or pick one from your device.',
+    description: 'Compress a PDF without leaving the current page.',
+    processLabel: 'Compress PDF',
+    functionId: FUNCTION_IDS.pdfCompressor,
+    fields: [{ key: 'quality', label: 'Compression level', min: 25, max: 100, step: 1 }],
+  },
+  'pdf-merger': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: true,
+    helper: 'Select multiple PDFs to merge them into one document.',
+    description: 'Merge several PDFs into a single file.',
+    processLabel: 'Merge PDFs',
+    functionId: FUNCTION_IDS.pdfMerger,
+    fields: [],
+    maxFiles: 12,
+  },
+  'pdf-splitter': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload one PDF, then define page ranges like 1-2, 4, 7-10.',
+    description: 'Split a PDF into smaller page ranges.',
+    processLabel: 'Split PDF',
+    functionId: FUNCTION_IDS.pdfSplitter,
+    fields: [{ key: 'page_ranges', label: 'Page ranges', placeholder: '1-2, 4, 7-10', helper: 'Leave blank to split every page separately.' }],
+  },
+  'pdf-to-word': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload one PDF to extract its text into a Word-ready output.',
+    description: 'Convert a PDF into editable text output.',
+    processLabel: 'Convert PDF',
+    functionId: FUNCTION_IDS.pdfToWord,
+    fields: [],
+  },
+  'image-resizer': {
+    icon: ImageIcon,
+    accept: 'image/*',
+    multiple: false,
+    helper: 'Upload one image and resize it for your target layout.',
+    description: 'Resize images with mobile-friendly controls.',
+    processLabel: 'Resize Image',
+    functionId: FUNCTION_IDS.imageResizer,
+    fields: [
+      { key: 'width', label: 'Width', placeholder: '1024' },
+      { key: 'height', label: 'Height', placeholder: '768' },
+      { key: 'output_format', label: 'Output format', options: ['webp', 'png', 'jpeg', 'avif'] },
+      { key: 'quality', label: 'Quality', min: 35, max: 100, step: 1 },
+    ],
+  },
+  'image-compressor': {
+    icon: ImageIcon,
+    accept: 'image/*',
+    multiple: false,
+    helper: 'Upload one image to reduce its file size.',
+    description: 'Compress a single image with output-format controls.',
+    processLabel: 'Compress Image',
+    functionId: FUNCTION_IDS.imageCompressor,
+    fields: [
+      { key: 'output_format', label: 'Output format', options: ['jpeg', 'webp', 'avif', 'png'] },
+      { key: 'quality', label: 'Quality', min: 35, max: 100, step: 1 },
+    ],
+  },
+  'image-converter': {
+    icon: ImageIcon,
+    accept: 'image/*',
+    multiple: false,
+    helper: 'Upload one image and choose the output format.',
+    description: 'Convert between the most common image formats.',
+    processLabel: 'Convert Image',
+    functionId: FUNCTION_IDS.imageConverter,
+    fields: [{ key: 'output_format', label: 'Output format', options: ['png', 'jpeg', 'webp', 'avif', 'gif'] }],
+  },
+  'image-bg-remover': {
+    icon: ImageIcon,
+    accept: 'image/*',
+    multiple: false,
+    helper: 'Upload a foreground image and remove its background.',
+    description: 'Generate transparent PNG results from simple backgrounds.',
+    processLabel: 'Remove Background',
+    functionId: FUNCTION_IDS.imageBgRemover,
+    fields: [{ key: 'threshold', label: 'Background threshold', min: 10, max: 90, step: 1 }],
+  },
+  'video-compressor': {
+    icon: Video,
+    accept: 'video/*',
+    multiple: false,
+    helper: 'Upload one video to reduce its size.',
+    description: 'Compress a video for smaller sharing.',
+    processLabel: 'Compress Video',
+    functionId: FUNCTION_IDS.videoCompressor,
+    fields: [{ key: 'quality', label: 'Quality', min: 25, max: 100, step: 1 }],
+  },
+  'video-trimmer': {
+    icon: Video,
+    accept: 'video/*',
+    multiple: false,
+    helper: 'Upload one video and trim it by start and end times.',
+    description: 'Trim a clip without a timeline editor.',
+    processLabel: 'Trim Video',
+    functionId: FUNCTION_IDS.videoTrimmer,
+    fields: [
+      { key: 'start_time', label: 'Start time', placeholder: '0' },
+      { key: 'end_time', label: 'End time', placeholder: '30' },
+    ],
+  },
+};
+
+function humanFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let index = 0;
+  let size = bytes;
+  while (size >= 1024 && index < units.length - 1) {
+    size /= 1024;
+    index += 1;
+  }
+  return `${size.toFixed(size >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Unable to read the selected file'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function base64ToText(input: string) {
+  try {
+    return atob(input);
+  } catch {
+    return '';
+  }
+}
+
+export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: string | null }) {
+  const config = FILE_TOOL_CONFIG[tool.slug as FileToolSlug];
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [dragging, setDragging] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [result, setResult] = useState<FileToolResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [fields, setFields] = useState<Record<string, string>>({
+    quality: '80',
+    output_format: 'webp',
+    width: '1024',
+    height: '768',
+    start_time: '0',
+    end_time: '30',
+    threshold: '30',
+    page_ranges: '',
+  });
+
+  useEffect(() => {
+    setFiles([]);
+    setResult(null);
+    setError(null);
+    setProgress(0);
+    setProcessing(false);
+  }, [tool.slug]);
+
+  const acceptText = config?.accept || 'application/octet-stream';
+  const isMultiple = Boolean(config?.multiple);
+
+  const canProcess = useMemo(() => {
+    if (!config) return false;
+    if (!files.length) return false;
+    if (isMultiple) return files.length >= 2;
+    return true;
+  }, [config, files.length, isMultiple]);
+
+  const setField = (key: string, value: string) => {
+    setFields((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const pickFiles = (incoming: FileList | File[]) => {
+    const next = Array.from(incoming);
+    const maxFiles = config?.maxFiles || (isMultiple ? 8 : 1);
+    setError(null);
+    setResult(null);
+    setFiles((prev) => {
+      const merged = isMultiple ? [...prev, ...next] : next.slice(0, 1);
+      return merged.slice(0, maxFiles);
+    });
+  };
+
+  const readPayload = async () => {
+    const primary = files[0];
+    if (!primary) {
+      throw new Error('Add a file first');
+    }
+
+    if (tool.slug === 'pdf-merger') {
+      const inputs = await Promise.all(files.map(async (file) => ({
+        file_base64: await fileToDataUrl(file),
+        input_filename: file.name,
+      })));
+      return {
+        files: inputs,
+        user_id: userId || null,
+        output_filename: `qofeno-${tool.slug}-${Date.now()}.pdf`,
+      };
+    }
+
+    const basePayload: Record<string, unknown> = {
+      file_base64: await fileToDataUrl(primary),
+      input_filename: primary.name,
+      user_id: userId || null,
+    };
+
+    if (tool.slug === 'pdf-splitter') {
+      return {
+        ...basePayload,
+        page_ranges: fields.page_ranges,
+      };
+    }
+
+    if (tool.slug === 'image-resizer') {
+      return {
+        ...basePayload,
+        width: Number(fields.width || 0) || undefined,
+        height: Number(fields.height || 0) || undefined,
+        output_format: fields.output_format,
+        quality: Number(fields.quality || 80),
+      };
+    }
+
+    if (tool.slug === 'image-compressor') {
+      return {
+        ...basePayload,
+        output_format: fields.output_format,
+        quality: Number(fields.quality || 80),
+      };
+    }
+
+    if (tool.slug === 'image-converter') {
+      return {
+        ...basePayload,
+        output_format: fields.output_format,
+      };
+    }
+
+    if (tool.slug === 'image-bg-remover') {
+      return {
+        ...basePayload,
+        threshold: Number(fields.threshold || 30),
+      };
+    }
+
+    if (tool.slug === 'video-compressor') {
+      return {
+        ...basePayload,
+        quality: Number(fields.quality || 80),
+      };
+    }
+
+    if (tool.slug === 'video-trimmer') {
+      return {
+        ...basePayload,
+        start_time: fields.start_time,
+        end_time: fields.end_time,
+      };
+    }
+
+    return basePayload;
+  };
+
+  const runTool = async () => {
+    if (!config) return;
+    if (!canProcess) {
+      toast.info(isMultiple ? 'Add at least two files.' : 'Add a file first.');
+      return;
+    }
+
+    setProcessing(true);
+    setProgress(15);
+    setError(null);
+    setResult(null);
+    const ticker = window.setInterval(() => {
+      setProgress((prev) => Math.min(92, prev + 8));
+    }, 180);
+
+    try {
+      const payload = await readPayload();
+      const response = await executeJsonFunction(config.functionId, payload);
+      setProgress(100);
+      if (response?.success === false) {
+        throw new Error(String(response?.error || 'The tool could not finish the task.'));
+      }
+
+      // If the function returned only a file_id (no download URL), request a signed link.
+      try {
+        if (!response.download_url && response.file_id) {
+          const dl = await executeJsonFunction(FUNCTION_IDS.createDownloadLink, { file_id: response.file_id });
+          if (dl && dl.success && dl.download_url) response.download_url = dl.download_url;
+        }
+
+        if (Array.isArray(response.outputs)) {
+          for (let i = 0; i < response.outputs.length; i += 1) {
+            const item = response.outputs[i];
+            if (!item.download_url && item.file_id) {
+              try {
+                const dl = await executeJsonFunction(FUNCTION_IDS.createDownloadLink, { file_id: item.file_id });
+                if (dl && dl.success && dl.download_url) item.download_url = dl.download_url;
+              } catch {}
+            }
+          }
+        }
+      } catch (err) {
+        // Non-fatal: continue with partial results
+      }
+
+      setResult(response);
+      toast.success('Processing complete');
+    } catch (err: any) {
+      const message = err?.message || 'Something went wrong while processing the file.';
+      setError(message);
+      toast.error(message);
+    } finally {
+      window.clearInterval(ticker);
+      window.setTimeout(() => {
+        setProgress(0);
+        setProcessing(false);
+      }, 350);
+    }
+  };
+
+  const copyLink = async (link?: string) => {
+    if (!link) return;
+    await navigator.clipboard.writeText(link);
+    toast.success('Copied download link');
+  };
+
+  if (!config) return null;
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="rounded-3xl border border-dashed border-purple-200 bg-purple-50/60 p-4 sm:p-6">
+          <div
+            onDragEnter={() => setDragging(true)}
+            onDragLeave={() => setDragging(false)}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragging(false);
+              pickFiles(event.dataTransfer.files);
+            }}
+            className={cn(
+              'rounded-2xl border-2 border-dashed p-6 sm:p-8 transition-all',
+              dragging ? 'border-purple-500 bg-white shadow-lg' : 'border-purple-200 bg-white/80'
+            )}
+          >
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center">
+                <UploadCloud className="w-7 h-7 text-purple-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-[#0F0A1E]">{config.description}</h3>
+                <p className="text-sm text-neutral-500 max-w-md">{config.helper}</p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+                <span className="rounded-full bg-neutral-100 px-3 py-1">{isMultiple ? 'Multiple files' : 'Single file'}</span>
+                <span className="rounded-full bg-neutral-100 px-3 py-1">{acceptText}</span>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <button
+                  onClick={() => inputRef.current?.click()}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-purple-700"
+                >
+                  <Plus className="w-4 h-4" /> Select files
+                </button>
+                <button
+                  onClick={runTool}
+                  disabled={!canProcess || processing}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-bold text-[#0F0A1E] transition-colors hover:border-purple-300 hover:bg-purple-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {config.processLabel}
+                </button>
+              </div>
+              <input
+                ref={inputRef}
+                type="file"
+                accept={acceptText}
+                multiple={isMultiple}
+                className="hidden"
+                onChange={(event) => {
+                  if (event.target.files) pickFiles(event.target.files);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-4 rounded-3xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-sm font-black text-[#0F0A1E]">
+            <SlidersHorizontal className="w-4 h-4 text-purple-600" /> Settings
+          </div>
+          <div className="grid gap-3">
+            {config.fields.map((field) => {
+              if (field.key === 'output_format') {
+                return (
+                  <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
+                    <span>{field.label}</span>
+                    <select
+                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition-colors focus:border-purple-500"
+                      value={fields.output_format}
+                      onChange={(event) => setField('output_format', event.target.value)}
+                    >
+                      {field.options.map((option) => (
+                        <option key={option} value={option}>{option.toUpperCase()}</option>
+                      ))}
+                    </select>
+                  </label>
+                );
+              }
+
+              if (field.key === 'quality' || field.key === 'threshold') {
+                const value = fields[field.key] || String(field.max);
+                return (
+                  <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
+                    <div className="flex items-center justify-between">
+                      <span>{field.label}</span>
+                      <span className="text-xs text-neutral-500">{value}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={field.min}
+                      max={field.max}
+                      step={field.step}
+                      value={value}
+                      onChange={(event) => setField(field.key, event.target.value)}
+                      className="w-full accent-purple-600"
+                    />
+                  </label>
+                );
+              }
+
+              return (
+                <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
+                  <span>{field.label}</span>
+                  <input
+                    type="text"
+                    placeholder={field.placeholder}
+                    value={fields[field.key]}
+                    onChange={(event) => setField(field.key, event.target.value)}
+                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition-colors focus:border-purple-500"
+                  />
+                  {'helper' in field && field.helper ? <p className="text-xs text-neutral-500">{field.helper}</p> : null}
+                </label>
+              );
+            })}
+          </div>
+          {files.length > 0 && (
+            <button
+              onClick={() => setFiles([])}
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-600 transition-colors hover:bg-neutral-200"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Clear files
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-3xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-wider text-[#0F0A1E]">Selected files</h4>
+              <p className="text-xs text-neutral-500">{files.length ? `${files.length} file(s) ready` : 'No files selected yet'}</p>
+            </div>
+            <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">{humanFileSize(files.reduce((sum, file) => sum + file.size, 0))}</span>
+          </div>
+
+          <div className="space-y-3">
+            <AnimatePresence initial={false}>
+              {files.length ? (
+                files.map((file, index) => (
+                  <motion.div
+                    key={`${file.name}-${index}`}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-[#0F0A1E]">{file.name}</p>
+                      <p className="text-xs text-neutral-500">{humanFileSize(file.size)} · {file.type || 'unknown type'}</p>
+                    </div>
+                    <button
+                      onClick={() => setFiles((prev) => prev.filter((_, currentIndex) => currentIndex !== index))}
+                      className="rounded-full p-2 text-neutral-400 transition-colors hover:bg-white hover:text-neutral-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-10 text-center text-sm text-neutral-500">
+                  Add files to preview them here.
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h4 className="text-sm font-black uppercase tracking-wider text-[#0F0A1E]">Result</h4>
+              <p className="text-xs text-neutral-500">Download or copy the returned link once processing finishes.</p>
+            </div>
+            {processing && <Loader2 className="w-4 h-4 animate-spin text-purple-600" />}
+          </div>
+
+          {progress > 0 && (
+            <div className="mb-4 space-y-2">
+              <Progress value={progress} className="h-2 bg-neutral-100 [&>div]:bg-purple-600" />
+              <p className="text-xs font-semibold text-neutral-500">Working on your file… {Math.round(progress)}%</p>
+            </div>
+          )}
+
+          {error ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <div className="mb-1 flex items-center gap-2 font-bold"><AlertCircle className="w-4 h-4" /> Processing failed</div>
+              <p>{error}</p>
+            </div>
+          ) : result ? (
+            <div className="space-y-4">
+              {result.outputs?.length ? (
+                <div className="space-y-3">
+                  {result.outputs.map((item, index) => (
+                    <div key={`${item.output_filename || 'output'}-${index}`} className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-[#0F0A1E]">{item.output_filename || `Output ${index + 1}`}</p>
+                          <p className="text-xs text-neutral-500">{item.output_size ? humanFileSize(item.output_size) : 'Ready to download'}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {item.download_url && (
+                            <a
+                              href={item.download_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-purple-700"
+                            >
+                              <Download className="w-3.5 h-3.5" /> Download
+                            </a>
+                          )}
+                          <button
+                            onClick={() => copyLink(item.download_url)}
+                            className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition-colors hover:bg-neutral-100"
+                          >
+                            <Copy className="w-3.5 h-3.5" /> Copy link
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                  <div className="flex items-center gap-2 text-sm font-bold text-[#0F0A1E]"><CheckCircle2 className="w-4 h-4 text-green-500" /> Processing complete</div>
+                  <p className="mt-1 text-xs text-neutral-500">{result.output_filename || 'Your file is ready.'}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {result.download_url && (
+                      <a
+                        href={result.download_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-purple-700"
+                      >
+                        <Download className="w-3.5 h-3.5" /> Download file
+                      </a>
+                    )}
+                    <button
+                      onClick={() => copyLink(result.download_url)}
+                      className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition-colors hover:bg-neutral-100"
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Copy link
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-500">
+              Results will show here after you run the tool.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

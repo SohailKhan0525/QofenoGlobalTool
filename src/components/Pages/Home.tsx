@@ -81,29 +81,36 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
         );
       }
 
-      tl.fromTo(subRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6 }, '-=0.4');
-      tl.fromTo(ctaRef.current, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.5)' }, '-=0.3');
+      if (subRef.current) {
+        tl.fromTo(subRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6 }, '-=0.4');
+      }
+      if (ctaRef.current) {
+        tl.fromTo(ctaRef.current, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.5)' }, '-=0.3');
+      }
       
       // Floating chips reveal
       tl.fromTo('.floating-chip', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, stagger: 0.04, duration: 0.6, ease: 'back.out(1.2)' }, '-=0.2');
 
       // Trust Counters animation on viewport enter
-      gsap.fromTo('.trust-counter-val', 
-        { innerText: 0 },
-        { 
-          innerText: (i, el) => el.getAttribute('data-target'),
-          snap: { innerText: 1 },
-          duration: 2,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: trustBarRef.current,
-            start: 'top 85%'
-          },
-          onUpdate: function() {
-            // format values dynamically
+      const trustCounters = document.querySelectorAll('.trust-counter-val');
+      if (trustBarRef.current && trustCounters.length > 0) {
+        gsap.fromTo(trustCounters, 
+          { innerText: 0 },
+          { 
+            innerText: (i, el) => el.getAttribute('data-target'),
+            snap: { innerText: 1 },
+            duration: 2,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: trustBarRef.current,
+              start: 'top 85%'
+            },
+            onUpdate: function() {
+              // format values dynamically
+            }
           }
-        }
-      );
+        );
+      }
     }, sectionRef);
 
     return () => ctx.revert();

@@ -1,0 +1,10 @@
+{
+  "name": "pdf-merger",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "node-appwrite": "^25.2.0",
+    "pdf-lib": "^1.17.1"
+  }
+}
