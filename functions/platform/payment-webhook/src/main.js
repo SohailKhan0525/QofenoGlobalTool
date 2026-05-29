@@ -63,6 +63,18 @@ export default async ({ req, res, error }) => {
       });
     }
 
+    if (isActive) {
+      await db.createDocument(databaseId, 'notifications', ID.unique(), {
+        user_id: userId,
+        title: "You're now on Pro ✦",
+        message: 'All tools are now unlocked. Enjoy priority processing.',
+        type: 'success',
+        read: false,
+        link: '/dashboard',
+        created_at: now,
+      });
+    }
+
     return res.json({ success: true, user_id: userId, status: isActive ? 'active' : status });
   } catch (err) {
     error(err.message);

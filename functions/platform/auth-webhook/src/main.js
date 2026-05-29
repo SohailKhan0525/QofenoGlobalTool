@@ -43,6 +43,17 @@ export default async ({ req, res, error }) => {
       updated_at: now
     });
 
+    // Create welcome notification for new users.
+    await db.createDocument(databaseId, 'notifications', ID.unique(), {
+      user_id: userId,
+      title: 'Welcome to Qofeno! 🎉',
+      message: 'Your account is ready. Start using free tools right now - no limits.',
+      type: 'success',
+      read: false,
+      link: '/tools',
+      created_at: now,
+    });
+
     return res.json({ success: true, user_id: userId, created: true });
   } catch (err) {
     error(err.message);

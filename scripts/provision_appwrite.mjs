@@ -160,6 +160,23 @@ const COLLECTIONS = {
     ],
     indexes: [{ key: 'created_at_desc', type: 'key', attributes: ['created_at'], orders: ['DESC'] }],
   },
+  notifications: {
+    permissions: [Permission.read(Role.users())],
+    attributes: [
+      { key: 'user_id', type: 'string', size: 128, required: true },
+      { key: 'title', type: 'string', size: 256, required: true },
+      { key: 'message', type: 'string', size: 2048, required: true },
+      { key: 'type', type: 'string', size: 32, required: false, default: 'info' },
+      { key: 'read', type: 'boolean', required: false, default: false },
+      { key: 'link', type: 'string', size: 512, required: false },
+      { key: 'created_at', type: 'datetime', required: false },
+    ],
+    indexes: [
+      { key: 'user_id_idx', type: 'key', attributes: ['user_id'] },
+      { key: 'read_idx', type: 'key', attributes: ['read'] },
+      { key: 'created_at_desc', type: 'key', attributes: ['created_at'], orders: ['DESC'] },
+    ],
+  },
 };
 
 const BUCKETS = {

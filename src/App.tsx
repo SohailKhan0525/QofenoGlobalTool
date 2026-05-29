@@ -38,6 +38,8 @@ import { toast } from 'sonner';
 import { FALLBACK_TOOLS, useToolCatalog } from './lib/toolCatalog';
 import { getPathForPage, parseRoute } from './lib/appRouter';
 import { useAuth } from './context/AuthContext';
+import { databases, DATABASE_ID, realtime } from './lib/qofeno-appwrite';
+import { Query } from 'appwrite';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -74,6 +76,29 @@ const PAGE_VARIANTS: any = {
   }
 };
 
+type AppNotification = {
+  id: string;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+  link?: string;
+};
+
+function relativeTime(input?: string | null) {
+  if (!input) return 'just now';
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return 'just now';
+  const diff = Date.now() - date.getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return 'just now';
+  if (min < 60) return `${min} min ago`;
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return `${hrs} hour${hrs > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day${days > 1 ? 's' : ''} ago`;
+}
+
 export default function App() {
   const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
   const { tools } = useToolCatalog();
@@ -95,12 +120,7 @@ export default function App() {
   const [showPreferences, setShowPreferences] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
 
-  // Real, persistent-ready state for notifications
-  const [notifications, setNotifications] = useState([
-    { id: '1', title: "Your tool request 'JSON Validator' is live!", time: "2 hours ago", read: false },
-    { id: '2', title: "You successfully upgraded to Pro.", time: "1 day ago", read: true },
-    { id: '3', title: "New AI tools added to the catalog.", time: "3 days ago", read: true }
-  ]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   // Real states for notification preferences inside the Preferences Dialog
   const [prefAppUpdates, setPrefAppUpdates] = useState(true);
@@ -225,6 +245,72 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [activeTab]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let subscription: any = null;
+
+    const loadNotifications = async () => {
+      if (!user?.id) {
+        setNotifications([]);
+        return;
+      }
+      try {
+        const resp = await databases.listDocuments(DATABASE_ID, 'notifications', [
+          Query.equal('user_id', user.id),
+          Query.orderDesc('created_at'),
+          Query.limit(20),
+        ]);
+        if (cancelled) return;
+        setNotifications((resp.documents || []).map((doc: any) => ({
+          id: doc.$id,
+          title: String(doc.title || 'Notification'),
+          message: String(doc.message || ''),
+          time: relativeTime(doc.created_at || doc.$createdAt),
+          read: Boolean(doc.read),
+          link: doc.link || undefined,
+        })));
+      } catch {
+        if (!cancelled) setNotifications([]);
+      }
+    };
+
+    void loadNotifications();
+
+    if (user?.id) {
+      const channel = `databases.${DATABASE_ID}.collections.notifications.documents`;
+      void realtime.subscribe(channel, (event: any) => {
+        const doc = event?.payload;
+        if (!doc || doc.user_id !== user.id) return;
+        void loadNotifications();
+      }).then((sub: any) => {
+        subscription = sub;
+      }).catch(() => {});
+    }
+
+    return () => {
+      cancelled = true;
+      try { subscription?.close?.(); } catch {}
+    };
+  }, [user?.id]);
+
+  const markNotificationRead = async (notificationId: string) => {
+    setNotifications((prev) => prev.map((n) => n.id === notificationId ? { ...n, read: true } : n));
+    try {
+      await databases.updateDocument(DATABASE_ID, 'notifications', notificationId, { read: true });
+    } catch {}
+  };
+
+  const markAllNotificationsRead = async () => {
+    const unread = notifications.filter((n) => !n.read);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    for (const notif of unread) {
+      try {
+        await databases.updateDocument(DATABASE_ID, 'notifications', notif.id, { read: true });
+      } catch {}
+    }
+    toast.success('All notifications marked as read');
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -541,8 +627,7 @@ export default function App() {
                       {notifications.some(n => !n.read) && (
                         <button 
                           onClick={() => {
-                            setNotifications(notifications.map(n => ({ ...n, read: true })));
-                            toast.success("All notifications marked as read");
+                            void markAllNotificationsRead();
                           }}
                           className="text-[10px] uppercase font-bold tracking-widest text-purple-600 hover:text-purple-800 cursor-pointer"
                         >
@@ -556,7 +641,11 @@ export default function App() {
                           <div 
                             key={notif.id} 
                             onClick={() => {
-                              setNotifications(notifications.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                              void markNotificationRead(notif.id);
+                              if (notif.link) {
+                                setShowNotifications(false);
+                                setActiveTab(notif.link);
+                              }
                             }}
                             className={cn(
                               "p-4 border-b border-neutral-50 last:border-0 hover:bg-neutral-50 cursor-pointer transition-colors relative", 
@@ -565,11 +654,12 @@ export default function App() {
                           >
                             {!notif.read && <span className="absolute top-4 right-4 w-1.5 h-1.5 bg-purple-600 rounded-full" />}
                             <p className="text-xs text-[#0F0A1E] mb-1 pr-4 leading-tight">{notif.title}</p>
+                            {notif.message ? <p className="text-[11px] text-neutral-500 mb-1 pr-4 leading-tight">{notif.message}</p> : null}
                             <p className="text-[10px] text-neutral-400 font-medium">{notif.time}</p>
                           </div>
                         ))
                       ) : (
-                        <div className="p-6 text-center text-xs text-neutral-400">No new notifications.</div>
+                        <div className="p-6 text-center text-xs text-neutral-400">No notifications yet.</div>
                       )}
                     </div>
                     <div className="p-3 border-t border-neutral-100 bg-neutral-50 text-center">
@@ -715,6 +805,15 @@ export default function App() {
           {/* Search and Hamburger for Mobile */}
           <div className="lg:hidden flex items-center gap-1">
             <button 
+              className="p-2 text-neutral-600 hover:text-purple-600 cursor-pointer relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="w-5 h-5" />
+              {notifications.some(n => !n.read) && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+              )}
+            </button>
+            <button 
               className="p-2 text-neutral-600 hover:text-purple-600 cursor-pointer"
               onClick={() => setActiveTab('tools')}
             >
@@ -726,6 +825,49 @@ export default function App() {
             >
               <Menu className="w-6 h-6" />
             </button>
+
+            <AnimatePresence>
+              {showNotifications && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  className="fixed top-[74px] right-3 left-3 z-[70] bg-white shadow-2xl rounded-2xl border border-neutral-200/70 overflow-hidden"
+                >
+                  <div className="p-3 border-b border-neutral-100 flex items-center justify-between">
+                    <h4 className="font-bold text-[#0F0A1E] text-sm">Notifications</h4>
+                    {notifications.some(n => !n.read) && (
+                      <button
+                        onClick={() => void markAllNotificationsRead()}
+                        className="text-[10px] uppercase font-bold tracking-widest text-purple-600"
+                      >
+                        Mark all
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length ? notifications.map((notif) => (
+                      <button
+                        key={notif.id}
+                        onClick={() => {
+                          void markNotificationRead(notif.id);
+                          if (notif.link) setActiveTab(notif.link);
+                          setShowNotifications(false);
+                        }}
+                        className={cn(
+                          "w-full text-left p-3 border-b border-neutral-50 last:border-0",
+                          !notif.read ? "bg-purple-50/40" : "bg-white"
+                        )}
+                      >
+                        <p className="text-xs font-bold text-[#0F0A1E]">{notif.title}</p>
+                        {notif.message ? <p className="text-[11px] text-neutral-500 mt-1">{notif.message}</p> : null}
+                        <p className="text-[10px] text-neutral-400 mt-1">{notif.time}</p>
+                      </button>
+                    )) : <div className="p-4 text-center text-xs text-neutral-400">No notifications yet.</div>}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {isAuthenticated ? (
