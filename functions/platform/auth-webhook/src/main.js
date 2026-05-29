@@ -1,9 +1,49 @@
 import { Client, Databases, ID, Query } from 'node-appwrite';
+import nodemailer from 'nodemailer';
 
 function parseBody(req) {
   const raw = req.body || req.payload || '{}';
   if (typeof raw !== 'string') return raw || {};
   try { return JSON.parse(raw); } catch { return {}; }
+}
+
+function getMailer() {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USERNAME;
+  const pass = process.env.SMTP_PASSWORD;
+
+  if (!host || !user || !pass) return null;
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+  });
+}
+
+async function sendWelcomeEmail(userId) {
+  const transporter = getMailer();
+  if (!transporter) return { sent: false, reason: 'smtp_not_configured' };
+
+  const to = process.env.EMAIL_TO_OVERRIDE;
+  if (!to) return { sent: false, reason: 'no_target_email' };
+
+  const fromName = process.env.EMAIL_FROM_NAME || 'Qofeno';
+  const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'hello@qofeno.io';
+  const replyTo = process.env.EMAIL_REPLY_TO || fromAddress;
+
+  await transporter.sendMail({
+    from: `${fromName} <${fromAddress}>`,
+    to,
+    replyTo,
+    subject: 'Welcome to Qofeno 🎉',
+    text: `Welcome to Qofeno! Your account (${userId}) is ready to use.`,
+    html: `<p>Welcome to <strong>Qofeno</strong>! Your account is ready to use.</p><p>User: <code>${userId}</code></p>`,
+  });
+
+  return { sent: true };
 }
 
 export default async ({ req, res, error }) => {
@@ -54,7 +94,9 @@ export default async ({ req, res, error }) => {
       created_at: now,
     });
 
-    return res.json({ success: true, user_id: userId, created: true });
+    const email = await sendWelcomeEmail(userId);
+
+    return res.json({ success: true, user_id: userId, created: true, email });
   } catch (err) {
     error(err.message);
     return res.json({ success: false, error: err.message }, 500);

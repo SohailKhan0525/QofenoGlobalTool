@@ -1,4 +1,5 @@
 import { Client, Databases, ID, Query } from 'node-appwrite';
+import nodemailer from 'nodemailer';
 
 function parseBody(req) {
   const raw = req.body || req.payload || '{}';
@@ -10,6 +11,45 @@ function toIso(value) {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function getMailer() {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 587);
+  const user = process.env.SMTP_USERNAME;
+  const pass = process.env.SMTP_PASSWORD;
+
+  if (!host || !user || !pass) return null;
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+  });
+}
+
+async function sendPaymentEmail(userId, plan) {
+  const transporter = getMailer();
+  if (!transporter) return { sent: false, reason: 'smtp_not_configured' };
+
+  const to = process.env.EMAIL_TO_OVERRIDE;
+  if (!to) return { sent: false, reason: 'no_target_email' };
+
+  const fromName = process.env.EMAIL_FROM_NAME || 'Qofeno';
+  const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'hello@qofeno.io';
+  const replyTo = process.env.EMAIL_REPLY_TO || fromAddress;
+
+  await transporter.sendMail({
+    from: `${fromName} <${fromAddress}>`,
+    to,
+    replyTo,
+    subject: `Qofeno ${plan.toUpperCase()} plan activated ✦`,
+    text: `Your subscription is active for account ${userId}. Plan: ${plan}.`,
+    html: `<p>Your Qofeno subscription is now <strong>active</strong>.</p><p>Plan: <strong>${plan}</strong><br/>User: <code>${userId}</code></p>`,
+  });
+
+  return { sent: true };
 }
 
 export default async ({ req, res, error }) => {
@@ -73,6 +113,9 @@ export default async ({ req, res, error }) => {
         link: '/dashboard',
         created_at: now,
       });
+
+      const email = await sendPaymentEmail(userId, subscriptionData.plan);
+      return res.json({ success: true, user_id: userId, status: 'active', email });
     }
 
     return res.json({ success: true, user_id: userId, status: isActive ? 'active' : status });

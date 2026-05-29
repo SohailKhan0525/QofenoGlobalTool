@@ -1,6 +1,11 @@
 Write-Host "Loading .env.server..."
-$envFile = Join-Path -Path (Get-Location) -ChildPath 'QofenoGlobalTool\.env.server'
-if (-not (Test-Path $envFile)) { Write-Error ".env.server not found in QofenoGlobalTool folder"; exit 1 }
+$envCandidates = @(
+  (Join-Path -Path (Get-Location) -ChildPath '.env.server'),
+  (Join-Path -Path (Get-Location) -ChildPath 'QofenoGlobalTool\.env.server'),
+  (Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath '.env.server')
+)
+$envFile = $envCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $envFile) { Write-Error ".env.server not found in current directory or QofenoGlobalTool folder"; exit 1 }
 
 Get-Content $envFile | ForEach-Object {
   if ($_ -match '^(\w+)=(.*)$') { Set-Item -Path env:$($matches[1]) -Value $matches[2] }
@@ -9,7 +14,12 @@ Get-Content $envFile | ForEach-Object {
 if (-not $env:APPWRITE_API_KEY) { Write-Error "APPWRITE_API_KEY not set in .env.server"; exit 1 }
 
 $base = $env:APPWRITE_ENDPOINT.TrimEnd('/')
-$functionsRoot = Join-Path -Path (Get-Location) -ChildPath 'QofenoGlobalTool\functions'
+$functionsCandidates = @(
+  (Join-Path -Path (Get-Location) -ChildPath 'functions'),
+  (Join-Path -Path (Get-Location) -ChildPath 'QofenoGlobalTool\functions'),
+  (Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath 'functions')
+)
+$functionsRoot = $functionsCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 function Invoke-Appwrite {
   param($method, $path, $json)
@@ -99,7 +109,16 @@ Get-ChildItem -Path $functionsRoot -Directory | ForEach-Object {
     @{ key='APPWRITE_API_KEY'; value = $env:APPWRITE_API_KEY; secret = $true },
     @{ key='DATABASE_ID'; value = $env:DATABASE_ID; secret = $false },
     @{ key='BUCKET_INPUTS'; value = $env:BUCKET_INPUTS; secret = $false },
-    @{ key='BUCKET_OUTPUTS'; value = $env:BUCKET_OUTPUTS; secret = $false }
+    @{ key='BUCKET_OUTPUTS'; value = $env:BUCKET_OUTPUTS; secret = $false },
+    @{ key='EMAIL_FROM_NAME'; value = $env:EMAIL_FROM_NAME; secret = $false },
+    @{ key='EMAIL_FROM_ADDRESS'; value = $env:EMAIL_FROM_ADDRESS; secret = $false },
+    @{ key='EMAIL_REPLY_TO'; value = $env:EMAIL_REPLY_TO; secret = $false },
+    @{ key='SUPPORT_EMAIL'; value = $env:SUPPORT_EMAIL; secret = $false },
+    @{ key='EMAIL_TO_OVERRIDE'; value = $env:EMAIL_TO_OVERRIDE; secret = $false },
+    @{ key='SMTP_HOST'; value = $env:SMTP_HOST; secret = $false },
+    @{ key='SMTP_PORT'; value = $env:SMTP_PORT; secret = $false },
+    @{ key='SMTP_USERNAME'; value = $env:SMTP_USERNAME; secret = $false },
+    @{ key='SMTP_PASSWORD'; value = $env:SMTP_PASSWORD; secret = $true }
   )
 
   $existingVarsUrl = "$base/functions/$functionId/variables"
@@ -108,6 +127,9 @@ Get-ChildItem -Path $functionsRoot -Directory | ForEach-Object {
   } catch { $existingVars = $null }
 
   foreach ($v in $vars) {
+    if (-not $v.value) {
+      continue
+    }
     if (-not $functionId) { Write-Warning "Cannot set var $($v.key) because functionId is empty"; continue }
     $existingVar = $null
     if ($existingVars.variables) { $existingVar = $existingVars.variables | Where-Object { $_.key -eq $v.key } | Select-Object -First 1 }

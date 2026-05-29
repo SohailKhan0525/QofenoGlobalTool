@@ -6,6 +6,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
+import { submitContactForm } from '../../lib/qofeno-appwrite';
 
 export function Contact() {
   const [name, setName] = useState('');
@@ -17,6 +18,7 @@ export function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [errorShake, setErrorShake] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   // Confetti particles for success feedback
   const [showConfetti, setShowConfetti] = useState(false);
@@ -41,7 +43,7 @@ export function Contact() {
     />
   )), []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Simple verification check to trigger shake
@@ -52,18 +54,29 @@ export function Contact() {
     }
 
     setIsSubmitting(true);
+    setSubmitError('');
 
-    // Simulate database post latency
-    setTimeout(() => {
+    try {
+      await submitContactForm({
+        name,
+        email,
+        subject: topic,
+        message,
+      });
       setIsSubmitting(false);
       setIsDone(true);
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 2400);
-    }, 1500);
+    } catch (err) {
+      setIsSubmitting(false);
+      setErrorShake(true);
+      setSubmitError(err instanceof Error ? err.message : 'Failed to send your message. Please try again.');
+      setTimeout(() => setErrorShake(false), 500);
+    }
   };
 
   return (
-    <section className="min-h-screen bg-white pt-32 md:pt-40 pb-20 px-6 md:px-12 relative flex items-center select-none">
+    <section className="min-h-screen bg-white pt-24 md:pt-32 pb-16 md:pb-20 px-4 sm:px-6 md:px-12 relative flex items-center select-none">
       <SEO title="Contact Us" description="Get in touch with the Qofeno team." />
       
       {/* SUCCESS CONFETTI */}
@@ -75,7 +88,7 @@ export function Contact() {
         )}
       </AnimatePresence>
 
-      <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-16 items-center">
         
         {/* LEFT COMPONENT COLUMN */}
         <div className="flex flex-col items-start">
@@ -101,7 +114,7 @@ export function Contact() {
         </div>
 
         {/* RIGHT COMPONENT FORM WITH SHAKE ERRORS AND ROTATION FEEDBACKS */}
-        <div className="bg-[#FAFAFA] border border-neutral-200/60 p-8 md:p-10 rounded-3xl shadow-sm relative">
+        <div className="bg-[#FAFAFA] border border-neutral-200/60 p-5 sm:p-6 md:p-10 rounded-3xl shadow-sm relative">
           
           <AnimatePresence mode="wait">
             {!isDone ? (
@@ -158,6 +171,10 @@ export function Contact() {
 
                 {errorShake && (
                   <p className="text-xs text-rose-600 font-bold flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Please complete all descriptive details before submitting.</p>
+                )}
+
+                {submitError && (
+                  <p className="text-xs text-rose-600 font-bold flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> {submitError}</p>
                 )}
 
                 <button 

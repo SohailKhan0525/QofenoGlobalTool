@@ -25,6 +25,7 @@ export const FUNCTION_IDS = {
   imageBgRemover: env.VITE_APPWRITE_FUNCTION_IMAGE_BG_REMOVER_ID || '9e1ae1632aeb4ce789399df3c236b24f',
   videoCompressor: env.VITE_APPWRITE_FUNCTION_VIDEO_COMPRESSOR_ID || '9b6795e4c10643ba80954c6c6cc65f32',
   videoTrimmer: env.VITE_APPWRITE_FUNCTION_VIDEO_TRIMMER_ID || '94b5e417d36a4c5284618d8f70bd644b',
+  contactForm: env.VITE_APPWRITE_FUNCTION_CONTACT_FORM_ID || 'c5ff2e4961c24afdaa2f4dba87b2ddfe',
 };
 
 const client = new Client().setEndpoint(endpoint).setProject(projectId);
@@ -74,4 +75,16 @@ export async function runBase64Encoder(input: string, action: 'encode' | 'decode
     throw new Error('Base64 encoder function is not configured');
   }
   return executeJsonFunction(FUNCTION_IDS.base64Encoder, { text: input, action });
+}
+
+export async function submitContactForm(payload: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  if (!FUNCTION_IDS.contactForm) {
+    throw new Error('Contact form function is not configured');
+  }
+  return executeJsonFunction(FUNCTION_IDS.contactForm, payload);
 }
