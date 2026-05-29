@@ -72,8 +72,11 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
     try {
       let aid = localStorage.getItem('anon_user_id');
       if (!aid) {
-        // lightweight UUID v4
-        aid = 'anon-' + ([1e7]+-1e3+-4e3+-8e3+-1e11).toString().replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+        // Generate a stable anonymous id for like/view tracking.
+        const seed = typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+        aid = `anon-${seed}`;
         localStorage.setItem('anon_user_id', aid);
       }
       return aid;
@@ -102,7 +105,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
     const loadLocal = () => {
       try {
-        const favs = JSON.parse(localStorage.getItem('favorite_tools') || '[]');
+        const favs = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
         setFavorites(favs);
       } catch {}
       try {
@@ -158,7 +161,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
         const nextFavs = isFav ? favorites.filter(f => f !== id) : [...favorites, id];
         await trackEvent(isFav ? 'unlike' : 'like', id, anon);
         setFavorites(nextFavs);
-        localStorage.setItem('favorite_tools', JSON.stringify(nextFavs));
+        localStorage.setItem('qofeno_likes', JSON.stringify(nextFavs));
         return;
       }
     } catch {}
@@ -167,7 +170,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
     setFavorites(prev => {
       const isFav = prev.includes(id);
       const newFavs = isFav ? prev.filter(f => f !== id) : [...prev, id];
-      localStorage.setItem('favorite_tools', JSON.stringify(newFavs));
+      localStorage.setItem('qofeno_likes', JSON.stringify(newFavs));
       return newFavs;
     });
   };

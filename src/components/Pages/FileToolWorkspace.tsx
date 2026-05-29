@@ -455,20 +455,20 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                 <span className="rounded-full bg-neutral-100 px-3 py-1">{isMultiple ? 'Multiple files' : 'Single file'}</span>
                 <span className="rounded-full bg-neutral-100 px-3 py-1">{acceptText}</span>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div className="flex flex-col gap-3 w-full max-w-md">
                 <button
                   onClick={() => inputRef.current?.click()}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-purple-700"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-neutral-200 px-4 py-3 text-sm font-bold text-[#0F0A1E] transition-colors hover:bg-neutral-50"
                 >
                   <Plus className="w-4 h-4" /> Select files
                 </button>
                 <button
                   onClick={runTool}
                   disabled={!canProcess || processing}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-bold text-[#0F0A1E] transition-colors hover:border-purple-300 hover:bg-purple-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex w-full min-h-[56px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-4 py-4 text-sm font-black text-white shadow-lg shadow-purple-500/20 transition-all hover:translate-y-[-1px] hover:shadow-xl hover:shadow-purple-500/25 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {config.processLabel}
+                  {processing ? 'Processing on our servers...' : config.processLabel}
                 </button>
               </div>
               <input
@@ -629,15 +629,15 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                           <p className="truncate text-sm font-bold text-[#0F0A1E]">{item.output_filename || `Output ${index + 1}`}</p>
                           <p className="text-xs text-neutral-500">{item.output_size ? humanFileSize(item.output_size) : 'Ready to download'}</p>
                         </div>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
                           {item.download_url && (
                             <a
                               href={item.download_url}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-purple-700"
+                              className="inline-flex w-full sm:w-auto min-h-[56px] items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-black text-white transition-colors hover:bg-green-700"
                             >
-                              <Download className="w-3.5 h-3.5" /> Download
+                              <Download className="w-4 h-4" /> Download Result
                             </a>
                           )}
                           <button
@@ -652,26 +652,32 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                  <div className="flex items-center gap-2 text-sm font-bold text-[#0F0A1E]"><CheckCircle2 className="w-4 h-4 text-green-500" /> Processing complete</div>
-                  <p className="mt-1 text-xs text-neutral-500">{result.output_filename || 'Your file is ready.'}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
+                <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+                  <div className="flex items-start gap-3 text-sm font-bold text-[#0F0A1E]">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+                    <div>
+                      <p className="font-black">Your file is ready!</p>
+                      <p className="mt-1 text-xs text-green-800">{result.output_filename || 'Result file'}{result.output_size ? ` · ${humanFileSize(result.output_size)}` : ''}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-col gap-2">
                     {result.download_url && (
                       <a
                         href={result.download_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-full bg-purple-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-purple-700"
+                        className="inline-flex w-full min-h-[56px] items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-black text-white transition-colors hover:bg-green-700"
                       >
-                        <Download className="w-3.5 h-3.5" /> Download file
+                        <Download className="w-4 h-4" /> Download Result
                       </a>
                     )}
                     <button
                       onClick={() => copyLink(result.download_url)}
-                      className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition-colors hover:bg-neutral-100"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition-colors hover:bg-neutral-100"
                     >
                       <Copy className="w-3.5 h-3.5" /> Copy link
                     </button>
+                    <p className="text-[11px] text-neutral-500">🔒 Your file will be deleted from our servers after download</p>
                   </div>
                 </div>
               )}

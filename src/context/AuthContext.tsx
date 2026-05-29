@@ -116,7 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const success = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
     const failure = `${window.location.origin}/login?error=oauth&redirect=${encodeURIComponent(redirect)}`;
     window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
-    await account.createOAuth2Session(provider, success, failure);
+    const oauthProvider = provider === 'google' ? OAuthProvider.Google : OAuthProvider.Github;
+    await account.createOAuth2Session(oauthProvider, success, failure);
   };
 
   const value = useMemo<AuthContextValue>(() => ({

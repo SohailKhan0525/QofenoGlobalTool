@@ -4,7 +4,7 @@ import { UploadCloud, CheckCircle2, ArrowLeft, ShieldCheck, Download, Heart, Eye
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 import { Query } from 'appwrite';
-import { account, databases, DATABASE_ID, runBase64Encoder, runJsonFormatter, runWordCounter, trackEvent } from '../../lib/qofeno-appwrite';
+import { account, databases, DATABASE_ID, realtime, runBase64Encoder, runJsonFormatter, runWordCounter, trackEvent } from '../../lib/qofeno-appwrite';
 import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
 
 // Shadcn imports
@@ -61,16 +61,14 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
     const syncStats = async () => {
       try {
-        const viewsResp = await databases.listDocuments(DATABASE_ID, 'tool_views', [Query.equal('tool_slug', toolSlug)]);
+        const viewsResp = await databases.listDocuments(DATABASE_ID, 'tool_views', [Query.equal('tool_slug', toolSlug), Query.limit(1)]);
+        const viewsDoc = viewsResp.documents?.[0] as any;
 
         if (cancelled) return;
-        setViews(viewsResp.total || 0);
+        setViews(Number(viewsDoc?.count || 0));
+        setLikes(Number(viewsDoc?.likes || 0));
 
         if (currentUserId) {
-          const likesResp = await databases.listDocuments(DATABASE_ID, 'tool_likes', [Query.equal('tool_slug', toolSlug)]);
-          if (cancelled) return;
-          setLikes(likesResp.total || 0);
-
           const userLikes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
             Query.equal('tool_slug', toolSlug),
             Query.equal('user_id', currentUserId),
@@ -79,8 +77,8 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
             setHasLiked(userLikes.total > 0);
           }
         } else if (!cancelled) {
-          setLikes(0);
-          setHasLiked(false);
+          const likedTools = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+          setHasLiked(Array.isArray(likedTools) && likedTools.includes(toolSlug));
         }
       } catch {
         if (!cancelled) {
@@ -97,6 +95,22 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
       cancelled = true;
     };
   }, [toolSlug, currentUserId]);
+
+  useEffect(() => {
+    const channel = `databases.${DATABASE_ID}.collections.tool_views.documents`;
+    let subscription: any = null;
+    void realtime.subscribe(channel, (event: any) => {
+      const doc = event?.payload;
+      if (!doc || doc.tool_slug !== toolSlug) return;
+      setViews(Number(doc.count || 0));
+      setLikes(Number(doc.likes || 0));
+    }).then((sub: any) => {
+      subscription = sub;
+    }).catch(() => {});
+    return () => {
+      try { subscription?.close?.(); } catch {}
+    };
+  }, [toolSlug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,15 +138,24 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   }, [toolSlug, currentUserId]);
 
   const toggleLike = () => {
+    const nextLiked = !hasLiked;
+    setHasLiked(nextLiked);
+    setLikes((prev) => Math.max(0, prev + (hasLiked ? -1 : 1)));
+
     if (!currentUserId) {
-      toast.info('Log in to save likes.');
-      return;
+      const likedTools = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+      const asArray = Array.isArray(likedTools) ? likedTools : [];
+      const updated = nextLiked
+        ? Array.from(new Set([...asArray, toolSlug]))
+        : asArray.filter((slug: string) => slug !== toolSlug);
+      localStorage.setItem('qofeno_likes', JSON.stringify(updated));
     }
 
     const eventType = hasLiked ? 'unlike' : 'like';
-    void trackEvent(eventType, toolSlug, currentUserId).then(() => {
-      setHasLiked(!hasLiked);
-      setLikes((prev) => Math.max(0, prev + (hasLiked ? -1 : 1)));
+    void trackEvent(eventType, toolSlug, currentUserId || undefined).catch(() => {
+      // Revert optimistic update only on request failure.
+      setHasLiked(hasLiked);
+      setLikes((prev) => Math.max(0, prev + (hasLiked ? 1 : -1)));
     });
   };
 

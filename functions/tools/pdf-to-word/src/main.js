@@ -1,4 +1,4 @@
-import { Client, Databases, ID, Storage } from 'node-appwrite';
+import { Client, Databases, ID, Permission, Role, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 import pdfParse from 'pdf-parse';
 import { Document, Packer, Paragraph, TextRun } from 'docx';
@@ -61,7 +61,7 @@ async function createExecution(db, payload) {
 }
 
 async function uploadOutput(storage, filename, buffer) {
-  const file = await storage.createFile(process.env.BUCKET_OUTPUTS, ID.unique(), InputFile.fromBuffer(buffer, filename));
+  const file = await storage.createFile(process.env.BUCKET_OUTPUTS, ID.unique(), InputFile.fromBuffer(buffer, filename), [Permission.read(Role.any()), Permission.delete(Role.any())]);
   const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
   return {
     file,

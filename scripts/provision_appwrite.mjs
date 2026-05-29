@@ -81,6 +81,7 @@ const COLLECTIONS = {
     attributes: [
       { key: 'tool_slug', type: 'string', size: 128, required: true },
       { key: 'count', type: 'integer', required: true, default: 0 },
+      { key: 'likes', type: 'integer', required: true, default: 0 },
     ],
     indexes: [{ key: 'tool_slug_unique', type: 'unique', attributes: ['tool_slug'] }],
   },

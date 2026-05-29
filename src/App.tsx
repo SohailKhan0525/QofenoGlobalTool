@@ -20,7 +20,7 @@ import { ForgotPassword } from './components/Pages/ForgotPassword';
 import { AuthCallback } from './components/Pages/AuthCallback';
 import { Dashboard } from './components/Pages/Dashboard';
 import { Profile } from './components/Pages/Profile';
-import { Settings } from './components/Pages/Settings';
+import { Settings as SettingsPage } from './components/Pages/Settings';
 import { NotFound } from './components/Pages/NotFound';
 import { FaGithub, FaInstagram } from 'react-icons/fa';
 import { FaToolbox } from 'react-icons/fa6';
@@ -30,7 +30,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 // Icons & animations
-import { Search, Plus, Calendar, Mail, FileText, CheckCircle2, User, Menu, X, LogOut, ChevronDown, Bell, Settings, Moon, Sun, Monitor, Sparkles } from 'lucide-react';
+import { Search, Plus, Calendar, Mail, FileText, CheckCircle2, User, Menu, X, LogOut, ChevronDown, Bell, Settings as SettingsIcon, Moon, Sun, Monitor, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import { cn } from './lib/utils';
@@ -269,7 +269,7 @@ export default function App() {
                  onClick={(e) => e.stopPropagation()}
                >
                  <button onClick={() => setShowPreferences(false)} className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-900 font-bold"><X className="w-5 h-5"/></button>
-                 <h3 className="text-xl font-black text-[#0F0A1E] mb-6 flex items-center gap-2"><Settings className="w-5 h-5 text-purple-600" /> Preferences</h3>
+                 <h3 className="text-xl font-black text-[#0F0A1E] mb-6 flex items-center gap-2"><SettingsIcon className="w-5 h-5 text-purple-600" /> Preferences</h3>
                  
                  <div className="space-y-6 overflow-y-auto pr-1 flex-1 font-sans">
                    <div className="space-y-3">
@@ -580,7 +580,7 @@ export default function App() {
                         }} 
                         className="text-xs font-bold text-neutral-500 hover:text-purple-600 flex items-center justify-center gap-1 w-full"
                       >
-                        <Settings className="w-3.5 h-3.5" /> Notification Settings
+                        <SettingsIcon className="w-3.5 h-3.5" /> Notification Settings
                       </button>
                     </div>
                   </motion.div>
@@ -755,7 +755,7 @@ export default function App() {
                       onClick={() => { setShowProfileMenu(false); setShowPreferences(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer mb-1"
                     >
-                      <Settings className="w-4 h-4" /> Preferences
+                      <SettingsIcon className="w-4 h-4" /> Preferences
                     </button>
                     <button 
                       onClick={() => {
@@ -892,7 +892,7 @@ export default function App() {
               {activeTab === 'auth-callback' && <AuthCallback onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'dashboard' && <Dashboard />}
               {activeTab === 'profile' && <Profile />}
-              {activeTab === 'settings' && <Settings />}
+              {activeTab === 'settings' && <SettingsPage />}
               {activeTab === 'coming-soon' && <ComingSoon onBack={() => setActiveTab('home')} />}
               {activeTab === 'terms' && <Terms />}
               {activeTab === 'policy' && <Policy />}
