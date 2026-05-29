@@ -58,6 +58,7 @@ interface ToolsCatalogProps {
 export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   const { tools, categoryCards } = useToolCatalog();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Tools');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [activeFilterTag, setActiveFilterTag] = useState('All'); // All, Favorites, Free, Pro, New, Popular
@@ -84,10 +85,41 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   };
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q') || '';
+    const category = params.get('category') || 'All Tools';
+    const sub = params.get('sub') || null;
+    const filter = params.get('filter') || 'All';
+    setSearchQuery(q);
+    setDebouncedSearch(q);
+    setSelectedCategory(category === 'all' ? 'All Tools' : category);
+    setSelectedSubCategory(sub);
+    setActiveFilterTag(filter);
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch.trim()) params.set('q', debouncedSearch.trim());
+    if (selectedCategory !== 'All Tools') params.set('category', selectedCategory);
+    if (selectedSubCategory) params.set('sub', selectedSubCategory);
+    if (activeFilterTag !== 'All') params.set('filter', activeFilterTag);
+    const next = params.toString();
+    const url = next ? `/tools?${next}` : '/tools';
+    window.history.replaceState({}, '', url);
+  }, [debouncedSearch, selectedCategory, selectedSubCategory, activeFilterTag]);
+
+  useEffect(() => {
     setIsFiltering(true);
     const t = setTimeout(() => setIsFiltering(false), 300);
     return () => clearTimeout(t);
-  }, [searchQuery, selectedCategory, selectedSubCategory, activeFilterTag]);
+  }, [debouncedSearch, selectedCategory, selectedSubCategory, activeFilterTag]);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,8 +219,8 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
     const sourceTools = tools.length > 0 ? tools : FALLBACK_TOOLS;
     return sourceTools.filter(tool => {
       // Search query check
-      const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            tool.desc.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = tool.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+                tool.desc.toLowerCase().includes(debouncedSearch.toLowerCase());
       
       // Category check
       let matchesCategory = true;
@@ -218,7 +250,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
       return matchesSearch && matchesCategory && matchesSub && matchesTag;
     });
-  }, [searchQuery, selectedCategory, selectedSubCategory, activeFilterTag, favorites, tools]);
+  }, [debouncedSearch, selectedCategory, selectedSubCategory, activeFilterTag, favorites, tools]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-24 md:pt-40 md:pb-32 px-6 md:px-12">
@@ -234,15 +266,24 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
             {/* Massive Search input */}
-            <div className="lg:col-span-2 relative">
+            <div className="lg:col-span-2 relative sticky top-[72px] md:top-auto z-20 bg-[#FAFAFA] py-2 md:py-0">
               <input 
                 type="text" 
                 placeholder="Find tools..." 
-                className="w-full bg-white border border-neutral-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 rounded-2xl py-4.5 pl-14 pr-6 outline-none text-neutral-800 text-lg shadow-sm transition-all placeholder-neutral-400"
+                className="w-full bg-white border border-neutral-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 rounded-2xl py-4.5 pl-14 pr-12 outline-none text-neutral-800 text-lg shadow-sm transition-all placeholder-neutral-400"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <Search className="w-6 h-6 text-neutral-400 absolute left-5 top-1/2 -translate-y-1/2" />
+              {searchQuery ? (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-500 flex items-center justify-center"
+                  aria-label="Clear search"
+                >
+                  ×
+                </button>
+              ) : null}
             </div>
 
             {/* Quick action chips for filtering in header */}
