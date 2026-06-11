@@ -34,16 +34,16 @@ async function deployFunctions() {
 
   const functionsApi = new Functions(client);
   const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-  const functionsDir = path.resolve(scriptDir, '..', 'functions', 'tools');
-  const otherFunctionsDir = path.resolve(scriptDir, '..', 'functions');
+  const functionsDir = path.resolve(scriptDir, '..', 'appwrite-functions', 'tools');
+  const otherFunctionsDir = path.resolve(scriptDir, '..', 'appwrite-functions');
 
   if (!fs.existsSync(functionsDir)) {
     console.log('No tools directory found, checking root functions...');
   }
 
-  // Get all directories under functions/tools and functions/
-  const toolsDirs = fs.existsSync(functionsDir) ? fs.readdirSync(functionsDir).map(f => path.join('functions', 'tools', f)) : [];
-  const rootDirs = fs.readdirSync(otherFunctionsDir).filter(f => f !== 'tools').map(f => path.join('functions', f));
+  // Get all directories under appwrite-functions/tools and appwrite-functions/
+  const toolsDirs = fs.existsSync(functionsDir) ? fs.readdirSync(functionsDir).map(f => path.join('appwrite-functions', 'tools', f)) : [];
+  const rootDirs = fs.readdirSync(otherFunctionsDir).filter(f => f !== 'tools').map(f => path.join('appwrite-functions', f));
   
   const allDirs = [...toolsDirs, ...rootDirs].filter(d => {
     const fullPath = path.resolve(scriptDir, '..', d);
@@ -53,56 +53,101 @@ async function deployFunctions() {
 
   console.log(`Found ${allDirs.length} functions to deploy.`);
 
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
   for (const dir of allDirs) {
     const fullDir = path.resolve(scriptDir, '..', dir);
     const functionId = path.basename(dir);
     console.log(`\n--- Deploying ${functionId} ---`);
 
     try {
-      // 1. Create or get function
-      try {
-        await functionsApi.get(functionId);
-        console.log(`Function ${functionId} exists.`);
-      } catch (err) {
-        if (err.code === 404) {
-          console.log(`Creating function ${functionId}...`);
-          await functionsApi.create(
-            functionId,
-            functionId,
-            'node-18.0',
-            ['any'] // execute permissions
-          );
-        } else {
-          throw err;
+      // 1. Create or get function with retry logic
+      let functionExists = false;
+      let retries = 3;
+      while (retries > 0 && !functionExists) {
+        try {
+          await functionsApi.get(functionId);
+          console.log(`Function ${functionId} exists.`);
+          functionExists = true;
+        } catch (err) {
+          if (err.code === 404) {
+            console.log(`Creating function ${functionId}...`);
+            try {
+              await functionsApi.create(functionId, functionId, 'node-18.0', ['any']);
+              functionExists = true;
+            } catch (createErr) {
+              if (createErr.code === 429) {
+                console.log('Rate limited on create. Waiting 15s...');
+                await sleep(15000);
+                retries--;
+              } else {
+                throw createErr;
+              }
+            }
+          } else if (err.code === 429) {
+            console.log('Rate limited on get. Waiting 15s...');
+            await sleep(15000);
+            retries--;
+          } else {
+            throw err;
+          }
         }
       }
 
-      // 2. Package the code into a tar.gz using native tar command or a simple node zip if tar is unavailable.
+      await sleep(5000); // 5 seconds wait to avoid rate limit between functions
+
+      // 2. Package the code into a tar.gz using native node tar module
       const tarPath = path.join(fullDir, 'code.tar.gz');
-      // Using powershell or bash to tar (we will use git bash or native windows tar)
       try {
         if (fs.existsSync(tarPath)) fs.unlinkSync(tarPath);
-        // Windows 10+ has tar built-in
-        execSync(`tar -czf code.tar.gz .`, { cwd: fullDir });
+        const tar = await import('tar');
+        
+        // We only want to tar package.json and src/
+        const filesToTar = [];
+        if (fs.existsSync(path.join(fullDir, 'package.json'))) filesToTar.push('package.json');
+        if (fs.existsSync(path.join(fullDir, 'src'))) filesToTar.push('src');
+        
+        await tar.c(
+          {
+            gzip: true,
+            file: tarPath,
+            cwd: fullDir
+          },
+          filesToTar
+        );
       } catch (e) {
-        console.error(`Failed to tar directory ${fullDir}. Ensure 'tar' is available.`);
+        console.error(`Failed to tar directory ${fullDir}.`);
         console.error(e.message);
         continue;
       }
 
       // 3. Create deployment
       console.log(`Uploading deployment for ${functionId}...`);
-      // Since node-appwrite expects an InputFile, and we are on Node, we use InputFile.fromPath
       const { InputFile } = await import('node-appwrite/file');
-      const deployment = await functionsApi.createDeployment(
-        functionId,
-        'src/main.js',
-        'npm install',
-        InputFile.fromPath(tarPath, 'code.tar.gz'),
-        true // activate immediately
-      );
       
-      console.log(`Successfully deployed ${functionId}. Deployment ID: ${deployment.$id}`);
+      let deployed = false;
+      let deployRetries = 3;
+      while (deployRetries > 0 && !deployed) {
+        try {
+          const deployment = await functionsApi.createDeployment(
+            functionId,
+            InputFile.fromPath(tarPath, 'code.tar.gz'),
+            true, // activate immediately
+            'src/main.js',
+            'npm install'
+          );
+          console.log(`Successfully deployed ${functionId}. Deployment ID: ${deployment.$id}`);
+          deployed = true;
+        } catch (depErr) {
+          if (depErr.code === 429) {
+            console.log('Rate limited on createDeployment. Waiting 15s...');
+            await sleep(15000);
+            deployRetries--;
+          } else {
+            throw depErr;
+          }
+        }
+      }
       
       // Cleanup
       if (fs.existsSync(tarPath)) fs.unlinkSync(tarPath);
