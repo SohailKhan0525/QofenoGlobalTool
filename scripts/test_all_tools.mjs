@@ -1,13 +1,19 @@
+/**
+ * test_all_tools.mjs
+ * Comprehensive automated test suite for all Qofeno Appwrite functions.
+ * Tests real function invocations with real payloads.
+ * Run: node scripts/test_all_tools.mjs
+ */
 import { Client, Functions } from 'node-appwrite';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-function loadEnv() {
-  const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-  const envPath = path.resolve(scriptDir, '..', '.env');
-  if (!fs.existsSync(envPath)) throw new Error('.env file not found');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+function loadEnv() {
+  const envPath = path.resolve(__dirname, '..', '.env');
+  if (!fs.existsSync(envPath)) throw new Error('.env file not found');
   for (const line of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
@@ -16,107 +22,85 @@ function loadEnv() {
   }
 }
 
-async function testTools() {
-  loadEnv();
-  const endpoint = process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
-  const projectId = process.env.APPWRITE_PROJECT_ID;
-  const apiKey = process.env.APPWRITE_API_KEY;
+// Minimal real PDF (generated to avoid file system dependency)
+const MINIMAL_PDF_BASE64 = 'JVBERi0xLjAKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iagozIDAgb2JqPDwvVHlwZS9QYWdlL01lZGlhQm94WzAgMCAzIDNdPj5lbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmCjAwMDAwMDAwMDkgMDAwMDAgbgowMDAwMDAwMDU4IDAwMDAwIG4KMDAwMDAwMDExNSAwMDAwMCBuCnRyYWlsZXI8PC9TaXplIDQvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgoxOTAKJSVFT0Y=';
 
-  if (!projectId || !apiKey) {
-    throw new Error('Missing Appwrite Config');
-  }
+// Small minimal DOCX (base64 encoded real minimal docx)
+const MINIMAL_DOCX_BASE64 = 'UEsDBBQACAgIAAAAIQAAAAAAAAAAAAAAAAALAAAAX3JlbHMvLnJlbHONzrsKwkAQRuF9nzKkT3ezKIIU2Uop0mdYs8mC2Q3ZjaDPrqKQKoX/hcP5GKa2r6YSHaQ2sByg6BuoRFFLbVkGx93m8gOBpEKrOqdBXdGQl4vs+QmU5Xh/KmNFGWSSJCCEiQCmB4CMtEpxQoSjQKWTgVFKZhqQnBiLJLmgVyFwgSAvDICUSh2lAyYJkL7xyxjJi1PQIAXjv5p2jLbYHTKR8AAAD//wMAUEsDBBQACAgIAAAAIQDVBCxmMQEAAH4CAAATAAAAd29yZC9kb2N1bWVudC54bWyFkV1LwzAUhu/9FSH3bpOuY5SmFxUvZOhF8eeSpOuyLU3CSTpX/91k3Qr7IAnk43meg3m8fh8GMYNtlcESBSmCRBtp61GjbadNbqVGjsASpbVAKJoJ+K1TBGGLkGGHnBGBhkh4TW8TpqDaEnqGAOHUMfuCwS4OBqWUWODlMDXuYkLhCMt7vARjLgFUYGMPRoAdoBBU+aOb0EiAHHhFGRaUNFNpqUiGOA6OaYJPaJFxZKJIgjhFJAnWZ5yx9CL5uyaAjfqm1CixRJlTaJWqkl4wjFXUluGnEiTgvlWE1gQ8eKWJXaSI3EJGTaqaIlX5neMTVsn6RmXN/R/BFPwAAAP//AwBQSwMEFAAICAgAAAAhAAAAAAAAAAAAAAAAAAoAAAB3b3JkL2ZvbnQveG1sAAAAUEsFBgAAAAADAAMAxwAAAMgAAAAA';
+
+async function runTests() {
+  loadEnv();
 
   const client = new Client()
-    .setEndpoint(endpoint)
-    .setProject(projectId)
-    .setKey(apiKey);
+    .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
+    .setProject(process.env.APPWRITE_PROJECT_ID)
+    .setKey(process.env.APPWRITE_API_KEY);
 
-  const functions = new Functions(client);
-
-  console.log('--- Running Qofeno Automated Test Suite ---');
-  
+  const fnClient = new Functions(client);
   const results = [];
-  
-  // 1. Test json-formatter (Simplest, doesn't require binary payloads)
-  console.log('\nTesting json-formatter...');
-  try {
-    const jsonPayload = {
-      json: '{"test":"value", "dirty":  true}',
-      action: 'format'
-    };
-    
-    const exec = await functions.createExecution('json-formatter', JSON.stringify(jsonPayload), false);
-    const resp = JSON.parse(exec.responseBody || '{}');
-    
-    if (resp.success && resp.result) {
-      console.log('✅ json-formatter passed');
-      results.push({ tool: 'json-formatter', status: 'PASS' });
-    } else {
-      console.error('❌ json-formatter failed:', resp.error || resp);
-      results.push({ tool: 'json-formatter', status: 'FAIL' });
+
+  async function test(toolId, payload, validate) {
+    process.stdout.write(`Testing ${toolId}... `);
+    try {
+      const exec = await fnClient.createExecution(toolId, JSON.stringify(payload), false);
+      const resp = exec.responseBody ? JSON.parse(exec.responseBody) : {};
+      const passed = validate(resp);
+      if (passed) {
+        console.log(`✅ PASS`);
+        results.push({ tool: toolId, status: 'PASS', info: resp.output_filename || resp.result?.words || '' });
+      } else {
+        console.log(`❌ FAIL: ${resp.error || JSON.stringify(resp).substring(0, 100)}`);
+        results.push({ tool: toolId, status: 'FAIL', error: resp.error });
+      }
+    } catch (e) {
+      console.log(`❌ ERROR: ${e.message}`);
+      results.push({ tool: toolId, status: 'ERROR', error: e.message });
     }
-  } catch (e) {
-    console.error('❌ json-formatter exception:', e.message);
-    results.push({ tool: 'json-formatter', status: 'FAIL' });
   }
 
-  // 2. Test word-counter
-  console.log('\nTesting word-counter...');
-  try {
-    const wordPayload = {
-      text: 'Hello world this is a test payload for the word counter.'
-    };
-    
-    const exec = await functions.createExecution('word-counter', JSON.stringify(wordPayload), false);
-    const resp = JSON.parse(exec.responseBody || '{}');
-    
-    if (resp.success && resp.result?.words === 11) {
-      console.log('✅ word-counter passed');
-      results.push({ tool: 'word-counter', status: 'PASS' });
-    } else {
-      console.error('❌ word-counter failed:', resp.error || resp);
-      results.push({ tool: 'word-counter', status: 'FAIL' });
-    }
-  } catch (e) {
-    console.error('❌ word-counter exception:', e.message);
-    results.push({ tool: 'word-counter', status: 'FAIL' });
-  }
+  console.log('\n🔬 Qofeno Tool Test Suite\n' + '─'.repeat(50));
 
-  // 3. Test base64-encoder
-  console.log('\nTesting base64-encoder...');
-  try {
-    const b64Payload = {
-      text: 'qofeno',
-      action: 'encode'
-    };
-    
-    const exec = await functions.createExecution('base64-encoder', JSON.stringify(b64Payload), false);
-    const resp = JSON.parse(exec.responseBody || '{}');
-    
-    if (resp.success && resp.result === 'cW9mZW5v') {
-      console.log('✅ base64-encoder passed');
-      results.push({ tool: 'base64-encoder', status: 'PASS' });
-    } else {
-      console.error('❌ base64-encoder failed:', resp.error || resp);
-      results.push({ tool: 'base64-encoder', status: 'FAIL' });
-    }
-  } catch (e) {
-    console.error('❌ base64-encoder exception:', e.message);
-    results.push({ tool: 'base64-encoder', status: 'FAIL' });
-  }
+  // Text/JSON tools
+  await test('json-formatter', { json: '{"a":1,"b":2}', action: 'format' }, r => r.success && r.result);
+  await test('word-counter', { text: 'Hello world test sentence here.' }, r => r.success && r.result?.words === 6);
+  await test('base64-encoder', { text: 'qofeno', action: 'encode' }, r => r.success && r.result === 'cW9mZW5v');
+  await test('text-case-converter', { text: 'hello world', action: 'uppercase' }, r => r.success && r.result?.includes('HELLO'));
 
-  console.log('\n================================');
-  console.log('Test Summary:');
-  results.forEach(r => {
-    console.log(`${r.status === 'PASS' ? '✅' : '❌'} ${r.tool}`);
-  });
-  
+  // PDF Tools (using minimal valid PDF)
+  const pdfPayload = { file_base64: MINIMAL_PDF_BASE64, input_filename: 'test.pdf' };
+  await test('pdf-compressor', { ...pdfPayload, compression_level: 'Medium' }, r => r.success && r.download_url);
+  await test('pdf-rotate', { ...pdfPayload, rotation: '90° Clockwise', apply_to: 'All pages' }, r => r.success && r.download_url);
+  await test('pdf-page-numbers', { ...pdfPayload, position: 'Bottom center', start_number: '1' }, r => r.success && r.download_url);
+  await test('pdf-watermark', { ...pdfPayload, watermark_text: 'CONFIDENTIAL', opacity: '0.3' }, r => r.success && r.download_url);
+  await test('pdf-flatten', pdfPayload, r => r.success && r.download_url);
+  await test('pdf-repair', pdfPayload, r => r.success && r.download_url);
+  await test('pdf-sign', { ...pdfPayload, signature_text: 'John Doe' }, r => r.success && r.download_url);
+  await test('pdf-crop', { ...pdfPayload, margin: '10' }, r => r.success && r.download_url);
+  await test('pdf-protect', { ...pdfPayload, owner_password: 'test123' }, r => r.success && r.download_url);
+  await test('pdf-unlock', pdfPayload, r => r.success && r.download_url);
+  await test('pdf-to-html', pdfPayload, r => r.success && r.download_url);
+  await test('pdf-splitter', { ...pdfPayload, split_mode: 'Every N pages', page_ranges: '1' }, r => r.success);
+  await test('pdf-metadata-viewer', pdfPayload, r => r.success);
+  await test('pdf-word-count', pdfPayload, r => r.success);
+
+  // Summary
+  console.log('\n' + '─'.repeat(50));
+  console.log('📊 Test Results Summary:');
   const passed = results.filter(r => r.status === 'PASS').length;
-  console.log(`\nScore: ${passed}/${results.length} tests passed.`);
-  
-  if (passed !== results.length) {
+  const failed = results.filter(r => r.status !== 'PASS').length;
+  results.forEach(r => {
+    const icon = r.status === 'PASS' ? '✅' : '❌';
+    console.log(`${icon} ${r.tool.padEnd(30)} ${r.status} ${r.info || r.error || ''}`);
+  });
+  console.log(`\n🎯 Score: ${passed}/${results.length} tests passed (${Math.round(passed/results.length*100)}%)`);
+
+  if (failed > 0) {
+    console.log('\n⚠️  Some tools failed. Check Appwrite function logs for details.');
     process.exit(1);
   }
 }
 
-testTools().catch(console.error);
+runTests().catch(err => {
+  console.error('Test suite crashed:', err.message);
+  process.exit(1);
+});
