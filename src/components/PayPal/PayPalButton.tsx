@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { useAuth } from '../../context/AuthContext';
-import { databases } from '../../lib/qofeno-appwrite';
+import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
+import { ID } from 'appwrite';
 import { toast } from 'sonner';
 
-const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
-const PLAN_ID_MONTHLY = import.meta.env.VITE_PAYPAL_PLAN_ID_MONTHLY || '';
-const PLAN_ID_YEARLY = import.meta.env.VITE_PAYPAL_PLAN_ID_YEARLY || '';
-const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID || 'qofeno_db';
+const PAYPAL_CLIENT_ID    = import.meta.env.VITE_PAYPAL_CLIENT_ID    || '';
+const PLAN_ID_MONTHLY     = import.meta.env.VITE_PAYPAL_PLAN_ID_MONTHLY || '';
+const PLAN_ID_YEARLY      = import.meta.env.VITE_PAYPAL_PLAN_ID_YEARLY  || '';
+const PAYPAL_MODE         = import.meta.env.VITE_PAYPAL_MODE           || 'live';
 
 type PayPalButtonProps = {
   isYearly?: boolean;
 };
-
 
 export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
   const { user } = useAuth();
@@ -21,6 +21,7 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
 
   const planId = isYearly ? PLAN_ID_YEARLY : PLAN_ID_MONTHLY;
 
+  // ── Success state ────────────────────────────────────────────────────────────
   if (success) {
     return (
       <div className="p-6 bg-green-50 text-green-800 rounded-2xl border border-green-200 text-center">
@@ -34,7 +35,10 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
           Your PRO account is now active. Welcome to Qofeno PRO!
         </p>
         <button
-          onClick={() => { window.history.pushState({}, '', '/dashboard'); window.dispatchEvent(new PopStateEvent('popstate')); }}
+          onClick={() => {
+            window.history.pushState({}, '', '/dashboard');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
           className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors"
         >
           Go to Dashboard →
@@ -43,6 +47,7 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
     );
   }
 
+  // ── Not configured guards ────────────────────────────────────────────────────
   if (!PAYPAL_CLIENT_ID) {
     return (
       <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm text-center">
@@ -56,15 +61,29 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
       <div className="space-y-3">
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm text-center">
           <strong>PayPal Subscription Plan not configured.</strong>
-          <p className="mt-1 text-xs">The administrator needs to add a PayPal Plan ID to enable payments.</p>
+          <p className="mt-1 text-xs">
+            The administrator needs to create a PayPal Subscription Plan and add the Plan ID to the environment.
+          </p>
+          <p className="mt-2 text-xs font-mono bg-amber-100 px-2 py-1 rounded">
+            VITE_PAYPAL_PLAN_ID_{isYearly ? 'YEARLY' : 'MONTHLY'}
+          </p>
         </div>
         <p className="text-xs text-center text-neutral-400">
-          To enable payments: Create a subscription plan in PayPal Dashboard and add the Plan ID to <code>VITE_PAYPAL_PLAN_ID_MONTHLY</code>.
+          Create a plan at{' '}
+          <a
+            href="https://developer.paypal.com/dashboard/products"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-purple-500"
+          >
+            PayPal Developer Dashboard
+          </a>
         </p>
       </div>
     );
   }
 
+  // ── Main PayPal button ────────────────────────────────────────────────────────
   return (
     <div className="w-full">
       {processing && (
@@ -73,11 +92,13 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
           </svg>
-          Processing your subscription...
+          Activating your PRO subscription…
         </div>
       )}
+
       <PayPalScriptProvider options={{
         'client-id': PAYPAL_CLIENT_ID,
+        clientId: PAYPAL_CLIENT_ID,
         currency: 'USD',
         vault: true,
         intent: 'subscription',
@@ -94,7 +115,10 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
               plan_id: planId,
               custom_id: user.id, // Used by PayPal webhook to identify the user
               subscriber: {
-                name: { given_name: user.name?.split(' ')[0] || '', surname: user.name?.split(' ').slice(1).join(' ') || '' },
+                name: {
+                  given_name: user.name?.split(' ')[0] || '',
+                  surname: user.name?.split(' ').slice(1).join(' ') || '',
+                },
                 email_address: user.email,
               },
             });
@@ -102,33 +126,62 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
           onApprove={async (data) => {
             setProcessing(true);
             try {
-              // Optimistically update user's plan in DB while webhook processes
+              const now = new Date().toISOString();
+
               if (user) {
+                // 1. Update users_meta.plan = 'pro' (optimistic — webhook will confirm)
                 try {
                   const docs = await databases.listDocuments(DATABASE_ID, 'users_meta');
                   const userMeta = docs.documents.find((d: any) => d.user_id === user.id);
                   if (userMeta) {
                     await databases.updateDocument(DATABASE_ID, 'users_meta', userMeta.$id, {
                       plan: 'pro',
-                      payment_ref: data.subscriptionID || data.orderID,
-                      updated_at: new Date().toISOString(),
+                      payment_ref: data.subscriptionID || data.orderID || null,
+                      updated_at: now,
                     });
                   }
                 } catch (_) {
                   // PayPal webhook will handle this as backup
                 }
+
+                // 2. Create / update subscriptions record
+                try {
+                  const existingSubs = await databases.listDocuments(DATABASE_ID, 'subscriptions');
+                  const existing = existingSubs.documents.find((d: any) => d.user_id === user.id);
+                  const subPayload = {
+                    user_id: user.id,
+                    plan: 'pro',
+                    period: isYearly ? 'yearly' : 'monthly',
+                    status: 'active',
+                    subscription_id: data.subscriptionID || null,
+                    payment_method: 'paypal',
+                    updated_at: now,
+                  };
+
+                  if (existing) {
+                    await databases.updateDocument(DATABASE_ID, 'subscriptions', existing.$id, subPayload);
+                  } else {
+                    await databases.createDocument(DATABASE_ID, 'subscriptions', ID.unique(), {
+                      ...subPayload,
+                      created_at: now,
+                    });
+                  }
+                } catch (_) {
+                  // Non-fatal — webhook backup handles this
+                }
               }
+
               toast.success('🎉 Subscription activated! Welcome to Qofeno PRO!');
               setSuccess(true);
             } catch (err) {
-              toast.error('Payment was received but profile update failed. Please contact support.');
+              toast.error('Payment received but profile update failed. Contact support if your plan doesn\'t reflect PRO.');
             } finally {
               setProcessing(false);
             }
           }}
           onError={(err) => {
             toast.error('PayPal payment failed. Please try again or contact support.');
-            console.error('PayPal Error:', err);
+            if (PAYPAL_MODE !== 'live') console.error('PayPal Error:', err);
           }}
           onCancel={() => {
             toast.info('Payment cancelled. You can try again anytime.');

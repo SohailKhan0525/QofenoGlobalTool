@@ -23,10 +23,10 @@ import { executeJsonFunction, FUNCTION_IDS } from '../../lib/qofeno-appwrite';
 import type { ToolCard } from '../../lib/toolCatalog';
 
 export const FILE_TOOL_SLUGS = new Set([
+  // FREE PDF Tools
   'pdf-compressor',
   'pdf-merger',
   'pdf-splitter',
-  'pdf-to-word',
   'pdf-rotate',
   'pdf-to-jpg',
   'jpg-to-pdf',
@@ -34,10 +34,31 @@ export const FILE_TOOL_SLUGS = new Set([
   'pdf-to-text',
   'pdf-word-count',
   'pdf-metadata-viewer',
+  // PRO PDF Tools
+  'pdf-to-word',
+  'pdf-watermark',
+  'pdf-protect',
+  'pdf-ocr',
+  'pdf-unlock',
+  'pdf-flatten',
+  'pdf-thumbnail',
+  'pdf-repair',
+  'pdf-redact',
+  'pdf-sign',
+  'pdf-crop',
+  'pdf-compare',
+  'pdf-to-excel',
+  'pdf-to-powerpoint',
+  'pdf-to-html',
+  'word-to-pdf',
+  'excel-to-pdf',
+  'powerpoint-to-pdf',
+  // Image Tools
   'image-resizer',
   'image-compressor',
   'image-converter',
   'image-bg-remover',
+  // Video Tools
   'video-compressor',
   'video-trimmer',
 ]);
@@ -290,6 +311,226 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
       { type: 'text', key: 'start_time', label: 'Start time', placeholder: '0' },
       { type: 'text', key: 'end_time', label: 'End time', placeholder: '30' },
     ],
+  },
+
+  // ── PRO PDF Tools ──────────────────────────────────────────────────────────
+
+  'pdf-watermark': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF and add a text watermark to every page.',
+    description: 'Add a visible watermark to your PDF.',
+    processLabel: 'Add Watermark',
+    functionId: FUNCTION_IDS.pdfWatermark || 'pdf-watermark',
+    fields: [
+      { type: 'text', key: 'watermark_text', label: 'Watermark text', placeholder: 'CONFIDENTIAL', defaultValue: 'CONFIDENTIAL' },
+      { type: 'select', key: 'position', label: 'Position', options: ['Center', 'Top-left', 'Top-right', 'Bottom-left', 'Bottom-right'], defaultValue: 'Center' },
+      { type: 'range', key: 'opacity', label: 'Opacity', min: 0.05, max: 1, step: 0.05, defaultValue: '0.3' },
+      { type: 'number', key: 'font_size', label: 'Font size', min: 24, max: 120, defaultValue: '48' },
+      { type: 'range', key: 'rotation', label: 'Rotation (degrees)', min: -90, max: 90, step: 5, defaultValue: '45' },
+      { type: 'select', key: 'apply_to', label: 'Apply to', options: ['All pages', 'First page', 'Last page'], defaultValue: 'All pages' },
+    ],
+  },
+
+  'pdf-protect': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to add password protection.',
+    description: 'Password-protect your PDF document.',
+    processLabel: 'Protect PDF',
+    functionId: FUNCTION_IDS.pdfProtect || 'pdf-protect',
+    fields: [
+      { type: 'text', key: 'owner_password', label: 'Owner password (required)', placeholder: 'owner-password-123' },
+      { type: 'text', key: 'user_password', label: 'User password (optional)', placeholder: 'user-password-123' },
+    ],
+  },
+
+  'pdf-ocr': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a scanned PDF to make it text-searchable.',
+    description: 'OCR: make scanned PDFs searchable.',
+    processLabel: 'Run OCR',
+    functionId: FUNCTION_IDS.pdfOcr || 'pdf-ocr',
+    fields: [
+      { type: 'select', key: 'language', label: 'Language', options: ['English', 'Spanish', 'French', 'German', 'Arabic', 'Hindi', 'Auto-detect'], defaultValue: 'English' },
+      { type: 'select', key: 'output_type', label: 'Output type', options: ['Searchable PDF', 'Text file (.txt)'], defaultValue: 'Searchable PDF' },
+    ],
+  },
+
+  'pdf-unlock': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a password-protected PDF to remove its password.',
+    description: 'Remove password protection from a PDF.',
+    processLabel: 'Unlock PDF',
+    functionId: FUNCTION_IDS.pdfUnlock || 'pdf-unlock',
+    fields: [
+      { type: 'text', key: 'password', label: 'Current password (if known)', placeholder: 'Enter PDF password' },
+    ],
+  },
+
+  'pdf-flatten': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to flatten all form fields and annotations.',
+    description: 'Flatten form fields and annotations into the page.',
+    processLabel: 'Flatten PDF',
+    functionId: FUNCTION_IDS.pdfFlatten || 'pdf-flatten',
+    fields: [],
+  },
+
+  'pdf-thumbnail': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to generate a thumbnail of the first page.',
+    description: 'Generate a high-quality JPG thumbnail from a PDF.',
+    processLabel: 'Generate Thumbnail',
+    functionId: FUNCTION_IDS.pdfThumbnail || 'pdf-thumbnail',
+    fields: [
+      { type: 'select', key: 'dpi', label: 'DPI', options: ['72', '96', '150', '300'], defaultValue: '150' },
+      { type: 'number', key: 'page', label: 'Page number', min: 1, defaultValue: '1' },
+    ],
+  },
+
+  'pdf-repair': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a corrupted or invalid PDF to attempt repair.',
+    description: 'Try to repair a corrupted PDF file.',
+    processLabel: 'Repair PDF',
+    functionId: FUNCTION_IDS.pdfRepair || 'pdf-repair',
+    fields: [],
+  },
+
+  'pdf-redact': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF and enter text to redact (black out) from all pages.',
+    description: 'Permanently black out sensitive text in a PDF.',
+    processLabel: 'Redact PDF',
+    functionId: FUNCTION_IDS.pdfRedact || 'pdf-redact',
+    fields: [
+      { type: 'text', key: 'redact_text', label: 'Text to redact', placeholder: 'Social Security, Account No', helper: 'Comma-separated list of phrases to black out.' },
+    ],
+  },
+
+  'pdf-sign': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to add a signature placeholder or image.',
+    description: 'Add a signature image to a PDF page.',
+    processLabel: 'Sign PDF',
+    functionId: FUNCTION_IDS.pdfSign || 'pdf-sign',
+    fields: [
+      { type: 'select', key: 'position', label: 'Signature position', options: ['Bottom-right', 'Bottom-left', 'Bottom-center', 'Top-right'], defaultValue: 'Bottom-right' },
+      { type: 'number', key: 'page', label: 'Page number', min: 1, defaultValue: '1' },
+    ],
+  },
+
+  'pdf-crop': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to crop its page dimensions.',
+    description: 'Crop or resize the page dimensions of a PDF.',
+    processLabel: 'Crop PDF',
+    functionId: FUNCTION_IDS.pdfCrop || 'pdf-crop',
+    fields: [
+      { type: 'number', key: 'margin_top', label: 'Margin top (pt)', min: 0, defaultValue: '36' },
+      { type: 'number', key: 'margin_bottom', label: 'Margin bottom (pt)', min: 0, defaultValue: '36' },
+      { type: 'number', key: 'margin_left', label: 'Margin left (pt)', min: 0, defaultValue: '36' },
+      { type: 'number', key: 'margin_right', label: 'Margin right (pt)', min: 0, defaultValue: '36' },
+    ],
+  },
+
+  'pdf-compare': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: true,
+    helper: 'Upload exactly two PDFs to compare their content.',
+    description: 'Compare two PDFs and highlight differences.',
+    processLabel: 'Compare PDFs',
+    functionId: FUNCTION_IDS.pdfCompare || 'pdf-compare',
+    maxFiles: 2,
+    fields: [
+      { type: 'select', key: 'compare_mode', label: 'Compare mode', options: ['Text only', 'Both'], defaultValue: 'Text only' },
+    ],
+  },
+
+  'pdf-to-excel': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF with tables to convert to Excel.',
+    description: 'Extract tables from PDF into an Excel spreadsheet.',
+    processLabel: 'Convert to Excel',
+    functionId: FUNCTION_IDS.pdfToExcel || 'pdf-to-excel',
+    fields: [],
+  },
+
+  'pdf-to-powerpoint': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF presentation to convert to PowerPoint.',
+    description: 'Convert PDF slides to a PowerPoint file.',
+    processLabel: 'Convert to PowerPoint',
+    functionId: FUNCTION_IDS.pdfToPowerpoint || 'pdf-to-powerpoint',
+    fields: [],
+  },
+
+  'pdf-to-html': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to convert its content to an HTML file.',
+    description: 'Convert PDF text content to an HTML web page.',
+    processLabel: 'Convert to HTML',
+    functionId: FUNCTION_IDS.pdfToHtml || 'pdf-to-html',
+    fields: [],
+  },
+
+  'word-to-pdf': {
+    icon: FileText,
+    accept: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    multiple: false,
+    helper: 'Upload a Word document (.docx) to convert it to PDF.',
+    description: 'Convert a Word document into a PDF.',
+    processLabel: 'Convert to PDF',
+    functionId: FUNCTION_IDS.wordToPdf || 'word-to-pdf',
+    fields: [],
+  },
+
+  'excel-to-pdf': {
+    icon: FileText,
+    accept: '.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    multiple: false,
+    helper: 'Upload an Excel spreadsheet (.xlsx) to convert it to PDF.',
+    description: 'Convert an Excel spreadsheet into a PDF.',
+    processLabel: 'Convert to PDF',
+    functionId: FUNCTION_IDS.excelToPdf || 'excel-to-pdf',
+    fields: [],
+  },
+
+  'powerpoint-to-pdf': {
+    icon: FileText,
+    accept: '.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    multiple: false,
+    helper: 'Upload a PowerPoint file (.pptx) to convert it to PDF.',
+    description: 'Convert a PowerPoint presentation into a PDF.',
+    processLabel: 'Convert to PDF',
+    functionId: FUNCTION_IDS.powerpointToPdf || 'powerpoint-to-pdf',
+    fields: [],
   },
 };
 
@@ -599,7 +840,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                       <input
                         type="checkbox"
                         checked={value}
-                        onChange={(event) => setField(field.key, event.target.checked)}
+                        onChange={(event) => setField(field.key, String(event.target.checked))}
                         className="w-4 h-4 accent-purple-600"
                       />
                     </label>
@@ -611,14 +852,14 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                     <span>{field.label}</span>
                     <input
                       type={field.type === 'number' ? 'number' : 'text'}
-                      placeholder={field.placeholder}
+                      placeholder={(field as any).placeholder}
                       min={field.type === 'number' ? field.min : undefined}
                       max={field.type === 'number' ? field.max : undefined}
                       value={fields[field.key] ?? field.defaultValue ?? ''}
                       onChange={(event) => setField(field.key, event.target.value)}
                       className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition-colors focus:border-purple-500"
                     />
-                    {field.helper ? <p className="text-xs text-neutral-500">{field.helper}</p> : null}
+                    {(field as any).helper ? <p className="text-xs text-neutral-500">{(field as any).helper}</p> : null}
                   </label>
                 );
               })}
@@ -751,6 +992,12 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                         <Download className="w-4 h-4" /> Download Result
                       </a>
                     )}
+                    <button
+                      onClick={() => { setResult(null); setFiles([]); setError(null); }}
+                      className="inline-flex w-full items-center justify-center gap-1 text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors py-1"
+                    >
+                      ↩ Process another file
+                    </button>
                     <button
                       onClick={() => copyLink(result.download_url)}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition-colors hover:bg-neutral-100"
