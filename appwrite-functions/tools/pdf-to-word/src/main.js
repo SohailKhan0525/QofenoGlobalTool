@@ -1,118 +1,147 @@
 import { Client, Databases, ID, Permission, Role, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
-import { PDFDocument } from 'pdf-lib';
+import pdfParse from 'pdf-parse';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 
 function parseBody(req) {
   const raw = req.body || req.payload || '{}';
   if (typeof raw !== 'string') return raw || {};
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return {};
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
+function decodeFileInput(value) {
+  if (typeof value !== 'string' || !value) return null;
+  const match = value.match(/^data:([^;]+);base64,(.*)$/i);
+  const base64 = match ? match[2] : value;
+  const mimeType = match ? match[1] : 'application/pdf';
+  return { buffer: Buffer.from(base64, 'base64'), mimeType };
+}
+
+async function readInputBuffer(body) {
+  const direct = decodeFileInput(body.file_base64 || body.input_base64 || body.data_base64 || body.file);
+  if (direct) return direct;
+  if (body.file_id && body.bucket_id) {
+    const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
+    const response = await fetch(`${endpoint}/storage/buckets/${body.bucket_id}/files/${body.file_id}/download`, {
+      headers: { 'X-Appwrite-Project': process.env.APPWRITE_PROJECT_ID, 'X-Appwrite-Key': process.env.APPWRITE_API_KEY },
+    });
+    if (!response.ok) throw new Error(`Unable to download source file: ${response.status}`);
+    return { buffer: Buffer.from(await response.arrayBuffer()), mimeType: 'application/pdf' };
   }
+  throw new Error('file_base64 or file_id + bucket_id is required');
+}
+
+async function createExecutionRecord(db, payload) {
+  try {
+    return await db.createDocument(process.env.DATABASE_ID, 'tool_executions', ID.unique(), {
+      user_id: payload.user_id || null,
+      tool_slug: payload.tool_slug,
+      tool_name: payload.tool_name,
+      category: payload.category,
+      status: payload.status,
+      input_filename: payload.input_filename || null,
+      input_size: payload.input_size || null,
+      output_filename: payload.output_filename || null,
+      output_size: payload.output_size || null,
+      download_url: payload.download_url || null,
+      error_message: payload.error_message || null,
+      duration_ms: payload.duration_ms || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  } catch (_) {}
+}
+
+async function uploadOutput(storage, filename, buffer) {
+  const file = await storage.createFile(
+    process.env.BUCKET_OUTPUTS,
+    ID.unique(),
+    InputFile.fromBuffer(buffer, filename),
+    [Permission.read(Role.any()), Permission.delete(Role.any())]
+  );
+  const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
+  return {
+    file,
+    download_url: `${endpoint}/storage/buckets/${process.env.BUCKET_OUTPUTS}/files/${file.$id}/download?project=${process.env.APPWRITE_PROJECT_ID}`,
+  };
+}
+
+async function processWithRetry(processFn, maxRetries = 2) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try { return await processFn(); }
+    catch (err) { lastError = err; await new Promise(r => setTimeout(r, 500)); }
+  }
+  throw lastError;
 }
 
 export default async ({ req, res, log, error }) => {
   const body = parseBody(req);
-  const client = new Client().setEndpoint(process.env.APPWRITE_ENDPOINT).setProject(process.env.APPWRITE_PROJECT_ID).setKey(process.env.APPWRITE_API_KEY);
+  const client = new Client()
+    .setEndpoint(process.env.APPWRITE_ENDPOINT)
+    .setProject(process.env.APPWRITE_PROJECT_ID)
+    .setKey(process.env.APPWRITE_API_KEY);
   const storage = new Storage(client);
   const db = new Databases(client);
   const startedAt = Date.now();
 
-  async function createExecution(dbClient, data) {
-    try {
-      await dbClient.createDocument(
-        process.env.DATABASE_ID,
-        'tool_executions',
-        ID.unique(),
-        data,
-        [Permission.read(Role.any())]
-      );
-    } catch (e) {
-      error('Failed to create execution record: ' + e.message);
-    }
-  }
-
-  async function readInputBuffer(b) {
-    let buf;
-    let mimeType = 'application/pdf';
-    if (b.file_base64) {
-      buf = Buffer.from(b.file_base64, 'base64');
-      mimeType = b.mime_type || mimeType;
-    } else if (b.file_url) {
-      const response = await fetch(b.file_url);
-      if (!response.ok) throw new Error('Failed to fetch file from URL');
-      const arrayBuffer = await response.arrayBuffer();
-      buf = Buffer.from(arrayBuffer);
-      mimeType = response.headers.get('content-type') || mimeType;
-    } else if (b.file_id) {
-      const arrayBuffer = await storage.getFileDownload(process.env.BUCKET_INPUTS, b.file_id);
-      buf = Buffer.from(arrayBuffer);
-    } else {
-      throw new Error('No file_base64, file_url, or file_id provided');
-    }
-    return { buffer: buf, mimeType };
-  }
-
-  async function uploadOutput(storageClient, filename, buffer) {
-    const fileForUpload = InputFile.fromBuffer(buffer, filename);
-    const uploaded = await storageClient.createFile(
-      process.env.BUCKET_OUTPUTS,
-      ID.unique(),
-      fileForUpload,
-      [Permission.read(Role.any())]
-    );
-    const download_url = process.env.APPWRITE_ENDPOINT + '/storage/buckets/' + process.env.BUCKET_OUTPUTS + '/files/' + uploaded.$id + '/download?project=' + process.env.APPWRITE_PROJECT_ID;
-    return { file: uploaded, download_url };
-  }
-
-  async function processWithRetry(processFn, maxRetries = 2) {
-    let lastError;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        return await processFn();
-      } catch (err) {
-        lastError = err;
-        log('Attempt ' + attempt + ' failed: ' + err.message + '. Retrying...');
-        await new Promise(r => setTimeout(r, 500));
-      }
-    }
-    throw lastError;
-  }
-
   try {
     const source = await readInputBuffer(body);
     const inputName = String(body.input_filename || body.filename || 'input.pdf');
-    
-    const { outputBuffer, outputName } = await processWithRetry(async () => {
-      let outBuf = source.buffer;
-      let outName = inputName.replace(/\\.[^/.]+$/, '') + '-output';
 
-      if ('pdf-to-word' === 'pdf-to-word') {
-        outName += '.docx';
-        outBuf = Buffer.from('UEsDBBQAAAAIAAAAIQAAAAAAAAAAAAAAAAAFAAAAd29yZC9QSwcIAAAAAAA=', 'base64');
-      } else if ('pdf-to-word' === 'pdf-to-excel') {
-        outName += '.xlsx';
-        outBuf = Buffer.from('UEsDBBQAAAAIAAAAIQAAAAAAAAAAAAAAAAAFAAAAd29yZC9QSwcIAAAAAAA=', 'base64');
-      } else if ('pdf-to-word' === 'pdf-to-html') {
-        outName += '.html';
-        outBuf = Buffer.from('<html><body><p>Converted Content</p></body></html>', 'utf8');
-      } else {
-        outName += '.pdf';
-        const pdf = await PDFDocument.create();
-        pdf.addPage([600, 400]);
-        outBuf = await pdf.save();
+    const { outputBuffer, outputName } = await processWithRetry(async () => {
+      // Extract text from PDF using pdf-parse
+      const pdfData = await pdfParse(source.buffer);
+      const rawText = pdfData.text || '';
+
+      if (!rawText.trim()) {
+        throw new Error('No text content found in PDF. This may be a scanned PDF that requires OCR.');
       }
+
+      // Split into paragraphs and build a real .docx document
+      const paragraphs = rawText.split(/\n{2,}/).filter(p => p.trim());
       
+      const docParagraphs = paragraphs.map(para => {
+        const lines = para.split('\n').filter(l => l.trim());
+        return new Paragraph({
+          children: lines.map((line, i) => [
+            new TextRun({ text: line.trim(), break: i > 0 ? 1 : 0 }),
+          ]).flat(),
+          spacing: { after: 200 },
+        });
+      });
+
+      if (docParagraphs.length === 0) {
+        docParagraphs.push(new Paragraph({ children: [new TextRun({ text: rawText })] }));
+      }
+
+      const doc = new Document({
+        creator: 'Qofeno',
+        title: inputName.replace(/\.pdf$/i, ''),
+        sections: [{ properties: {}, children: docParagraphs }],
+      });
+
+      const outBuf = await Packer.toBuffer(doc);
+      const outName = inputName.replace(/\.pdf$/i, '') + '.docx';
+
+      // Validate: docx is a zip starting with PK
+      if (outBuf[0] !== 0x50 || outBuf[1] !== 0x4B) {
+        throw new Error('Output .docx is corrupted');
+      }
+      if (!outBuf || outBuf.length === 0) {
+        throw new Error('Output file is empty — processing failed');
+      }
+
+      log(`Converted PDF to DOCX: ${outName} (${outBuf.length} bytes), ${pdfData.numpages} pages, ${pdfData.text.length} chars`);
       return { outputBuffer: outBuf, outputName: outName };
     });
 
     const uploaded = await uploadOutput(storage, outputName, outputBuffer);
 
-    await createExecution(db, {
+    await createExecutionRecord(db, {
       user_id: body.user_id || null,
       tool_slug: 'pdf-to-word',
-      tool_name: 'pdf-to-word',
+      tool_name: 'PDF to Word',
       category: 'PDF & Documents',
       status: 'completed',
       input_filename: inputName,
@@ -133,18 +162,16 @@ export default async ({ req, res, log, error }) => {
     });
   } catch (err) {
     error(err.message);
-    try {
-      await createExecution(db, {
-        user_id: body.user_id || null,
-        tool_slug: 'pdf-to-word',
-        tool_name: 'pdf-to-word',
-        category: 'PDF & Documents',
-        status: 'error',
-        input_filename: body.input_filename || body.filename || null,
-        error_message: err.message,
-        duration_ms: Date.now() - startedAt,
-      });
-    } catch {}
+    await createExecutionRecord(db, {
+      user_id: body.user_id || null,
+      tool_slug: 'pdf-to-word',
+      tool_name: 'PDF to Word',
+      category: 'PDF & Documents',
+      status: 'error',
+      input_filename: body.input_filename || body.filename || null,
+      error_message: err.message,
+      duration_ms: Date.now() - startedAt,
+    });
     return res.json({ success: false, error: err.message }, 500);
   }
-}
+};
