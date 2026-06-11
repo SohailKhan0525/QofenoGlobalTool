@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
@@ -162,7 +162,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     processLabel: 'Rotate Pages',
     functionId: 'pdf-rotate',
     fields: [
-      { type: 'select', key: 'rotation', label: 'Rotation', options: ['90° Clockwise', '180°', '90° Counter-clockwise'], defaultValue: '90° Clockwise' },
+      { type: 'select', key: 'rotation', label: 'Rotation', options: ['90Â° Clockwise', '180Â°', '90Â° Counter-clockwise'], defaultValue: '90Â° Clockwise' },
       { type: 'select', key: 'apply_to', label: 'Apply to', options: ['All pages', 'Odd pages', 'Even pages', 'Specific pages'], defaultValue: 'All pages' },
       { type: 'text', key: 'specific_pages', label: 'Specific pages', placeholder: '1, 3, 5-7', helper: 'Only if "Specific pages" is selected.' }
     ],
@@ -313,7 +313,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
 
-  // ── PRO PDF Tools ──────────────────────────────────────────────────────────
+  // â”€â”€ PRO PDF Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   'pdf-watermark': {
     icon: FileText,
@@ -539,483 +539,568 @@ function humanFileSize(bytes: number) {
   const units = ['B', 'KB', 'MB', 'GB'];
   let index = 0;
   let size = bytes;
-  while (size >= 1024 && index < units.length - 1) {
-    size /= 1024;
-    index += 1;
-  }
+  while (size >= 1024 && index < units.length - 1) { size /= 1024; index++; }
   return `${size.toFixed(size >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 }
 
-function fileToDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Unable to read the selected file'));
-    reader.readAsDataURL(file);
-  });
-}
-
-function base64ToText(input: string) {
-  try {
-    return atob(input);
-  } catch {
-    return '';
-  }
-}
+type Stage = 'idle' | 'file_selected' | 'processing' | 'done' | 'error';
 
 export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: string | null }) {
   const config = FILE_TOOL_CONFIG[tool.slug as FileToolSlug];
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const [stage, setStage] = useState<Stage>('idle');
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<FileToolResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, any>>({});
+  const [wrongType, setWrongType] = useState(false);
 
+  // Reset when tool changes
   useEffect(() => {
+    setStage('idle');
     setFiles([]);
     setResult(null);
-    setError(null);
+    setErrorMsg(null);
     setProgress(0);
-    setProcessing(false);
-    
-    // Initialize default values for fields
-    const config = FILE_TOOL_CONFIG[tool.slug as FileToolSlug];
-    if (config) {
-      const defaultFields: Record<string, any> = {};
-      config.fields.forEach(field => {
-        if ('defaultValue' in field) {
-          defaultFields[field.key] = field.defaultValue;
-        } else if (field.type === 'switch') {
-          defaultFields[field.key] = false;
-        } else {
-          defaultFields[field.key] = '';
-        }
+    setWrongType(false);
+    const cfg = FILE_TOOL_CONFIG[tool.slug as FileToolSlug];
+    if (cfg) {
+      const defaults: Record<string, any> = {};
+      cfg.fields.forEach((field) => {
+        if ('defaultValue' in field) defaults[field.key] = field.defaultValue;
+        else if (field.type === 'switch') defaults[field.key] = false;
+        else defaults[field.key] = '';
       });
-      setFields(defaultFields);
+      setFields(defaults);
     }
   }, [tool.slug]);
 
-  const acceptText = config?.accept || 'application/octet-stream';
-  const isMultiple = Boolean(config?.multiple);
+  // Auto-open download when done
+  useEffect(() => {
+    if (stage === 'done' && result?.download_url) {
+      window.open(result.download_url, '_blank', 'noreferrer');
+    }
+  }, [stage, result]);
 
-  const canProcess = useMemo(() => {
-    if (!config) return false;
-    if (!files.length) return false;
-    if (isMultiple) return files.length >= 2;
-    return true;
-  }, [config, files.length, isMultiple]);
+  if (!config) return null;
 
-  const setField = (key: string, value: string) => {
-    setFields((prev) => ({ ...prev, [key]: value }));
-  };
+  const acceptText = config.accept;
+  const isMultiple = Boolean(config.multiple);
+  const acceptedExts = acceptText.split(',').map(s => s.trim().replace('application/', '').replace('image/', '').toUpperCase()).filter(Boolean).join(', ');
 
-  const pickFiles = (incoming: FileList | File[]) => {
-    const next = Array.from(incoming);
-    const maxFiles = config?.maxFiles || (isMultiple ? 8 : 1);
-    setError(null);
-    setResult(null);
-    setFiles((prev) => {
-      const merged = isMultiple ? [...prev, ...next] : next.slice(0, 1);
-      return merged.slice(0, maxFiles);
+  const setField = (key: string, value: any) => setFields((prev) => ({ ...prev, [key]: value }));
+
+  const isFileTypeAccepted = (file: File) => {
+    const accepted = acceptText.split(',').map(s => s.trim().toLowerCase());
+    const fname = file.name.toLowerCase();
+    return accepted.some(a => {
+      if (a.startsWith('.')) return fname.endsWith(a);
+      if (a.includes('*')) return file.type.startsWith(a.replace('*', ''));
+      return file.type === a;
     });
   };
 
-  const readPayload = async () => {
-    const primary = files[0];
-    if (!primary) {
-      throw new Error('Add a file first');
+  const pickFiles = (incoming: FileList | File[]) => {
+    const arr = Array.from(incoming);
+    setWrongType(false);
+    const bad = arr.some(f => !isFileTypeAccepted(f));
+    if (bad) {
+      setWrongType(true);
+      return;
     }
-
-    if (tool.slug === 'pdf-merger') {
-      const inputs = await Promise.all(files.map(async (file) => ({
-        file_base64: await fileToDataUrl(file),
-        input_filename: file.name,
-      })));
-      return {
-        files: inputs,
-        user_id: userId || null,
-        output_filename: `qofeno-${tool.slug}-${Date.now()}.pdf`,
-      };
-    }
-
-    const basePayload: Record<string, unknown> = {
-      file_base64: await fileToDataUrl(primary),
-      input_filename: primary.name,
-      user_id: userId || null,
-    };
-
-    return {
-      ...basePayload,
-      ...fields, // Inject all dynamic fields to payload
-    };
+    const maxFiles = config.maxFiles || (isMultiple ? 20 : 1);
+    setFiles((prev) => {
+      const merged = isMultiple ? [...prev, ...arr] : arr.slice(0, 1);
+      return merged.slice(0, maxFiles);
+    });
+    setStage('file_selected');
+    setResult(null);
+    setErrorMsg(null);
   };
 
+  const resetTool = () => {
+    setStage('idle');
+    setFiles([]);
+    setResult(null);
+    setErrorMsg(null);
+    setProgress(0);
+    setWrongType(false);
+  };
+
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Unable to read file'));
+      reader.readAsDataURL(file);
+    });
+
   const runTool = async () => {
-    if (!config) return;
-    if (!canProcess) {
-      toast.info(isMultiple ? 'Add at least two files.' : 'Add a file first.');
+    if (!config || !files.length) return;
+    if (isMultiple && files.length < 2) {
+      toast.info('Add at least two files.');
       return;
     }
 
-    setProcessing(true);
-    setProgress(15);
-    setError(null);
-    setResult(null);
+    setStage('processing');
+    setProgress(10);
+    setErrorMsg(null);
+
     const ticker = window.setInterval(() => {
-      setProgress((prev) => Math.min(92, prev + 8));
-    }, 180);
+      setProgress((prev) => Math.min(90, prev + 6));
+    }, 200);
 
     try {
-      const payload = await readPayload();
+      let payload: Record<string, unknown>;
+
+      if (tool.slug === 'pdf-merger') {
+        const inputs = await Promise.all(
+          files.map(async (f) => ({ file_base64: await fileToDataUrl(f), input_filename: f.name }))
+        );
+        payload = { files: inputs, user_id: userId || null, output_filename: `qofeno-merged-${Date.now()}.pdf` };
+      } else {
+        const primary = files[0];
+        payload = {
+          file_base64: await fileToDataUrl(primary),
+          input_filename: primary.name,
+          user_id: userId || null,
+          ...fields,
+        };
+      }
+
       const response = await executeJsonFunction(config.functionId, payload);
       setProgress(100);
+
       if (response?.success === false) {
         throw new Error(String(response?.error || 'The tool could not finish the task.'));
       }
 
-      // If the function returned only a file_id (no download URL), request a signed link.
-      try {
-        if (!response.download_url && response.file_id) {
+      // Resolve download URL from file_id if needed
+      if (!response.download_url && response.file_id) {
+        try {
           const dl = await executeJsonFunction(FUNCTION_IDS.createDownloadLink, { file_id: response.file_id });
-          if (dl && dl.success && dl.download_url) response.download_url = dl.download_url;
-        }
+          if (dl?.success && dl.download_url) response.download_url = dl.download_url;
+        } catch {}
+      }
 
-        if (Array.isArray(response.outputs)) {
-          for (let i = 0; i < response.outputs.length; i += 1) {
-            const item = response.outputs[i];
-            if (!item.download_url && item.file_id) {
-              try {
-                const dl = await executeJsonFunction(FUNCTION_IDS.createDownloadLink, { file_id: item.file_id });
-                if (dl && dl.success && dl.download_url) item.download_url = dl.download_url;
-              } catch {}
-            }
+      if (Array.isArray(response.outputs)) {
+        for (const item of response.outputs) {
+          if (!item.download_url && item.file_id) {
+            try {
+              const dl = await executeJsonFunction(FUNCTION_IDS.createDownloadLink, { file_id: item.file_id });
+              if (dl?.success && dl.download_url) item.download_url = dl.download_url;
+            } catch {}
           }
         }
-      } catch (err) {
-        // Non-fatal: continue with partial results
       }
 
       setResult(response);
-      toast.success('Processing complete');
+      setStage('done');
+      toast.success('âœ… Processing complete!');
     } catch (err: any) {
       const message = err?.message || 'Something went wrong while processing the file.';
-      setError(message);
+      setErrorMsg(message);
+      setStage('error');
       toast.error(message);
     } finally {
       window.clearInterval(ticker);
-      window.setTimeout(() => {
-        setProgress(0);
-        setProcessing(false);
-      }, 350);
+      setTimeout(() => setProgress(0), 400);
     }
   };
 
-  const copyLink = async (link?: string) => {
-    if (!link) return;
-    await navigator.clipboard.writeText(link);
-    toast.success('Copied download link');
-  };
-
-  if (!config) return null;
-
-  return (
-    <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="relative rounded-3xl border border-dashed border-purple-200 bg-purple-50/60 p-4 sm:p-6 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(#d8b4fe_2px,transparent_2px)] [background-size:16px_16px] opacity-30 pointer-events-none" />
-          <div
-            onDragEnter={() => setDragging(true)}
-            onDragLeave={() => setDragging(false)}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragging(true);
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-              setDragging(false);
-              pickFiles(event.dataTransfer.files);
-            }}
-            className={cn(
-              'rounded-2xl border-2 border-dashed p-6 sm:p-8 transition-all',
-              dragging ? 'border-purple-500 bg-white shadow-lg' : 'border-purple-200 bg-white/80'
-            )}
+  // â”€â”€â”€ STAGE: IDLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  if (stage === 'idle') {
+    return (
+      <div className="w-full">
+        {/* Wrong type error */}
+        {wrongType && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4"
           >
-            <div className="flex flex-col items-center text-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-purple-100 flex items-center justify-center">
-                <UploadCloud className="w-7 h-7 text-purple-600" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-black text-[#0F0A1E]">{config.description}</h3>
-                <p className="text-sm text-neutral-500 max-w-md">{config.helper}</p>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-widest text-neutral-500">
-                <span className="rounded-full bg-neutral-100 px-3 py-1">{isMultiple ? 'Multiple files' : 'Single file'}</span>
-                <span className="rounded-full bg-neutral-100 px-3 py-1">{acceptText}</span>
-              </div>
-              <div className="flex flex-col gap-3 w-full max-w-md">
-                <button
-                  onClick={() => inputRef.current?.click()}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border border-neutral-200 px-4 py-3 text-sm font-bold text-[#0F0A1E] transition-colors hover:bg-neutral-50"
-                >
-                  <Plus className="w-4 h-4" /> Select files
-                </button>
-                <button
-                  onClick={runTool}
-                  disabled={!canProcess || processing}
-                  className="inline-flex w-full min-h-[56px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-4 py-4 text-sm font-black text-white shadow-lg shadow-purple-500/20 transition-all hover:translate-y-[-1px] hover:shadow-xl hover:shadow-purple-500/25 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  {processing ? 'Processing on our servers...' : config.processLabel}
-                </button>
-              </div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept={acceptText}
-                multiple={isMultiple}
-                className="hidden"
-                onChange={(event) => {
-                  if (event.target.files) pickFiles(event.target.files);
-                }}
-              />
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <div>
+              <p className="font-semibold text-red-800 text-sm">Wrong file type</p>
+              <p className="text-xs text-red-600 mt-0.5">This tool accepts <strong>{acceptedExts}</strong> files only</p>
             </div>
+          </motion.div>
+        )}
+
+        {/* Upload zone */}
+        <div
+          onDragEnter={() => setDragging(true)}
+          onDragLeave={() => setDragging(false)}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDrop={(e) => { e.preventDefault(); setDragging(false); pickFiles(e.dataTransfer.files); }}
+          onClick={() => inputRef.current?.click()}
+          className={cn(
+            'flex flex-col items-center justify-center cursor-pointer select-none',
+            'border-2 border-dashed rounded-3xl transition-all duration-200',
+            'min-h-[300px] w-full p-8 sm:p-12 text-center',
+            dragging
+              ? 'border-purple-500 bg-purple-100 scale-[1.01] shadow-xl shadow-purple-200'
+              : 'border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-400'
+          )}
+        >
+          <div className="w-20 h-20 mb-5 rounded-2xl bg-purple-100 flex items-center justify-center mx-auto">
+            {config.icon === ImageIcon
+              ? <ImageIcon className="w-10 h-10 text-purple-600" />
+              : config.icon === Video
+              ? <Video className="w-10 h-10 text-purple-600" />
+              : <FileText className="w-10 h-10 text-purple-600" />
+            }
           </div>
+
+          <h2 className="text-2xl sm:text-3xl font-black text-[#0F0A1E] mb-2">
+            {isMultiple ? 'Select files' : 'Select a file'}
+          </h2>
+          <p className="text-neutral-500 text-base mb-6">or drop {isMultiple ? 'files' : 'a file'} here</p>
+
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}
+            className="px-8 py-3.5 bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold text-base rounded-xl shadow-lg shadow-purple-200 transition-all"
+          >
+            Select {isMultiple ? 'files' : 'file'}
+          </button>
+
+          <p className="text-xs text-neutral-400 mt-5">
+            Accepts: {acceptedExts} Â· up to 500 MB
+          </p>
         </div>
 
-        {config.fields.length > 0 && (
-          <div className="space-y-4 rounded-3xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
-            <div className="flex items-center gap-2 text-sm font-black text-[#0F0A1E]">
-              <SlidersHorizontal className="w-4 h-4 text-purple-600" /> Settings
+        <input
+          ref={inputRef}
+          type="file"
+          accept={acceptText}
+          multiple={isMultiple}
+          className="hidden"
+          onChange={(e) => { if (e.target.files) pickFiles(e.target.files); e.target.value = ''; }}
+        />
+      </div>
+    );
+  }
+
+  // â”€â”€â”€ STAGE: PROCESSING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  if (stage === 'processing') {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col items-center justify-center py-20 gap-6 w-full"
+      >
+        <div className="relative w-20 h-20">
+          <svg className="w-20 h-20 animate-spin" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" stroke="#E9D5FF" strokeWidth="8" fill="none" />
+            <circle cx="40" cy="40" r="34" stroke="#7C3AED" strokeWidth="8" fill="none"
+              strokeDasharray="213" strokeDashoffset="150" strokeLinecap="round" />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-sm font-black text-purple-700">{Math.round(progress)}%</span>
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="text-xl font-bold text-[#0F0A1E]">Processing your fileâ€¦</p>
+          <p className="text-sm text-neutral-500 mt-1">Running on our servers â€” this won't take long</p>
+        </div>
+        <div className="w-full max-w-xs bg-neutral-100 rounded-full h-2 overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-purple-600 to-fuchsia-500 rounded-full"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
+          />
+        </div>
+      </motion.div>
+    );
+  }
+
+  // â”€â”€â”€ STAGE: DONE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  if (stage === 'done' && result) {
+    const outputs = result.outputs;
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full space-y-4"
+      >
+        {/* Multiple outputs (e.g. pdf-splitter) */}
+        {outputs && outputs.length > 0 ? (
+          <div className="rounded-3xl border-2 border-green-200 bg-green-50 p-6 space-y-3">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-black text-green-800">Your files are ready!</p>
+                <p className="text-sm text-green-600">{outputs.length} files generated</p>
+              </div>
             </div>
-            <div className="grid gap-3">
-              {config.fields.map((field) => {
-                if (field.type === 'select') {
-                  return (
-                    <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
-                      <span>{field.label}</span>
-                      <select
-                        className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition-colors focus:border-purple-500"
-                        value={fields[field.key] ?? field.defaultValue ?? ''}
-                        onChange={(event) => setField(field.key, event.target.value)}
-                      >
-                        {field.options.map((option) => {
-                          const val = typeof option === 'string' ? option : option.value;
-                          const lbl = typeof option === 'string' ? option : option.label;
-                          return <option key={val} value={val}>{lbl}</option>;
-                        })}
-                      </select>
-                    </label>
-                  );
-                }
-
-                if (field.type === 'range') {
-                  const value = fields[field.key] ?? field.defaultValue ?? String(field.max);
-                  return (
-                    <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
-                      <div className="flex items-center justify-between">
-                        <span>{field.label}</span>
-                        <span className="text-xs text-neutral-500">{value}</span>
-                      </div>
-                      <input
-                        type="range"
-                        min={field.min}
-                        max={field.max}
-                        step={field.step}
-                        value={value}
-                        onChange={(event) => setField(field.key, event.target.value)}
-                        className="w-full accent-purple-600"
-                      />
-                    </label>
-                  );
-                }
-
-                if (field.type === 'switch') {
-                  const value = fields[field.key] ?? field.defaultValue ?? false;
-                  return (
-                    <label key={field.key} className="flex items-center justify-between text-sm font-semibold text-neutral-700 cursor-pointer">
-                      <span>{field.label}</span>
-                      <input
-                        type="checkbox"
-                        checked={value}
-                        onChange={(event) => setField(field.key, String(event.target.checked))}
-                        className="w-4 h-4 accent-purple-600"
-                      />
-                    </label>
-                  );
-                }
-
-                return (
-                  <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
-                    <span>{field.label}</span>
-                    <input
-                      type={field.type === 'number' ? 'number' : 'text'}
-                      placeholder={(field as any).placeholder}
-                      min={field.type === 'number' ? field.min : undefined}
-                      max={field.type === 'number' ? field.max : undefined}
-                      value={fields[field.key] ?? field.defaultValue ?? ''}
-                      onChange={(event) => setField(field.key, event.target.value)}
-                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition-colors focus:border-purple-500"
-                    />
-                    {(field as any).helper ? <p className="text-xs text-neutral-500">{(field as any).helper}</p> : null}
-                  </label>
-                );
-              })}
+            {outputs.map((item, i) => (
+              <div key={i} className="flex items-center justify-between bg-white rounded-2xl border border-green-200 p-3 gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[#0F0A1E] truncate">{item.output_filename || `Output ${i + 1}`}</p>
+                  {item.output_size ? <p className="text-xs text-neutral-500">{humanFileSize(item.output_size)}</p> : null}
+                </div>
+                {item.download_url && (
+                  <a href={item.download_url} target="_blank" rel="noreferrer"
+                    className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 transition-colors">
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Single output */
+          <div className="rounded-3xl border-2 border-green-200 bg-green-50 p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <p className="text-lg font-black text-green-800">Your file is ready!</p>
+                <p className="text-sm text-green-600">
+                  {result.output_filename || 'output'}{result.output_size ? ` Â· ${humanFileSize(result.output_size)}` : ''}
+                </p>
+              </div>
             </div>
-            {files.length > 0 && (
-              <button
-                onClick={() => setFiles([])}
-                className="inline-flex w-fit items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-600 transition-colors hover:bg-neutral-200"
+
+            {result.download_url ? (
+              <a
+                href={result.download_url}
+                download={result.output_filename}
+                target="_blank"
+                rel="noreferrer"
+                className="flex w-full min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-purple-600 hover:bg-purple-700 active:scale-[0.98] text-white font-black text-lg shadow-lg shadow-purple-200 transition-all mb-3"
               >
-                <Trash2 className="w-3.5 h-3.5" /> Clear files
-              </button>
+                <Download className="w-6 h-6" />
+                Download {result.output_filename || 'result'}
+              </a>
+            ) : (
+              /* Text-only results (pdf-to-text, pdf-word-count, pdf-metadata-viewer) */
+              <div className="rounded-2xl bg-white border border-green-200 p-4 mb-3">
+                <pre className="text-sm text-neutral-700 whitespace-pre-wrap font-mono overflow-auto max-h-64">
+                  {typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result)}
+                </pre>
+              </div>
             )}
+
+            <button
+              onClick={resetTool}
+              className="w-full py-3 text-purple-600 font-semibold hover:text-purple-800 transition-colors hover:underline"
+            >
+              â†© Process another file
+            </button>
+            <p className="text-xs text-center text-neutral-400 mt-2">
+              ðŸ”’ Your file will be automatically deleted from our servers
+            </p>
           </div>
         )}
-      </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-3xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h4 className="text-sm font-black uppercase tracking-wider text-[#0F0A1E]">Selected files</h4>
-              <p className="text-xs text-neutral-500">{files.length ? `${files.length} file(s) ready` : 'No files selected yet'}</p>
-            </div>
-            <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-purple-700">{humanFileSize(files.reduce((sum, file) => sum + file.size, 0))}</span>
-          </div>
+        {/* Process another */}
+        {outputs && outputs.length > 0 && (
+          <button onClick={resetTool} className="w-full py-3 text-purple-600 font-semibold hover:underline transition-colors">
+            â†© Process another file
+          </button>
+        )}
+      </motion.div>
+    );
+  }
 
-          <div className="space-y-3">
-            <AnimatePresence initial={false}>
-              {files.length ? (
-                files.map((file, index) => (
-                  <motion.div
-                    key={`${file.name}-${index}`}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#0F0A1E]">{file.name}</p>
-                      <p className="text-xs text-neutral-500">{humanFileSize(file.size)} · {file.type || 'unknown type'}</p>
-                    </div>
-                    <button
-                      onClick={() => setFiles((prev) => prev.filter((_, currentIndex) => currentIndex !== index))}
-                      className="rounded-full p-2 text-neutral-400 transition-colors hover:bg-white hover:text-neutral-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </motion.div>
-                ))
-              ) : (
-                <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 px-4 py-10 text-center text-sm text-neutral-500">
-                  Add files to preview them here.
-                </div>
-              )}
-            </AnimatePresence>
+  // â”€â”€â”€ STAGE: ERROR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  if (stage === 'error') {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="rounded-3xl border-2 border-red-200 bg-red-50 p-6 w-full"
+      >
+        <div className="flex items-center gap-3 mb-4">
+          <AlertCircle className="w-8 h-8 text-red-500 flex-shrink-0" />
+          <div>
+            <p className="font-black text-red-800 text-lg">Processing failed</p>
+            <p className="text-sm text-red-600 mt-0.5">{errorMsg}</p>
           </div>
         </div>
+        <button
+          onClick={resetTool}
+          className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors"
+        >
+          Try again
+        </button>
+      </motion.div>
+    );
+  }
 
-        <div className="rounded-3xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <h4 className="text-sm font-black uppercase tracking-wider text-[#0F0A1E]">Result</h4>
-              <p className="text-xs text-neutral-500">Download or copy the returned link once processing finishes.</p>
-            </div>
-            {processing && <Loader2 className="w-4 h-4 animate-spin text-purple-600" />}
+  // â”€â”€â”€ STAGE: FILE SELECTED â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  return (
+    <div className="w-full space-y-4">
+      {/* Selected file(s) info */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="space-y-2"
+      >
+        <AnimatePresence mode="popLayout">
+          {files.map((file, i) => (
+            <motion.div
+              key={`${file.name}-${i}`}
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 16 }}
+              className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-neutral-200 shadow-sm"
+            >
+              <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+                <FileText className="w-5 h-5 text-purple-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[#0F0A1E] truncate text-sm">{file.name}</p>
+                <p className="text-xs text-neutral-500">{humanFileSize(file.size)}</p>
+              </div>
+              <button
+                onClick={() => {
+                  const next = files.filter((_, j) => j !== i);
+                  if (next.length === 0) setStage('idle');
+                  setFiles(next);
+                }}
+                className="p-2 rounded-full text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {/* Add more files (for multi-file tools) */}
+        {isMultiple && (
+          <button
+            onClick={() => inputRef.current?.click()}
+            className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-2xl text-sm font-semibold text-neutral-500 hover:border-purple-300 hover:text-purple-600 hover:bg-purple-50 transition-all"
+          >
+            <Plus className="w-4 h-4 inline mr-1" /> Add more files
+          </button>
+        )}
+      </motion.div>
+
+      {/* Settings panel â€” only visible after file selected */}
+      {config.fields.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+          className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm space-y-3"
+        >
+          <div className="flex items-center gap-2 text-sm font-black text-[#0F0A1E]">
+            <SlidersHorizontal className="w-4 h-4 text-purple-600" /> Settings
           </div>
-
-          {progress > 0 && (
-            <div className="mb-4 space-y-2">
-              <Progress value={progress} className="h-2 bg-neutral-100 [&>div]:bg-purple-600" />
-              <p className="text-xs font-semibold text-neutral-500">Working on your file… {Math.round(progress)}%</p>
-            </div>
-          )}
-
-          {error ? (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-              <div className="mb-1 flex items-center gap-2 font-bold"><AlertCircle className="w-4 h-4" /> Processing failed</div>
-              <p>{error}</p>
-            </div>
-          ) : result ? (
-            <div className="space-y-4">
-              {result.outputs?.length ? (
-                <div className="space-y-3">
-                  {result.outputs.map((item, index) => (
-                    <div key={`${item.output_filename || 'output'}-${index}`} className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-[#0F0A1E]">{item.output_filename || `Output ${index + 1}`}</p>
-                          <p className="text-xs text-neutral-500">{item.output_size ? humanFileSize(item.output_size) : 'Ready to download'}</p>
-                        </div>
-                        <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
-                          {item.download_url && (
-                            <a
-                              href={item.download_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex w-full sm:w-auto min-h-[56px] items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-black text-white transition-colors hover:bg-green-700"
-                            >
-                              <Download className="w-4 h-4" /> Download Result
-                            </a>
-                          )}
-                          <button
-                            onClick={() => copyLink(item.download_url)}
-                            className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition-colors hover:bg-neutral-100"
-                          >
-                            <Copy className="w-3.5 h-3.5" /> Copy link
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
-                  <div className="flex items-start gap-3 text-sm font-bold text-[#0F0A1E]">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-black">Your file is ready!</p>
-                      <p className="mt-1 text-xs text-green-800">{result.output_filename || 'Result file'}{result.output_size ? ` · ${humanFileSize(result.output_size)}` : ''}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-col gap-2">
-                    {result.download_url && (
-                      <a
-                        href={result.download_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex w-full min-h-[56px] items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-black text-white transition-colors hover:bg-green-700"
-                      >
-                        <Download className="w-4 h-4" /> Download Result
-                      </a>
-                    )}
-                    <button
-                      onClick={() => { setResult(null); setFiles([]); setError(null); }}
-                      className="inline-flex w-full items-center justify-center gap-1 text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors py-1"
+          <div className="grid gap-3 sm:grid-cols-2">
+            {config.fields.map((field) => {
+              if (field.type === 'select') {
+                return (
+                  <label key={field.key} className="space-y-1.5 text-sm font-semibold text-neutral-700">
+                    <span>{field.label}</span>
+                    <select
+                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm outline-none transition-colors focus:border-purple-500"
+                      value={fields[field.key] ?? field.defaultValue ?? ''}
+                      onChange={(e) => setField(field.key, e.target.value)}
                     >
-                      ↩ Process another file
-                    </button>
-                    <button
-                      onClick={() => copyLink(result.download_url)}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-xs font-bold text-neutral-700 transition-colors hover:bg-neutral-100"
-                    >
-                      <Copy className="w-3.5 h-3.5" /> Copy link
-                    </button>
-                    <p className="text-[11px] text-neutral-500">🔒 Your file will be deleted from our servers after download</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-500">
-              Results will show here after you run the tool.
-            </div>
-          )}
-        </div>
-      </div>
+                      {field.options.map((opt) => {
+                        const val = typeof opt === 'string' ? opt : opt.value;
+                        const lbl = typeof opt === 'string' ? opt : opt.label;
+                        return <option key={val} value={val}>{lbl}</option>;
+                      })}
+                    </select>
+                  </label>
+                );
+              }
+              if (field.type === 'range') {
+                const val = fields[field.key] ?? field.defaultValue ?? String(field.max);
+                return (
+                  <label key={field.key} className="space-y-1.5 text-sm font-semibold text-neutral-700">
+                    <div className="flex items-center justify-between">
+                      <span>{field.label}</span>
+                      <span className="text-xs text-neutral-500">{val}</span>
+                    </div>
+                    <input
+                      type="range" min={field.min} max={field.max} step={field.step}
+                      value={val}
+                      onChange={(e) => setField(field.key, e.target.value)}
+                      className="w-full accent-purple-600"
+                    />
+                  </label>
+                );
+              }
+              if (field.type === 'switch') {
+                const checked = Boolean(fields[field.key] ?? field.defaultValue ?? false);
+                return (
+                  <label key={field.key} className="flex items-center justify-between text-sm font-semibold text-neutral-700 cursor-pointer py-1">
+                    <span>{field.label}</span>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => setField(field.key, String(e.target.checked))}
+                      className="w-4 h-4 accent-purple-600"
+                    />
+                  </label>
+                );
+              }
+              // text / number
+              return (
+                <label key={field.key} className="space-y-1.5 text-sm font-semibold text-neutral-700">
+                  <span>{field.label}</span>
+                  <input
+                    type={field.type === 'number' ? 'number' : 'text'}
+                    placeholder={(field as any).placeholder}
+                    min={field.type === 'number' ? field.min : undefined}
+                    max={field.type === 'number' ? field.max : undefined}
+                    value={fields[field.key] ?? field.defaultValue ?? ''}
+                    onChange={(e) => setField(field.key, e.target.value)}
+                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm outline-none transition-colors focus:border-purple-500"
+                    style={{ fontSize: '16px' }}
+                  />
+                  {(field as any).helper && <p className="text-xs text-neutral-500">{(field as any).helper}</p>}
+                </label>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Big Process Button */}
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+        onClick={runTool}
+        className="w-full min-h-[60px] flex items-center justify-center gap-3
+          bg-gradient-to-r from-purple-600 to-fuchsia-600
+          hover:from-purple-700 hover:to-fuchsia-700
+          active:scale-[0.98] text-white font-black text-xl
+          rounded-2xl shadow-xl shadow-purple-200 transition-all"
+      >
+        <Sparkles className="w-6 h-6" />
+        {config.processLabel}
+      </motion.button>
+
+      {/* Change file */}
+      <button onClick={resetTool} className="w-full text-center text-sm text-neutral-400 hover:text-neutral-700 transition-colors">
+        â†© Choose a different file
+      </button>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept={acceptText}
+        multiple={isMultiple}
+        className="hidden"
+        onChange={(e) => { if (e.target.files) pickFiles(e.target.files); e.target.value = ''; }}
+      />
     </div>
   );
 }

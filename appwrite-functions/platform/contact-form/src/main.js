@@ -1,70 +1,101 @@
+/**
+ * contact-form — Saves contact message to Appwrite, sends notification to admin
+ * and auto-reply to sender via Resend.
+ */
 import { Client, Databases, ID } from 'node-appwrite';
-import nodemailer from 'nodemailer';
 
 function parseBody(req) {
   const raw = req.body || req.payload || '{}';
   if (typeof raw !== 'string') return raw || {};
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
+  try { return JSON.parse(raw); } catch { return {}; }
 }
 
 function sanitize(value, maxLength) {
   return String(value || '').trim().slice(0, maxLength);
 }
 
-function getMailer() {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || 587);
-  const user = process.env.SMTP_USERNAME;
-  const pass = process.env.SMTP_PASSWORD;
-
-  if (!host || !user || !pass) return null;
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
-}
-
 async function sendContactEmails(payload) {
-  const transporter = getMailer();
-  if (!transporter) return { sent: false, reason: 'smtp_not_configured' };
-
+  const resendKey = process.env.RESEND_API_KEY;
+  const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'hello@qofeno.com';
   const fromName = process.env.EMAIL_FROM_NAME || 'Qofeno';
-  const fromAddress = process.env.EMAIL_FROM_ADDRESS || 'hello@qofeno.io';
-  const replyTo = process.env.EMAIL_REPLY_TO || payload.email;
-  const supportEmail = process.env.SUPPORT_EMAIL || fromAddress;
+  const adminEmail = process.env.ADMIN_EMAIL || fromAddress;
+  const appUrl = process.env.APP_URL || 'https://qofeno-labs.pages.dev';
 
-  await transporter.sendMail({
-    from: `${fromName} <${fromAddress}>`,
-    to: supportEmail,
-    replyTo: payload.email,
-    subject: `[Qofeno Contact] ${payload.subject}`,
-    text: `Name: ${payload.name}\nEmail: ${payload.email}\nSubject: ${payload.subject}\n\n${payload.message}`,
-    html: `<p><strong>Name:</strong> ${payload.name}</p><p><strong>Email:</strong> ${payload.email}</p><p><strong>Subject:</strong> ${payload.subject}</p><p>${payload.message.replace(/\n/g, '<br/>')}</p>`,
-  });
+  if (!resendKey) return { sent: false, reason: 'no_resend_key' };
 
-  await transporter.sendMail({
-    from: `${fromName} <${fromAddress}>`,
-    to: payload.email,
-    replyTo,
-    subject: 'We received your message — Qofeno',
-    text: `Hi ${payload.name},\n\nThanks for contacting Qofeno. We received your message and will get back to you soon.\n\nSubject: ${payload.subject}`,
-    html: `<p>Hi ${payload.name},</p><p>Thanks for contacting <strong>Qofeno</strong>. We received your message and will get back to you soon.</p><p><strong>Subject:</strong> ${payload.subject}</p>`,
-  });
+  const results = [];
 
-  return { sent: true };
+  // 1. Forward to admin (Mohd Zaheer Uddin)
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: `${fromName} Contact <${fromAddress}>`,
+        to: [adminEmail],
+        reply_to: payload.email,
+        subject: `[Qofeno Contact] ${payload.subject}`,
+        html: `
+          <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+            <h2 style="color:#7C3AED;margin:0 0 16px;">New Contact Message</h2>
+            <table style="width:100%;border-collapse:collapse;">
+              <tr><td style="padding:8px 0;color:#6B7280;width:80px;font-weight:600;">From:</td><td style="padding:8px 0;color:#0F0A1E;">${payload.name} &lt;${payload.email}&gt;</td></tr>
+              <tr><td style="padding:8px 0;color:#6B7280;font-weight:600;">Subject:</td><td style="padding:8px 0;color:#0F0A1E;">${payload.subject}</td></tr>
+            </table>
+            <div style="margin-top:16px;padding:16px;background:#F9FAFB;border-radius:8px;color:#374151;line-height:1.6;">
+              ${payload.message.replace(/\n/g, '<br>')}
+            </div>
+            <p style="color:#9CA3AF;font-size:12px;margin-top:24px;">Sent via Qofeno contact form · ${appUrl}</p>
+          </div>
+        `,
+      }),
+    });
+    const d = await res.json();
+    results.push({ type: 'admin', sent: true, id: d.id });
+  } catch (err) {
+    results.push({ type: 'admin', sent: false, error: err.message });
+  }
+
+  // 2. Auto-reply to sender
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: `${fromName} <${fromAddress}>`,
+        to: [payload.email],
+        subject: 'Thanks for reaching out — Qofeno',
+        html: `
+          <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;padding:40px 20px;">
+            <h1 style="color:#7C3AED;font-size:28px;font-weight:900;margin:0 0 8px;">Qofeno</h1>
+            <h2 style="color:#0F0A1E;font-size:20px;margin:0 0 16px;">Thanks for reaching out! 👋</h2>
+            <p style="color:#6B7280;line-height:1.6;margin:0 0 16px;">
+              Hi ${payload.name}, I've received your message about "<strong>${payload.subject}</strong>" and will reply as soon as possible.
+            </p>
+            <p style="color:#6B7280;line-height:1.6;margin:0 0 24px;">
+              In the meantime, feel free to explore all our free tools:
+            </p>
+            <a href="${appUrl}/tools" style="display:inline-block;padding:12px 28px;background:#7C3AED;color:white;border-radius:10px;font-weight:600;text-decoration:none;">
+              Explore Tools →
+            </a>
+            <p style="color:#9CA3AF;font-size:13px;margin-top:40px;">— Mohd Zaheer Uddin, Qofeno</p>
+          </div>
+        `,
+      }),
+    });
+    const d = await res.json();
+    results.push({ type: 'reply', sent: true, id: d.id });
+  } catch (err) {
+    results.push({ type: 'reply', sent: false, error: err.message });
+  }
+
+  return { sent: true, results };
 }
 
-export default async ({ req, res, error }) => {
+export default async ({ req, res, log, error }) => {
   const body = parseBody(req);
-  const name = sanitize(body.name, 256);
-  const email = sanitize(body.email, 256);
+  const name    = sanitize(body.name, 256);
+  const email   = sanitize(body.email, 256);
   const subject = sanitize(body.subject || body.topic, 512);
   const message = sanitize(body.message, 4096);
 
@@ -83,15 +114,14 @@ export default async ({ req, res, error }) => {
 
   try {
     const document = await db.createDocument(databaseId, 'contact_messages', ID.unique(), {
-      name,
-      email,
-      subject,
-      message,
+      name, email, subject, message,
       read: false,
       created_at: createdAt,
     });
+    log(`Contact message saved: ${document.$id}`);
 
     const emailStatus = await sendContactEmails({ name, email, subject, message });
+    log(`Emails: ${JSON.stringify(emailStatus)}`);
 
     return res.json({ success: true, id: document.$id, email: emailStatus });
   } catch (err) {
