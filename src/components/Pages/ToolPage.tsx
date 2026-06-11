@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { SEO } from '../../components/SEO';
 import { FILE_TOOL_SLUGS, FileToolWorkspace } from './FileToolWorkspace';
 import { useAuth } from '../../context/AuthContext';
+import { PayPalButton } from '../PayPal/PayPalButton';
 
 export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { tools } = useToolCatalog();
@@ -315,6 +316,31 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   ];
 
   const isFileTool = FILE_TOOL_SLUGS.has(toolSlug);
+  const isProLocked = tool.type === 'Pro' && user?.plan !== 'pro';
+
+  if (isProLocked) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] pt-28 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">
+        <SEO title={`${tool.name} (PRO)`} description={tool.desc} />
+        <div className="max-w-4xl mx-auto space-y-6 text-center mt-10">
+           <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+             <ShieldCheck className="w-10 h-10 text-purple-600" />
+           </div>
+           <h1 className="text-3xl md:text-4xl font-black text-[#0F0A1E] mb-4">{tool.name} is a PRO feature</h1>
+           <p className="text-neutral-500 mb-8 max-w-lg mx-auto leading-relaxed">Upgrade to Qofeno PRO to unlock this tool and enjoy unlimited access to all features, faster processing, and dedicated support.</p>
+           <PayPalButton />
+           <div className="mt-8">
+              <button
+                onClick={() => onNavigate('tools')}
+                className="inline-flex items-center gap-2 text-neutral-500 hover:text-purple-600 transition-colors font-bold text-sm cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back to Tools
+              </button>
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isFileTool) {
     return (
@@ -726,13 +752,17 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                                  <motion.div
                                    key="processing"
                                    initial={{ opacity: 0, scale: 0.98 }}
-                                   animate={{ opacity: 0.75, scale: 1 }}
+                                   animate={{ opacity: 1, scale: 1 }}
                                    exit={{ opacity: 0, scale: 0.98 }}
                                    transition={{ duration: 0.15 }}
-                                   className="flex items-center gap-2 text-neutral-400 font-sans italic"
+                                   className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-purple-50/80 via-white to-pink-50/80 animate-gradient-x z-10"
                                  >
-                                   <Loader2 className="w-4 h-4 text-purple-600 animate-spin shrink-0" />
-                                   Computing formatted output...
+                                   <div className="flex items-center gap-3">
+                                      <Loader2 className="w-5 h-5 text-purple-600 animate-spin shrink-0" />
+                                      <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-neutral-400 to-purple-600 animate-shimmer bg-[length:200%_auto] text-base">
+                                        Computing formatted output...
+                                      </span>
+                                   </div>
                                  </motion.div>
                               ) : outputText ? (
                                  <motion.div

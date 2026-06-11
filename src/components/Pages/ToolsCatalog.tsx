@@ -475,7 +475,9 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                           localStorage.setItem('selected_tool_id', tool.id);
                           onNavigate('tool');
                         }}
-                        className="group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-2xl hover:shadow-purple-500/10 cursor-pointer flex flex-col transition-all duration-300 relative"
+                        whileHover={{ scale: 1.02, rotateX: 2, rotateY: -2, z: 20 }}
+                        style={{ perspective: 1000 }}
+                        className="group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-2xl hover:shadow-purple-500/15 cursor-pointer flex flex-col transition-all duration-300 relative"
                       >
                         <div className="absolute top-6 right-6 flex items-center gap-1.5 z-10">
                           <button 

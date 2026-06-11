@@ -142,11 +142,26 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
       
       {/* SECTION 1 — HERO */}
       <section className="relative min-h-screen flex flex-col justify-center items-center pt-32 pb-24 md:pt-48 md:pb-32 px-6 md:px-12 bg-white text-center z-10 overflow-hidden">
-        {/* Glowing floating orbs in background */}
-        <div className="absolute inset-0 pointer-events-none -z-10">
-          <div className="absolute top-[10%] left-[5%] w-[45vw] h-[45vw] rounded-full bg-purple-100/40 blur-[130px] animate-slow-drift" />
-          <div className="absolute bottom-[10%] right-[5%] w-[40vw] h-[40vw] rounded-full bg-pink-100/30 blur-[110px] animate-slow-drift-reverse" />
-          <div className="absolute top-[40%] right-[15%] w-[35vw] h-[35vw] rounded-full bg-cyan-100/20 blur-[120px]" />
+        {/* Glowing floating orbs in background (Aurora equivalent) */}
+        <div className="absolute inset-0 pointer-events-none -z-10 bg-white">
+          <motion.div 
+            animate={{ 
+              x: [0, 50, -50, 0], 
+              y: [0, -50, 50, 0],
+              scale: [1, 1.1, 0.9, 1]
+            }}
+            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+            className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-r from-purple-400 via-fuchsia-400 to-pink-400 opacity-20 blur-[120px]" 
+          />
+          <motion.div 
+            animate={{ 
+              x: [0, -60, 60, 0], 
+              y: [0, 60, -60, 0],
+              scale: [1, 0.9, 1.1, 1]
+            }}
+            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+            className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 opacity-20 blur-[120px]" 
+          />
           <div className="absolute inset-0 bg-[radial-gradient(#7c3aed0a_1px,transparent_1px)] [background-size:16px_16px] opacity-60" />
         </div>
 
@@ -199,21 +214,25 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
             Qofeno brings together powerful tools for PDFs, images, video, writing, code, and more — all server-processed, free to start, right in your browser.
           </p>
 
-          {/* CTA Group */}
+          {/* CTA Group (Magnet equivalent) */}
           <div ref={ctaRef} className="flex flex-col sm:flex-row items-center gap-4 mb-16 z-20">
-            <button 
+            <motion.button 
+              whileHover={{ scale: 1.05, y: -2, x: 2 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => onNavigate('tools')}
-              className="w-full sm:w-auto px-8 py-4.5 bg-gradient-to-r from-purple-600 to-violet-500 text-white rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-purple-500/20 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer"
+              className="w-full sm:w-auto px-8 py-4.5 bg-gradient-to-r from-purple-600 to-violet-500 text-white rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer"
             >
               Explore Tools
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
+              whileHover={{ scale: 1.05, y: -2, x: -2 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => onNavigate('pricing')}
-              className="w-full sm:w-auto px-8 py-4.5 bg-white border border-neutral-200 text-neutral-800 rounded-2xl font-bold text-lg hover:bg-neutral-50 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-8 py-4.5 bg-white border border-neutral-200 text-neutral-800 rounded-2xl font-bold text-lg hover:bg-neutral-50 hover:shadow-xl hover:shadow-neutral-200/50 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             >
               View Pricing
-            </button>
+            </motion.button>
           </div>
 
           {/* Quick Search Panel */}
@@ -559,24 +578,27 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
               </button>
             </div>
 
-            {/* PRO PLAN */}
-            <div className="border border-purple-200 bg-purple-50 p-8 rounded-3xl flex flex-col justify-between relative transform scale-105 shadow-xl shadow-purple-500/10">
-              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">
-                Most Popular
+            {/* PRO PLAN (Shine border equivalent) */}
+            <div className="relative group rounded-3xl transform scale-105 shadow-2xl shadow-purple-500/20">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 rounded-[26px] opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-gradient-xy blur-[2px]"></div>
+              <div className="relative border border-purple-200 bg-white p-8 rounded-3xl flex flex-col justify-between h-full">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+                  Most Popular
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold mb-2 text-purple-900">Pro</h3>
+                  <div className="text-4xl font-black text-[#0F0A1E] mb-6">$9<span className="text-lg text-neutral-400 font-medium">/mo</span></div>
+                  <ul className="space-y-3 mb-8 text-sm text-[#0F0A1E] font-medium">
+                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Everything in Free</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> All 18+ PRO PDF Tools unlocked</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Priority server processing</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Higher file size limits</li>
+                  </ul>
+                </div>
+                <button onClick={() => onNavigate('pricing')} className="w-full py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20 cursor-pointer">
+                  Get Pro
+                </button>
               </div>
-              <div>
-                <h3 className="font-display text-xl font-bold mb-2 text-purple-900">Pro</h3>
-                <div className="text-4xl font-black text-purple-900 mb-6">$9<span className="text-lg text-purple-700/60 font-medium">/mo</span></div>
-                <ul className="space-y-3 mb-8 text-sm text-purple-900 font-medium">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Everything in Free</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> All tools unlocked</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Priority processing</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Higher file size limits</li>
-                </ul>
-              </div>
-              <button onClick={() => onNavigate('pricing')} className="w-full py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition-colors">
-                Get Pro
-              </button>
             </div>
 
              {/* ENTERPRISE PLAN */}

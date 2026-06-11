@@ -69,6 +69,19 @@ async function uploadOutput(storage, filename, buffer) {
   };
 }
 
+async function processWithRetry(processFn, maxRetries = 2) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await processFn();
+    } catch (err) {
+      lastError = err;
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+  throw lastError;
+}
+
 export default async ({ req, res, error }) => {
   const body = parseBody(req);
   const client = new Client().setEndpoint(process.env.APPWRITE_ENDPOINT).setProject(process.env.APPWRITE_PROJECT_ID).setKey(process.env.APPWRITE_API_KEY);
@@ -79,9 +92,18 @@ export default async ({ req, res, error }) => {
   try {
     const source = await readInputBuffer(body);
     const inputName = String(body.input_filename || body.filename || 'input.pdf');
-    const inputPdf = await PDFDocument.load(source.buffer, { ignoreEncryption: true });
-    const outputBuffer = await inputPdf.save({ useObjectStreams: true });
-    const outputName = inputName.replace(/\.pdf$/i, '') + '-compressed.pdf';
+    const { outputBuffer, outputName } = await processWithRetry(async () => {
+      const inputPdf = await PDFDocument.load(source.buffer, { ignoreEncryption: true });
+      // PDF-lib's save method optimizes some streams but isn't a deep compressor.
+      const outputBuffer = await inputPdf.save({ useObjectStreams: true });
+      const outputName = inputName.replace(/\.pdf$/i, '') + '-compressed.pdf';
+      
+      if (outputBuffer.toString('utf8', 0, 5) !== '%PDF-') {
+        throw new Error("Output is not a valid PDF file");
+      }
+      return { outputBuffer, outputName };
+    });
+
     const uploaded = await uploadOutput(storage, outputName, outputBuffer);
 
     await createExecution(db, {

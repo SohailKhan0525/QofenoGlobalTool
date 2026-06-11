@@ -8,7 +8,9 @@ export default async ({ req, res, log, error }) => {
     const words = (text.trim().length === 0) ? 0 : text.trim().split(/\s+/).length
     const characters = text.length
     const sentences = (text.match(/[.!?]+/g) || []).length
-    const paragraphs = (text.split(/\n\n+/).filter(p => p.trim().length > 0)).length
+    const paragraphs = (text.split(/
+
++/).filter(p => p.trim().length > 0)).length
     const reading_time_minutes = Math.max(1, Math.round(words / 200))
 
     return res.json({ success: true, words, characters, sentences, paragraphs, reading_time_minutes })

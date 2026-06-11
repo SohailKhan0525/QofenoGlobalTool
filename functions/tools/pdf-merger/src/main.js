@@ -68,6 +68,19 @@ async function uploadOutput(storage, filename, buffer) {
   };
 }
 
+async function processWithRetry(processFn, maxRetries = 2) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await processFn();
+    } catch (err) {
+      lastError = err;
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+  throw lastError;
+}
+
 export default async ({ req, res, error }) => {
   const body = parseBody(req);
   const client = new Client().setEndpoint(process.env.APPWRITE_ENDPOINT).setProject(process.env.APPWRITE_PROJECT_ID).setKey(process.env.APPWRITE_API_KEY);
@@ -81,21 +94,29 @@ export default async ({ req, res, error }) => {
       throw new Error('files array is required');
     }
 
-    const merged = await PDFDocument.create();
-    const inputNames = [];
-    let inputSize = 0;
+    const { outputBuffer, outputName, inputSize, inputNames } = await processWithRetry(async () => {
+      const merged = await PDFDocument.create();
+      const names = [];
+      let size = 0;
 
-    for (const item of fileItems) {
-      const source = await readInputBuffer(item || {});
-      inputSize += source.buffer.length;
-      inputNames.push(String(item?.input_filename || item?.filename || 'input.pdf'));
-      const pdf = await PDFDocument.load(source.buffer, { ignoreEncryption: true });
-      const pages = await merged.copyPages(pdf, pdf.getPageIndices());
-      pages.forEach((page) => merged.addPage(page));
-    }
+      for (const item of fileItems) {
+        const source = await readInputBuffer(item || {});
+        size += source.buffer.length;
+        names.push(String(item?.input_filename || item?.filename || 'input.pdf'));
+        const pdf = await PDFDocument.load(source.buffer, { ignoreEncryption: true });
+        const pages = await merged.copyPages(pdf, pdf.getPageIndices());
+        pages.forEach((page) => merged.addPage(page));
+      }
 
-    const outputBuffer = await merged.save({ useObjectStreams: true });
-    const outputName = String(body.output_filename || 'merged.pdf');
+      const outBuf = await merged.save({ useObjectStreams: true });
+      const outName = String(body.output_filename || 'merged.pdf');
+      
+      if (outBuf.toString('utf8', 0, 5) !== '%PDF-') {
+        throw new Error("Output is not a valid PDF file");
+      }
+      return { outputBuffer: outBuf, outputName: outName, inputSize: size, inputNames: names };
+    });
+
     const uploaded = await uploadOutput(storage, outputName, outputBuffer);
 
     await createExecution(db, {

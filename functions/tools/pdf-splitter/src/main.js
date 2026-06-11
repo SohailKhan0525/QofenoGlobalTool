@@ -86,6 +86,19 @@ async function uploadOutput(storage, filename, buffer) {
   };
 }
 
+async function processWithRetry(processFn, maxRetries = 2) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await processFn();
+    } catch (err) {
+      lastError = err;
+      await new Promise(r => setTimeout(r, 500));
+    }
+  }
+  throw lastError;
+}
+
 export default async ({ req, res, error }) => {
   const body = parseBody(req);
   const client = new Client().setEndpoint(process.env.APPWRITE_ENDPOINT).setProject(process.env.APPWRITE_PROJECT_ID).setKey(process.env.APPWRITE_API_KEY);
@@ -96,26 +109,34 @@ export default async ({ req, res, error }) => {
   try {
     const source = await readInputBuffer(body);
     const inputName = String(body.input_filename || body.filename || 'input.pdf');
-    const pdf = await PDFDocument.load(source.buffer, { ignoreEncryption: true });
-    const ranges = parseRanges(body.page_ranges || body.ranges, pdf.getPageCount());
-    const outputs = [];
+    const outputs = await processWithRetry(async () => {
+      const pdf = await PDFDocument.load(source.buffer, { ignoreEncryption: true });
+      const ranges = parseRanges(body.page_ranges || body.ranges, pdf.getPageCount());
+      const outs = [];
 
-    for (const [startPage, endPage] of ranges) {
-      const target = await PDFDocument.create();
-      const copied = await target.copyPages(pdf, Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage - 1 + index));
-      copied.forEach((page) => target.addPage(page));
-      const outputBuffer = await target.save({ useObjectStreams: true });
-      const outputName = `${inputName.replace(/\.pdf$/i, '')}-pages-${startPage}-${endPage}.pdf`;
-      const uploaded = await uploadOutput(storage, outputName, outputBuffer);
-      outputs.push({
-        page_start: startPage,
-        page_end: endPage,
-        output_filename: outputName,
-        output_size: outputBuffer.length,
-        download_url: uploaded.download_url,
-        file_id: uploaded.file.$id,
-      });
-    }
+      for (const [startPage, endPage] of ranges) {
+        const target = await PDFDocument.create();
+        const copied = await target.copyPages(pdf, Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage - 1 + index));
+        copied.forEach((page) => target.addPage(page));
+        const outputBuffer = await target.save({ useObjectStreams: true });
+        const outputName = `${inputName.replace(/\.pdf$/i, '')}-pages-${startPage}-${endPage}.pdf`;
+        
+        if (outputBuffer.toString('utf8', 0, 5) !== '%PDF-') {
+          throw new Error("Output is not a valid PDF file");
+        }
+        
+        const uploaded = await uploadOutput(storage, outputName, outputBuffer);
+        outs.push({
+          page_start: startPage,
+          page_end: endPage,
+          output_filename: outputName,
+          output_size: outputBuffer.length,
+          download_url: uploaded.download_url,
+          file_id: uploaded.file.$id,
+        });
+      }
+      return outs;
+    });
 
     const firstOutput = outputs[0] || null;
     await createExecution(db, {

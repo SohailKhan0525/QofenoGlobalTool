@@ -27,6 +27,13 @@ export const FILE_TOOL_SLUGS = new Set([
   'pdf-merger',
   'pdf-splitter',
   'pdf-to-word',
+  'pdf-rotate',
+  'pdf-to-jpg',
+  'jpg-to-pdf',
+  'pdf-page-numbers',
+  'pdf-to-text',
+  'pdf-word-count',
+  'pdf-metadata-viewer',
   'image-resizer',
   'image-compressor',
   'image-converter',
@@ -55,14 +62,11 @@ type FileToolResult = {
 };
 
 type FileToolField =
-  | { key: 'page_ranges'; label: string; placeholder: string; helper: string }
-  | { key: 'output_format'; label: string; options: string[] }
-  | { key: 'quality'; label: string; min: number; max: number; step: number }
-  | { key: 'width'; label: string; placeholder: string }
-  | { key: 'height'; label: string; placeholder: string }
-  | { key: 'start_time'; label: string; placeholder: string }
-  | { key: 'end_time'; label: string; placeholder: string }
-  | { key: 'threshold'; label: string; min: number; max: number; step: number };
+  | { type: 'text'; key: string; label: string; placeholder?: string; helper?: string; defaultValue?: string }
+  | { type: 'select'; key: string; label: string; options: (string | { label: string; value: string })[]; defaultValue?: string }
+  | { type: 'range'; key: string; label: string; min: number; max: number; step: number; defaultValue?: string }
+  | { type: 'switch'; key: string; label: string; defaultValue?: boolean }
+  | { type: 'number'; key: string; label: string; min?: number; max?: number; defaultValue?: string };
 
 type FileToolConfig = {
   icon: LucideIcon;
@@ -84,8 +88,10 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     helper: 'Drop a PDF or pick one from your device.',
     description: 'Compress a PDF without leaving the current page.',
     processLabel: 'Compress PDF',
-    functionId: FUNCTION_IDS.pdfCompressor,
-    fields: [{ key: 'quality', label: 'Compression level', min: 25, max: 100, step: 1 }],
+    functionId: FUNCTION_IDS.pdfCompressor || 'pdf-compressor',
+    fields: [
+      { type: 'select', key: 'compression_level', label: 'Compression Level', options: ['Low', 'Medium', 'High', 'Maximum'], defaultValue: 'Medium' }
+    ],
   },
   'pdf-merger': {
     icon: FileText,
@@ -94,9 +100,11 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     helper: 'Select multiple PDFs to merge them into one document.',
     description: 'Merge several PDFs into a single file.',
     processLabel: 'Merge PDFs',
-    functionId: FUNCTION_IDS.pdfMerger,
-    fields: [],
-    maxFiles: 12,
+    functionId: FUNCTION_IDS.pdfMerger || 'pdf-merger',
+    fields: [
+      { type: 'text', key: 'output_filename', label: 'Output Filename', defaultValue: 'merged.pdf' }
+    ],
+    maxFiles: 20,
   },
   'pdf-splitter': {
     icon: FileText,
@@ -105,8 +113,11 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     helper: 'Upload one PDF, then define page ranges like 1-2, 4, 7-10.',
     description: 'Split a PDF into smaller page ranges.',
     processLabel: 'Split PDF',
-    functionId: FUNCTION_IDS.pdfSplitter,
-    fields: [{ key: 'page_ranges', label: 'Page ranges', placeholder: '1-2, 4, 7-10', helper: 'Leave blank to split every page separately.' }],
+    functionId: FUNCTION_IDS.pdfSplitter || 'pdf-splitter',
+    fields: [
+      { type: 'select', key: 'split_mode', label: 'Split Mode', options: ['By page ranges', 'Every N pages', 'By bookmarks'], defaultValue: 'By page ranges' },
+      { type: 'text', key: 'page_ranges', label: 'Page ranges / N pages', placeholder: '1-3, 5, 7-9', helper: 'For ranges use 1-3,5. For N pages enter a number.' }
+    ],
   },
   'pdf-to-word': {
     icon: FileText,
@@ -114,8 +125,99 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     multiple: false,
     helper: 'Upload one PDF to extract its text into a Word-ready output.',
     description: 'Convert a PDF into editable text output.',
-    processLabel: 'Convert PDF',
-    functionId: FUNCTION_IDS.pdfToWord,
+    processLabel: 'Convert to Word',
+    functionId: FUNCTION_IDS.pdfToWord || 'pdf-to-word',
+    fields: [
+      { type: 'select', key: 'conversion_mode', label: 'Conversion mode', options: ['Standard', 'OCR mode'], defaultValue: 'Standard' },
+      { type: 'switch', key: 'preserve_layout', label: 'Preserve layout', defaultValue: true }
+    ],
+  },
+  'pdf-rotate': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to rotate its pages.',
+    description: 'Rotate PDF pages permanently.',
+    processLabel: 'Rotate Pages',
+    functionId: 'pdf-rotate',
+    fields: [
+      { type: 'select', key: 'rotation', label: 'Rotation', options: ['90° Clockwise', '180°', '90° Counter-clockwise'], defaultValue: '90° Clockwise' },
+      { type: 'select', key: 'apply_to', label: 'Apply to', options: ['All pages', 'Odd pages', 'Even pages', 'Specific pages'], defaultValue: 'All pages' },
+      { type: 'text', key: 'specific_pages', label: 'Specific pages', placeholder: '1, 3, 5-7', helper: 'Only if "Specific pages" is selected.' }
+    ],
+  },
+  'pdf-to-jpg': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to convert it to JPG images.',
+    description: 'Convert PDF pages into high-quality JPG images.',
+    processLabel: 'Convert to JPG',
+    functionId: 'pdf-to-jpg',
+    fields: [
+      { type: 'range', key: 'quality', label: 'Quality', min: 50, max: 100, step: 1, defaultValue: '90' },
+      { type: 'select', key: 'dpi', label: 'DPI', options: ['72', '96', '150', '300', '600'], defaultValue: '300' },
+      { type: 'text', key: 'pages', label: 'Pages', placeholder: 'All or 1,3,5-7', defaultValue: 'All' }
+    ],
+  },
+  'jpg-to-pdf': {
+    icon: FileText,
+    accept: 'image/jpeg,image/jpg',
+    multiple: true,
+    helper: 'Upload JPGs to combine them into a PDF.',
+    description: 'Convert JPG images into a single PDF document.',
+    processLabel: 'Convert to PDF',
+    functionId: 'jpg-to-pdf',
+    fields: [
+      { type: 'select', key: 'page_size', label: 'Page size', options: ['A4', 'Letter', 'Legal', 'Auto-fit'], defaultValue: 'A4' },
+      { type: 'select', key: 'orientation', label: 'Orientation', options: ['Portrait', 'Landscape', 'Auto'], defaultValue: 'Portrait' },
+      { type: 'select', key: 'margin', label: 'Margin', options: ['None', 'Small', 'Medium', 'Large'], defaultValue: 'None' }
+    ],
+    maxFiles: 50,
+  },
+  'pdf-page-numbers': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to add page numbers.',
+    description: 'Add page numbers into PDFs with ease.',
+    processLabel: 'Add Page Numbers',
+    functionId: 'pdf-page-numbers',
+    fields: [
+      { type: 'select', key: 'position', label: 'Position', options: ['Bottom center', 'Bottom left', 'Bottom right', 'Top center', 'Top left', 'Top right'], defaultValue: 'Bottom center' },
+      { type: 'number', key: 'start_number', label: 'Start number', defaultValue: '1' },
+      { type: 'number', key: 'font_size', label: 'Font size', defaultValue: '12' },
+      { type: 'select', key: 'format', label: 'Format', options: ['1', 'Page 1', '1 of N', 'Page 1 of N'], defaultValue: '1' }
+    ],
+  },
+  'pdf-to-text': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to extract its text.',
+    description: 'Extract text content from your PDF documents.',
+    processLabel: 'Extract Text',
+    functionId: 'pdf-to-text',
+    fields: [],
+  },
+  'pdf-word-count': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to count words and characters.',
+    description: 'Count the total number of words and characters in a PDF.',
+    processLabel: 'Count Words',
+    functionId: 'pdf-word-count',
+    fields: [],
+  },
+  'pdf-metadata-viewer': {
+    icon: FileText,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to view its metadata.',
+    description: 'View hidden metadata attributes in a PDF file.',
+    processLabel: 'View Metadata',
+    functionId: 'pdf-metadata-viewer',
     fields: [],
   },
   'image-resizer': {
@@ -125,12 +227,12 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     helper: 'Upload one image and resize it for your target layout.',
     description: 'Resize images with mobile-friendly controls.',
     processLabel: 'Resize Image',
-    functionId: FUNCTION_IDS.imageResizer,
+    functionId: FUNCTION_IDS.imageResizer || 'image-resizer',
     fields: [
-      { key: 'width', label: 'Width', placeholder: '1024' },
-      { key: 'height', label: 'Height', placeholder: '768' },
-      { key: 'output_format', label: 'Output format', options: ['webp', 'png', 'jpeg', 'avif'] },
-      { key: 'quality', label: 'Quality', min: 35, max: 100, step: 1 },
+      { type: 'text', key: 'width', label: 'Width', placeholder: '1024' },
+      { type: 'text', key: 'height', label: 'Height', placeholder: '768' },
+      { type: 'select', key: 'output_format', label: 'Output format', options: ['webp', 'png', 'jpeg', 'avif'], defaultValue: 'webp' },
+      { type: 'range', key: 'quality', label: 'Quality', min: 35, max: 100, step: 1, defaultValue: '80' },
     ],
   },
   'image-compressor': {
@@ -140,10 +242,10 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     helper: 'Upload one image to reduce its file size.',
     description: 'Compress a single image with output-format controls.',
     processLabel: 'Compress Image',
-    functionId: FUNCTION_IDS.imageCompressor,
+    functionId: FUNCTION_IDS.imageCompressor || 'image-compressor',
     fields: [
-      { key: 'output_format', label: 'Output format', options: ['jpeg', 'webp', 'avif', 'png'] },
-      { key: 'quality', label: 'Quality', min: 35, max: 100, step: 1 },
+      { type: 'select', key: 'output_format', label: 'Output format', options: ['jpeg', 'webp', 'avif', 'png'], defaultValue: 'jpeg' },
+      { type: 'range', key: 'quality', label: 'Quality', min: 35, max: 100, step: 1, defaultValue: '80' },
     ],
   },
   'image-converter': {
@@ -153,8 +255,8 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     helper: 'Upload one image and choose the output format.',
     description: 'Convert between the most common image formats.',
     processLabel: 'Convert Image',
-    functionId: FUNCTION_IDS.imageConverter,
-    fields: [{ key: 'output_format', label: 'Output format', options: ['png', 'jpeg', 'webp', 'avif', 'gif'] }],
+    functionId: FUNCTION_IDS.imageConverter || 'image-converter',
+    fields: [{ type: 'select', key: 'output_format', label: 'Output format', options: ['png', 'jpeg', 'webp', 'avif', 'gif'], defaultValue: 'png' }],
   },
   'image-bg-remover': {
     icon: ImageIcon,
@@ -163,8 +265,8 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     helper: 'Upload a foreground image and remove its background.',
     description: 'Generate transparent PNG results from simple backgrounds.',
     processLabel: 'Remove Background',
-    functionId: FUNCTION_IDS.imageBgRemover,
-    fields: [{ key: 'threshold', label: 'Background threshold', min: 10, max: 90, step: 1 }],
+    functionId: FUNCTION_IDS.imageBgRemover || 'image-bg-remover',
+    fields: [{ type: 'range', key: 'threshold', label: 'Background threshold', min: 10, max: 90, step: 1, defaultValue: '30' }],
   },
   'video-compressor': {
     icon: Video,
@@ -173,8 +275,8 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     helper: 'Upload one video to reduce its size.',
     description: 'Compress a video for smaller sharing.',
     processLabel: 'Compress Video',
-    functionId: FUNCTION_IDS.videoCompressor,
-    fields: [{ key: 'quality', label: 'Quality', min: 25, max: 100, step: 1 }],
+    functionId: FUNCTION_IDS.videoCompressor || 'video-compressor',
+    fields: [{ type: 'range', key: 'quality', label: 'Quality', min: 25, max: 100, step: 1, defaultValue: '80' }],
   },
   'video-trimmer': {
     icon: Video,
@@ -183,10 +285,10 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     helper: 'Upload one video and trim it by start and end times.',
     description: 'Trim a clip without a timeline editor.',
     processLabel: 'Trim Video',
-    functionId: FUNCTION_IDS.videoTrimmer,
+    functionId: FUNCTION_IDS.videoTrimmer || 'video-trimmer',
     fields: [
-      { key: 'start_time', label: 'Start time', placeholder: '0' },
-      { key: 'end_time', label: 'End time', placeholder: '30' },
+      { type: 'text', key: 'start_time', label: 'Start time', placeholder: '0' },
+      { type: 'text', key: 'end_time', label: 'End time', placeholder: '30' },
     ],
   },
 };
@@ -229,16 +331,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<FileToolResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [fields, setFields] = useState<Record<string, string>>({
-    quality: '80',
-    output_format: 'webp',
-    width: '1024',
-    height: '768',
-    start_time: '0',
-    end_time: '30',
-    threshold: '30',
-    page_ranges: '',
-  });
+  const [fields, setFields] = useState<Record<string, any>>({});
 
   useEffect(() => {
     setFiles([]);
@@ -246,6 +339,22 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     setError(null);
     setProgress(0);
     setProcessing(false);
+    
+    // Initialize default values for fields
+    const config = FILE_TOOL_CONFIG[tool.slug as FileToolSlug];
+    if (config) {
+      const defaultFields: Record<string, any> = {};
+      config.fields.forEach(field => {
+        if ('defaultValue' in field) {
+          defaultFields[field.key] = field.defaultValue;
+        } else if (field.type === 'switch') {
+          defaultFields[field.key] = false;
+        } else {
+          defaultFields[field.key] = '';
+        }
+      });
+      setFields(defaultFields);
+    }
   }, [tool.slug]);
 
   const acceptText = config?.accept || 'application/octet-stream';
@@ -297,61 +406,10 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       user_id: userId || null,
     };
 
-    if (tool.slug === 'pdf-splitter') {
-      return {
-        ...basePayload,
-        page_ranges: fields.page_ranges,
-      };
-    }
-
-    if (tool.slug === 'image-resizer') {
-      return {
-        ...basePayload,
-        width: Number(fields.width || 0) || undefined,
-        height: Number(fields.height || 0) || undefined,
-        output_format: fields.output_format,
-        quality: Number(fields.quality || 80),
-      };
-    }
-
-    if (tool.slug === 'image-compressor') {
-      return {
-        ...basePayload,
-        output_format: fields.output_format,
-        quality: Number(fields.quality || 80),
-      };
-    }
-
-    if (tool.slug === 'image-converter') {
-      return {
-        ...basePayload,
-        output_format: fields.output_format,
-      };
-    }
-
-    if (tool.slug === 'image-bg-remover') {
-      return {
-        ...basePayload,
-        threshold: Number(fields.threshold || 30),
-      };
-    }
-
-    if (tool.slug === 'video-compressor') {
-      return {
-        ...basePayload,
-        quality: Number(fields.quality || 80),
-      };
-    }
-
-    if (tool.slug === 'video-trimmer') {
-      return {
-        ...basePayload,
-        start_time: fields.start_time,
-        end_time: fields.end_time,
-      };
-    }
-
-    return basePayload;
+    return {
+      ...basePayload,
+      ...fields, // Inject all dynamic fields to payload
+    };
   };
 
   const runTool = async () => {
@@ -425,7 +483,8 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
   return (
     <div className="space-y-6">
       <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-3xl border border-dashed border-purple-200 bg-purple-50/60 p-4 sm:p-6">
+        <div className="relative rounded-3xl border border-dashed border-purple-200 bg-purple-50/60 p-4 sm:p-6 overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(#d8b4fe_2px,transparent_2px)] [background-size:16px_16px] opacity-30 pointer-events-none" />
           <div
             onDragEnter={() => setDragging(true)}
             onDragLeave={() => setDragging(false)}
@@ -485,74 +544,95 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           </div>
         </div>
 
-        <div className="space-y-4 rounded-3xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
-          <div className="flex items-center gap-2 text-sm font-black text-[#0F0A1E]">
-            <SlidersHorizontal className="w-4 h-4 text-purple-600" /> Settings
-          </div>
-          <div className="grid gap-3">
-            {config.fields.map((field) => {
-              if (field.key === 'output_format') {
+        {config.fields.length > 0 && (
+          <div className="space-y-4 rounded-3xl border border-neutral-200 bg-white p-4 sm:p-6 shadow-sm">
+            <div className="flex items-center gap-2 text-sm font-black text-[#0F0A1E]">
+              <SlidersHorizontal className="w-4 h-4 text-purple-600" /> Settings
+            </div>
+            <div className="grid gap-3">
+              {config.fields.map((field) => {
+                if (field.type === 'select') {
+                  return (
+                    <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
+                      <span>{field.label}</span>
+                      <select
+                        className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition-colors focus:border-purple-500"
+                        value={fields[field.key] ?? field.defaultValue ?? ''}
+                        onChange={(event) => setField(field.key, event.target.value)}
+                      >
+                        {field.options.map((option) => {
+                          const val = typeof option === 'string' ? option : option.value;
+                          const lbl = typeof option === 'string' ? option : option.label;
+                          return <option key={val} value={val}>{lbl}</option>;
+                        })}
+                      </select>
+                    </label>
+                  );
+                }
+
+                if (field.type === 'range') {
+                  const value = fields[field.key] ?? field.defaultValue ?? String(field.max);
+                  return (
+                    <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
+                      <div className="flex items-center justify-between">
+                        <span>{field.label}</span>
+                        <span className="text-xs text-neutral-500">{value}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={field.min}
+                        max={field.max}
+                        step={field.step}
+                        value={value}
+                        onChange={(event) => setField(field.key, event.target.value)}
+                        className="w-full accent-purple-600"
+                      />
+                    </label>
+                  );
+                }
+
+                if (field.type === 'switch') {
+                  const value = fields[field.key] ?? field.defaultValue ?? false;
+                  return (
+                    <label key={field.key} className="flex items-center justify-between text-sm font-semibold text-neutral-700 cursor-pointer">
+                      <span>{field.label}</span>
+                      <input
+                        type="checkbox"
+                        checked={value}
+                        onChange={(event) => setField(field.key, event.target.checked)}
+                        className="w-4 h-4 accent-purple-600"
+                      />
+                    </label>
+                  );
+                }
+
                 return (
                   <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
                     <span>{field.label}</span>
-                    <select
-                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition-colors focus:border-purple-500"
-                      value={fields.output_format}
-                      onChange={(event) => setField('output_format', event.target.value)}
-                    >
-                      {field.options.map((option) => (
-                        <option key={option} value={option}>{option.toUpperCase()}</option>
-                      ))}
-                    </select>
-                  </label>
-                );
-              }
-
-              if (field.key === 'quality' || field.key === 'threshold') {
-                const value = fields[field.key] || String(field.max);
-                return (
-                  <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
-                    <div className="flex items-center justify-between">
-                      <span>{field.label}</span>
-                      <span className="text-xs text-neutral-500">{value}</span>
-                    </div>
                     <input
-                      type="range"
-                      min={field.min}
-                      max={field.max}
-                      step={field.step}
-                      value={value}
+                      type={field.type === 'number' ? 'number' : 'text'}
+                      placeholder={field.placeholder}
+                      min={field.type === 'number' ? field.min : undefined}
+                      max={field.type === 'number' ? field.max : undefined}
+                      value={fields[field.key] ?? field.defaultValue ?? ''}
                       onChange={(event) => setField(field.key, event.target.value)}
-                      className="w-full accent-purple-600"
+                      className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition-colors focus:border-purple-500"
                     />
+                    {field.helper ? <p className="text-xs text-neutral-500">{field.helper}</p> : null}
                   </label>
                 );
-              }
-
-              return (
-                <label key={field.key} className="space-y-2 text-sm font-semibold text-neutral-700">
-                  <span>{field.label}</span>
-                  <input
-                    type="text"
-                    placeholder={field.placeholder}
-                    value={fields[field.key]}
-                    onChange={(event) => setField(field.key, event.target.value)}
-                    className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm outline-none transition-colors focus:border-purple-500"
-                  />
-                  {'helper' in field && field.helper ? <p className="text-xs text-neutral-500">{field.helper}</p> : null}
-                </label>
-              );
-            })}
+              })}
+            </div>
+            {files.length > 0 && (
+              <button
+                onClick={() => setFiles([])}
+                className="inline-flex w-fit items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-600 transition-colors hover:bg-neutral-200"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Clear files
+              </button>
+            )}
           </div>
-          {files.length > 0 && (
-            <button
-              onClick={() => setFiles([])}
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-bold text-neutral-600 transition-colors hover:bg-neutral-200"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Clear files
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
