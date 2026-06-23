@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleExclamation, faCircleCheck, faCopy, faFileLines, faSpinner, faPlus, faTrashCan, faCloudArrowUp, faVideo, faImage as faImageIcon, faDownload, faWandMagicSparkles, faSliders } from '@fortawesome/free-solid-svg-icons';
+import { faCircleExclamation, faCircleCheck, faCopy, faFileLines, faSpinner, faPlus, faTrashCan, faCloudArrowUp, faVideo, faImage as faImageIcon, faDownload, faWandMagicSparkles, faSliders, faCrop, faCompress, faObjectUngroup, faRotateRight, faArrowsLeftRight, faMusic, faVolumeXmark, faTachometerAlt, faBackward, faRepeat, faFilm, faExpand, faGaugeHigh, faMagnifyingGlass, faShieldHalved, faClosedCaptioning, faListOl, faTv, faImages, faDroplet, faSun, faCircleHalfStroke } from '@fortawesome/free-solid-svg-icons';
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -108,11 +108,11 @@ type FileToolResult = {
 };
 
 type FileToolField =
-  | { type: 'text'; key: string; label: string; placeholder?: string; helper?: string; defaultValue?: string }
-  | { type: 'select'; key: string; label: string; options: (string | { label: string; value: string })[]; defaultValue?: string }
-  | { type: 'range'; key: string; label: string; min: number; max: number; step: number; defaultValue?: string }
-  | { type: 'switch'; key: string; label: string; defaultValue?: boolean }
-  | { type: 'number'; key: string; label: string; min?: number; max?: number; defaultValue?: string };
+  | { type: 'text'; key: string; label: string; placeholder?: string; helper?: string; defaultValue?: string; hide?: boolean }
+  | { type: 'number'; key: string; label: string; min?: number; max?: number; defaultValue?: string; hide?: boolean }
+  | { type: 'range'; key: string; label: string; min: number; max: number; step: number; defaultValue?: string; hide?: boolean }
+  | { type: 'select'; key: string; label: string; options: (string | { label: string; value: string })[]; defaultValue?: string; hide?: boolean }
+  | { type: 'switch'; key: string; label: string; defaultValue?: boolean; hide?: boolean };
 
 type FileToolConfig = {
   icon: any;
@@ -770,7 +770,8 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'thumbnail-extractor': {
-    icon: faImage, accept: 'video/*', multiple: false,
+    icon: faImageIcon,
+    accept: 'video/*', multiple: false,
     helper: 'Extract a single frame thumbnail at a specific timestamp.', description: 'Extract Thumbnail.', processLabel: 'Extract Thumbnail', functionId: FUNCTION_IDS.videoManipulator,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'thumbnail', hide: true },

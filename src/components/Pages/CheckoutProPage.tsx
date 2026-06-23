@@ -81,17 +81,19 @@ export function CheckoutProPage() {
 
           {/* PayPal Button */}
           
-          {turnstileToken ? (
+          {(!import.meta.env.VITE_TURNSTILE_SITE_KEY || turnstileToken) ? (
             <PayPalButton isYearly={isYearly} />
           ) : (
             <div className="flex flex-col items-center">
               <p className="text-sm text-neutral-400 mb-3 text-center">Please complete the captcha to checkout securely.</p>
               <div className="bg-white/5 rounded-xl p-2 border border-white/10">
-                <Turnstile
-                  siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
-                  onSuccess={(token) => setTurnstileToken(token)}
-                  options={{ theme: 'dark' }}
-                />
+                {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
+                  <Turnstile
+                    siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => setTurnstileToken(token)}
+                    options={{ theme: 'dark' }}
+                  />
+                )}
               </div>
             </div>
           )}

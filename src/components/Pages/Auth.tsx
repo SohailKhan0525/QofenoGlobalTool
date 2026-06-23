@@ -40,7 +40,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
     if (!password.trim()) return 'Password is required.';
     if (!isLogin && !name.trim()) return 'Full name is required.';
     if (!isLogin && password.length < 8) return 'Password must be at least 8 characters.';
-    if (!isLogin && !turnstileToken) return 'Please complete the captcha verification.';
+    if (!isLogin && !!import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken) return 'Please complete the captcha verification.';
     return '';
   };
 
@@ -215,11 +215,13 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
 
           {!isLogin && (
             <div className="flex justify-center my-4">
-              <Turnstile
-                siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
-                onSuccess={(token) => setTurnstileToken(token)}
-                onError={() => triggerError('Captcha verification failed. Please try again.')}
-              />
+              {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
+                <Turnstile
+                  siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  onError={() => triggerError('Captcha verification failed. Please try again.')}
+                />
+              )}
             </div>
           )}
           {errorMessage && (
