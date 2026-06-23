@@ -10,7 +10,8 @@ import {
   faFileZipper, faKey, faEye, faBolt, faPen, faEyeSlash, faStar,
   faLayerGroup, faCompressArrowsAlt, faColumns, faAlignLeft,
   faFileCode, faFloppyDisk, faArrowsAlt, faFileMedical, faBriefcase, faPalette,
-  faRotateRight, faArrowsLeftRight, faWandMagicSparkles, faSun, faCircleHalfStroke, faShieldHalved, faFileImage
+  faRotateRight, faArrowsLeftRight, faWandMagicSparkles, faSun, faCircleHalfStroke, faShieldHalved, faFileImage,
+  faMusic, faVolumeXmark, faTachometerAlt, faBackward, faRepeat, faFilm, faGaugeHigh, faClosedCaptioning, faTv, faImages, faSliders
 } from '@fortawesome/free-solid-svg-icons';
 import { DATABASE_ID, databases, isAppwriteConfigured } from './qofeno-appwrite';
 
@@ -949,6 +950,168 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     desc: 'Add text watermarks to your images to protect your copyrights.',
     icon: faShieldHalved, imageUrl: null, functionId: 'image-manipulator',
     schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Watermark Image', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Add watermark to images.' }),
+  },
+  {
+    id: 'trim-video', slug: 'trim-video', name: 'Trim Video', category: 'Video Tools', subcategory: 'Editing', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: true, runs: '0', desc: 'Trim and cut video clips easily.',
+    icon: faScissors, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Trim Video', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'crop-video', slug: 'crop-video', name: 'Crop Video', category: 'Video Tools', subcategory: 'Editing', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Crop video dimensions to specific frames.',
+    icon: faCrop, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Crop Video', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'compress-video', slug: 'compress-video', name: 'Compress Video', category: 'Video Tools', subcategory: 'Optimization', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: true, runs: '0', desc: 'Reduce video file size without losing quality.',
+    icon: faCompress, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Compress Video', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'mp4-converter', slug: 'mp4-converter', name: 'Convert to MP4', category: 'Video Tools', subcategory: 'Conversion', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: true, runs: '0', desc: 'Convert any video to MP4 format.',
+    icon: faVideo, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Convert to MP4', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'mov-converter', slug: 'mov-converter', name: 'Convert to MOV', category: 'Video Tools', subcategory: 'Conversion', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Convert your video files to Apple MOV format.',
+    icon: faVideo, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Convert to MOV', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'avi-converter', slug: 'avi-converter', name: 'Convert to AVI', category: 'Video Tools', subcategory: 'Conversion', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Convert video files to AVI format.',
+    icon: faVideo, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Convert to AVI', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'webm-converter', slug: 'webm-converter', name: 'Convert to WebM', category: 'Video Tools', subcategory: 'Conversion', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Convert video to web-optimized WebM format.',
+    icon: faVideo, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Convert to WebM', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'merge-videos', slug: 'merge-videos', name: 'Merge Videos', category: 'Video Tools', subcategory: 'Editing', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: true, runs: '0', desc: 'Join multiple video clips into a single file.',
+    icon: faObjectUngroup, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Merge Videos', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'rotate-video', slug: 'rotate-video', name: 'Rotate Video', category: 'Video Tools', subcategory: 'Editing', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Rotate your video 90, 180, or 270 degrees.',
+    icon: faRotateRight, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Rotate Video', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'flip-video', slug: 'flip-video', name: 'Flip Video', category: 'Video Tools', subcategory: 'Editing', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Mirror and flip your video horizontally or vertically.',
+    icon: faArrowsLeftRight, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Flip Video', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'extract-audio', slug: 'extract-audio', name: 'Extract Audio', category: 'Video Tools', subcategory: 'Audio', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: true, runs: '0', desc: 'Extract MP3 audio track from any video.',
+    icon: faMusic, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Extract Audio', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'remove-audio', slug: 'remove-audio', name: 'Remove Audio', category: 'Video Tools', subcategory: 'Audio', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Mute a video by completely removing its audio track.',
+    icon: faVolumeXmark, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Remove Audio', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'speed-changer-video', slug: 'speed-changer-video', name: 'Change Video Speed', category: 'Video Tools', subcategory: 'Editing', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Speed up or slow down your video playback.',
+    icon: faTachometerAlt, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Change Video Speed', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'reverse-video', slug: 'reverse-video', name: 'Reverse Video', category: 'Video Tools', subcategory: 'Editing', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Play your video backwards.',
+    icon: faBackward, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Reverse Video', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'loop-video', slug: 'loop-video', name: 'Loop Video', category: 'Video Tools', subcategory: 'Editing', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Loop a video multiple times to extend duration.',
+    icon: faRepeat, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Loop Video', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'gif-maker-video', slug: 'gif-maker-video', name: 'Video to GIF', category: 'Video Tools', subcategory: 'Conversion', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: true, runs: '0', desc: 'Create animated GIFs from video clips.',
+    icon: faFilm, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Video to GIF', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'thumbnail-extractor', slug: 'thumbnail-extractor', name: 'Extract Thumbnail', category: 'Video Tools', subcategory: 'Images', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Generate a JPG thumbnail from any timestamp in a video.',
+    icon: faImage, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Extract Thumbnail', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'resolution-changer', slug: 'resolution-changer', name: 'Change Resolution', category: 'Video Tools', subcategory: 'Optimization', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Scale video resolution up or down.',
+    icon: faExpand, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Change Resolution', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'fps-changer', slug: 'fps-changer', name: 'Change Framerate (FPS)', category: 'Video Tools', subcategory: 'Optimization', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Change the frames per second of your video.',
+    icon: faGaugeHigh, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Change Framerate', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'metadata-viewer-video', slug: 'metadata-viewer-video', name: 'Video Metadata', category: 'Video Tools', subcategory: 'Analysis', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'View detailed FFprobe metadata of a video.',
+    icon: faMagnifyingGlass, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Video Metadata', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'watermark-video', slug: 'watermark-video', name: 'Watermark Video', category: 'Video Tools', subcategory: 'Security', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Overlay a logo or image watermark onto your video.',
+    icon: faShieldHalved, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Watermark Video', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'subtitle-creation', slug: 'subtitle-creation', name: 'Add Subtitles', category: 'Video Tools', subcategory: 'Editing', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Embed an SRT subtitle track into your video.',
+    icon: faClosedCaptioning, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Add Subtitles', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'chapter-creator', slug: 'chapter-creator', name: 'Chapter Creator', category: 'Video Tools', subcategory: 'Editing', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Add chapter markers to your video.',
+    icon: faListOl, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Chapter Creator', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'stabilization-video', slug: 'stabilization-video', name: 'Stabilize Video', category: 'Video Tools', subcategory: 'Filters', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Remove camera shake and stabilize your footage.',
+    icon: faWandMagicSparkles, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Stabilize Video', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'aspect-ratio-converter', slug: 'aspect-ratio-converter', name: 'Aspect Ratio Converter', category: 'Video Tools', subcategory: 'Optimization', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Change the display aspect ratio of your video.',
+    icon: faTv, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Aspect Ratio Converter', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'frame-extractor', slug: 'frame-extractor', name: 'Extract Frames', category: 'Video Tools', subcategory: 'Images', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Extract every frame of a video as a ZIP archive of images.',
+    icon: faImages, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Extract Frames', applicationCategory: 'MultimediaApplication' }),
+  },
+  {
+    id: 'audio-sync', slug: 'audio-sync', name: 'Audio Sync', category: 'Video Tools', subcategory: 'Audio', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0', desc: 'Fix out-of-sync audio by shifting it forward or backward.',
+    icon: faSliders, imageUrl: null, functionId: 'video-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Audio Sync', applicationCategory: 'MultimediaApplication' }),
   }
 ];
 

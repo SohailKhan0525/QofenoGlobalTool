@@ -62,6 +62,7 @@ export const FUNCTION_IDS = {
   // Video Tools
   videoCompressor:      env.VITE_APPWRITE_FUNCTION_VIDEO_COMPRESSOR_ID      || '9b6795e4c10643ba80954c6c6cc65f32',
   videoTrimmer:         env.VITE_APPWRITE_FUNCTION_VIDEO_TRIMMER_ID         || '94b5e417d36a4c5284618d8f70bd644b',
+  videoManipulator:     env.VITE_APPWRITE_FUNCTION_VIDEO_MANIPULATOR_ID     || '',
 };
 
 const client = new Client().setEndpoint(endpoint).setProject(projectId);
