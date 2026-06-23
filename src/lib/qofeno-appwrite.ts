@@ -63,6 +63,9 @@ export const FUNCTION_IDS = {
   videoCompressor:      env.VITE_APPWRITE_FUNCTION_VIDEO_COMPRESSOR_ID,
   videoTrimmer:         env.VITE_APPWRITE_FUNCTION_VIDEO_TRIMMER_ID,
   videoManipulator:     env.VITE_APPWRITE_FUNCTION_VIDEO_MANIPULATOR_ID,
+
+  // Audio Tools
+  audioManipulator:     env.VITE_APPWRITE_FUNCTION_AUDIO_MANIPULATOR_ID,
 };
 
 const client = new Client().setEndpoint(endpoint).setProject(projectId);

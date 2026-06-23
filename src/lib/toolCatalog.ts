@@ -12,7 +12,7 @@ import {
   faFileCode, faFloppyDisk, faArrowsAlt, faFileMedical, faBriefcase, faPalette,
   faRotateRight, faArrowsLeftRight, faWandMagicSparkles, faSun, faCircleHalfStroke, faShieldHalved, faFileImage,
   faMusic, faVolumeXmark, faTachometerAlt, faBackward, faRepeat, faFilm, faGaugeHigh, faClosedCaptioning, faTv, faImages, faSliders
-} from '@fortawesome/free-solid-svg-icons';
+, faVolumeHigh} from '@fortawesome/free-solid-svg-icons';
 import { DATABASE_ID, databases, isAppwriteConfigured } from './qofeno-appwrite';
 
 export interface ToolCard {

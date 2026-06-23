@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleExclamation, faCircleCheck, faCopy, faFileLines, faSpinner, faPlus, faTrashCan, faCloudArrowUp, faVideo, faImage as faImageIcon, faDownload, faWandMagicSparkles, faSliders, faCrop, faCompress, faObjectUngroup, faRotateRight, faArrowsLeftRight, faMusic, faVolumeXmark, faTachometerAlt, faBackward, faRepeat, faFilm, faExpand, faGaugeHigh, faMagnifyingGlass, faShieldHalved, faClosedCaptioning, faListOl, faTv, faImages, faDroplet, faSun, faCircleHalfStroke } from '@fortawesome/free-solid-svg-icons';
+import { faCircleExclamation, faCircleCheck, faCopy, faFileLines, faSpinner, faPlus, faTrashCan, faCloudArrowUp, faVideo, faImage as faImageIcon, faDownload, faWandMagicSparkles, faVolumeHigh, faSliders, faCrop, faCompress, faObjectUngroup, faRotateRight, faArrowsLeftRight, faMusic, faVolumeXmark, faTachometerAlt, faBackward, faRepeat, faFilm, faExpand, faGaugeHigh, faMagnifyingGlass, faShieldHalved, faClosedCaptioning, faListOl, faTv, faImages, faDroplet, faSun, faCircleHalfStroke } from '@fortawesome/free-solid-svg-icons';
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -86,6 +86,25 @@ export const FILE_TOOL_SLUGS = new Set([
   'aspect-ratio-converter',
   'frame-extractor',
   'audio-sync',
+  'mp3-converter',
+  'wav-converter',
+  'aac-converter',
+  'ogg-converter',
+  'flac-converter',
+  'trim-audio',
+  'merge-audio',
+  'audio-compressor',
+  'volume-booster',
+  'change-audio-speed',
+  'change-audio-pitch',
+  'fade-in-audio',
+  'fade-out-audio',
+  'silence-remover',
+  'audio-reverser',
+  'audio-metadata',
+  'ringtone-maker',
+  'bass-booster',
+  'background-noise-remover',
 ]);
 
 type FileToolSlug = typeof FILE_TOOL_SLUGS extends Set<infer T> ? T : string;
@@ -854,6 +873,155 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'audio-sync', hide: true },
       { type: 'number', key: 'delay', label: 'Audio Delay/Advance (seconds)', defaultValue: '1' }
+    ],
+  },
+  'mp3-converter': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Convert audio to MP3.', description: 'MP3 Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
+      { type: 'text', key: 'format', label: '', defaultValue: 'mp3', hide: true },
+    ],
+  },
+  'wav-converter': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Convert audio to WAV.', description: 'WAV Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
+      { type: 'text', key: 'format', label: '', defaultValue: 'wav', hide: true },
+    ],
+  },
+  'aac-converter': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Convert audio to AAC.', description: 'AAC Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
+      { type: 'text', key: 'format', label: '', defaultValue: 'aac', hide: true },
+    ],
+  },
+  'ogg-converter': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Convert audio to OGG.', description: 'OGG Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
+      { type: 'text', key: 'format', label: '', defaultValue: 'ogg', hide: true },
+    ],
+  },
+  'flac-converter': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Convert audio to FLAC.', description: 'FLAC Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
+      { type: 'text', key: 'format', label: '', defaultValue: 'flac', hide: true },
+    ],
+  },
+  'trim-audio': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Cut and trim audio files.', description: 'Trim Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'trim', hide: true },
+      { type: 'text', key: 'start_time', label: 'Start Time (HH:MM:SS)', defaultValue: '00:00:00' },
+      { type: 'text', key: 'end_time', label: 'End Time / Duration', defaultValue: '00:00:10' },
+    ],
+  },
+  'merge-audio': {
+    icon: faMusic, accept: 'audio/*', multiple: true,
+    helper: 'Combine multiple audio files into one.', description: 'Merge Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'merge', hide: true },
+    ],
+  },
+  'audio-compressor': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Compress audio files to save space.', description: 'Audio Compressor.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'compress', hide: true },
+    ],
+  },
+  'volume-booster': {
+    icon: faVolumeHigh, accept: 'audio/*', multiple: false,
+    helper: 'Increase the volume of your audio.', description: 'Volume Booster.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'volume-boost', hide: true },
+      { type: 'number', key: 'volume', label: 'Volume Multiplier', defaultValue: '2.0' },
+    ],
+  },
+  'change-audio-speed': {
+    icon: faTachometerAlt, accept: 'audio/*', multiple: false,
+    helper: 'Speed up or slow down audio.', description: 'Change Audio Speed.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'speed', hide: true },
+      { type: 'number', key: 'speed', label: 'Speed Multiplier (e.g., 1.5, 0.5)', defaultValue: '1.5' },
+    ],
+  },
+  'change-audio-pitch': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Change the pitch of your audio.', description: 'Change Audio Pitch.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'pitch', hide: true },
+      { type: 'number', key: 'pitch', label: 'Pitch Ratio (e.g., 1.2 for higher, 0.8 for lower)', defaultValue: '1.2' },
+    ],
+  },
+  'fade-in-audio': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Add a fade in effect to audio.', description: 'Fade In Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'fade-in', hide: true },
+      { type: 'number', key: 'duration', label: 'Fade In Duration (seconds)', defaultValue: '3' },
+    ],
+  },
+  'fade-out-audio': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Add a fade out effect to audio.', description: 'Fade Out Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'fade-out', hide: true },
+      { type: 'number', key: 'start_time', label: 'Start Time (seconds)', defaultValue: '10' },
+      { type: 'number', key: 'duration', label: 'Fade Out Duration (seconds)', defaultValue: '3' },
+    ],
+  },
+  'silence-remover': {
+    icon: faVolumeXmark, accept: 'audio/*', multiple: false,
+    helper: 'Remove silent parts from audio.', description: 'Silence Remover.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'silence-remove', hide: true },
+    ],
+  },
+  'audio-reverser': {
+    icon: faBackward, accept: 'audio/*', multiple: false,
+    helper: 'Play your audio backwards.', description: 'Audio Reverser.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'reverse', hide: true },
+    ],
+  },
+  'audio-metadata': {
+    icon: faFileLines, accept: 'audio/*', multiple: false,
+    helper: 'Extract audio metadata to JSON.', description: 'Audio Metadata.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'metadata', hide: true },
+    ],
+  },
+  'ringtone-maker': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Create a ringtone from audio.', description: 'Ringtone Maker.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'ringtone', hide: true },
+      { type: 'text', key: 'start_time', label: 'Start Time (HH:MM:SS)', defaultValue: '00:00:00' },
+      { type: 'number', key: 'duration', label: 'Duration (seconds)', defaultValue: '30' },
+    ],
+  },
+  'bass-booster': {
+    icon: faMusic, accept: 'audio/*', multiple: false,
+    helper: 'Boost the bass in your audio.', description: 'Bass Booster.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'bass-boost', hide: true },
+      { type: 'number', key: 'gain', label: 'Gain (dB)', defaultValue: '5' },
+    ],
+  },
+  'background-noise-remover': {
+    icon: faWandMagicSparkles, accept: 'audio/*', multiple: false,
+    helper: 'Clean up audio and remove noise.', description: 'Background Noise Remover.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'noise-remove', hide: true },
     ],
   },
 };
