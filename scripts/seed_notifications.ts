@@ -36,14 +36,14 @@ async function run() {
       // Check if this user already got the notification
       const existing = await databases.listDocuments(databaseId!, 'notifications', [
         Query.equal('user_id', user.$id),
-        Query.equal('title', '78+ New Tools Added!'),
+        Query.equal('title', '142+ New Tools Added!'),
       ]);
 
       if (existing.total === 0) {
         await databases.createDocument(databaseId!, 'notifications', ID.unique(), {
           user_id: user.$id,
-          title: '78+ New Tools Added!',
-          message: 'We have added dozens of real Appwrite-integrated tools, including PDF Compressors, Mergers, and OCR!',
+          title: '142+ New Tools Added!',
+          message: 'We have added dozens of real Appwrite-integrated tools, including 19 new Audio Tools, Video Processors, and more!',
           type: 'success',
           read: false,
           link: '/tools',

@@ -1274,7 +1274,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           </button>
 
           <p className="text-xs text-neutral-400 mt-5">
-            Accepts: {acceptedExts} · up to {user?.plan === 'pro' ? '1 GB' : '100 MB'}
+            Accepts: {acceptedExts === '.pdf' ? '.PDF, PDF/A' : acceptedExts} &middot; up to 500 MB
           </p>
         </div>
 
@@ -1310,7 +1310,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         </div>
         <div className="text-center">
           <p className="text-xl font-bold text-[#0F0A1E]">Processing your file...</p>
-          <p className="text-sm text-neutral-500 mt-1">Running on our servers &mdash; this won't take long</p>
+          <p className="text-sm text-neutral-500 mt-1">Running on our servers - this won't take long</p>
         </div>
         <div className="w-full max-w-xs bg-neutral-100 rounded-full h-2 overflow-hidden">
           <motion.div
@@ -1591,8 +1591,8 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       </motion.button>
 
       {/* Change file */}
-      <button onClick={resetTool} className="w-full text-center text-sm text-neutral-400 hover:text-neutral-700 transition-colors">
-        ⮌ Choose a different file
+      <button onClick={resetTool} className="w-full text-center text-sm font-bold text-neutral-500 hover:text-neutral-700 transition-colors">
+        Change file
       </button>
 
       <input
