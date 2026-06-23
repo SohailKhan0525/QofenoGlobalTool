@@ -59,11 +59,10 @@ async function request(method, pathName, body) {
 }
 
 function categorizeSlug(slug) {
-  if (slug.includes('pdf')) return { cat: 'PDF & Documents', icon: 'faFileLines' };
-  if (slug.includes('video')) return { cat: 'Video Tools', icon: 'faVideo' };
-  if (slug.includes('image') || slug.includes('jpg')) return { cat: 'Image Tools', icon: 'faImageIcon' };
-  if (slug.includes('audio')) return { cat: 'Audio Tools', icon: 'faMusic' };
-  if (slug.includes('word') || slug.includes('excel') || slug.includes('powerpoint')) return { cat: 'PDF & Documents', icon: 'faFileLines' };
+  if (slug.includes('pdf') || slug.includes('word') || slug.includes('excel') || slug.includes('powerpoint')) return { cat: 'PDF & Documents', icon: 'faFileLines' };
+  if (slug.includes('video') || slug.match(/(mp4|mov|avi|webm)/)) return { cat: 'Video Tools', icon: 'faVideo' };
+  if (slug.includes('image') || slug.match(/(jpg|png|webp|avif|blur|sharpen|brightness|contrast)/)) return { cat: 'Image Tools', icon: 'faImageIcon' };
+  if (slug.includes('audio') || slug.match(/(mp3|wav|ogg|flac|aac|volume|pitch|bass|silence|fade|ringtone)/)) return { cat: 'Audio Tools', icon: 'faMusic' };
   if (slug.includes('json') || slug.includes('base64') || slug.includes('text')) return { cat: 'Developer Tools', icon: 'faCode' };
   return { cat: 'AI & Automation', icon: 'faRobot' };
 }
