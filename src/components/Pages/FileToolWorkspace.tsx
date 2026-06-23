@@ -567,10 +567,27 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     }
   }, [tool.slug]);
 
+  const forceDownload = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = filename || 'download';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (e) {
+      window.open(url, '_blank');
+    }
+  };
+
   // Auto-open download when done
   useEffect(() => {
     if (stage === 'done' && result?.download_url) {
-      window.open(result.download_url, '_blank', 'noreferrer');
+      forceDownload(result.download_url, result.output_filename || 'download');
     }
   }, [stage, result]);
 
@@ -831,10 +848,10 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                   {item.output_size ? <p className="text-xs text-neutral-500">{humanFileSize(item.output_size)}</p> : null}
                 </div>
                 {item.download_url && (
-                  <a href={item.download_url} target="_blank" rel="noreferrer"
+                  <button onClick={() => forceDownload(item.download_url!, item.output_filename || `Output ${i + 1}`)}
                     className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 transition-colors">
                     <FontAwesomeIcon icon={faDownload}  className="w-3.5 h-3.5" /> Download
-                  </a>
+                  </button>
                 )}
               </div>
             ))}
@@ -855,16 +872,13 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
             </div>
 
             {result.download_url ? (
-              <a
-                href={result.download_url}
-                download={result.output_filename}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={() => forceDownload(result.download_url!, result.output_filename || 'result')}
                 className="flex w-full min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-purple-600 hover:bg-purple-700 active:scale-[0.98] text-white font-black text-lg shadow-lg shadow-purple-200 transition-all mb-3"
               >
                 <FontAwesomeIcon icon={faDownload}  className="w-6 h-6" />
                 Download {result.output_filename || 'result'}
-              </a>
+              </button>
             ) : (
               /* Text-only results (pdf-to-text, pdf-word-count, pdf-metadata-viewer) */
               <div className="rounded-2xl bg-white border border-green-200 p-4 mb-3">

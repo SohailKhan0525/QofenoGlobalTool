@@ -17,6 +17,25 @@ import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
 
 // Shadcn imports
 import { Progress } from "@/components/ui/progress";
+
+import { motion, AnimatePresence } from 'framer-motion';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faCloudArrowUp, faCircleCheck, faArrowLeft, faShieldHalved, faDownload,
+  faHeart, faEye, faCirclePlay, faCircleQuestion, faXmark, faChevronDown,
+  faShareNodes, faSpinner, faChevronRight, faExpand, faFileLines,
+  faCopy, faMagnifyingGlass,
+} from '@fortawesome/free-solid-svg-icons';
+import { faXTwitter, faFacebook as faFbBrand, faLinkedin } from '@fortawesome/free-brands-svg-icons';
+import { cn } from '../../lib/utils';
+import { toast } from 'sonner';
+import { Query } from 'appwrite';
+import { account, databases, DATABASE_ID, realtime, runBase64Encoder, runJsonFormatter, runWordCounter, trackEvent } from '../../lib/qofeno-appwrite';
+import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
+import { Turnstile } from '@marsidev/react-turnstile';
+
+// Shadcn imports
+import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -24,7 +43,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { SEO } from '../../components/SEO';
 import { FILE_TOOL_SLUGS, FileToolWorkspace } from './FileToolWorkspace';
 import { useAuth } from '../../context/AuthContext';
-import { PayPalButton } from '../PayPal/PayPalButton';
 
 export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { tools } = useToolCatalog();
@@ -34,6 +52,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   const [views, setViews] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [isLoadingTool, setIsLoadingTool] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -81,286 +100,6 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     }
   };
 
-  return () => clearTimeout(timer);
-  }, [toolId, user?.id]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const syncStats = async () => {
-      try {
-        const viewsResp = await databases.listDocuments(DATABASE_ID, 'tool_views', [Query.equal('tool_slug', toolSlug), Query.limit(1)]);
-        const viewsDoc = viewsResp.documents?.[0] as any;
-
-        if (cancelled) return;
-        setViews(Number(viewsDoc?.count || 0));
-        setLikes(Number(viewsDoc?.likes || 0));
-
-        if (currentUserId) {
-          const userLikes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
-            Query.equal('tool_slug', toolSlug),
-            Query.equal('user_id', currentUserId),
-          ]);
-          if (!cancelled) {
-            setHasLiked(userLikes.total > 0);
-          }
-        } else if (!cancelled) {
-          const likedTools = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
-          setHasLiked(Array.isArray(likedTools) && likedTools.includes(toolSlug));
-        }
-      } catch {
-        if (!cancelled) {
-          setViews(0);
-          setLikes(0);
-          setHasLiked(false);
-        }
-      }
-    };
-
-    void syncStats();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [toolSlug, currentUserId]);
-
-  useEffect(() => {
-    const channel = `databases.${DATABASE_ID}.collections.tool_views.documents`;
-    let subscription: any = null;
-    void realtime.subscribe(channel, (event: any) => {
-      const doc = event?.payload;
-      if (!doc || doc.tool_slug !== toolSlug) return;
-      setViews(Number(doc.count || 0));
-      setLikes(Number(doc.likes || 0));
-    }).then((sub: any) => {
-      subscription = sub;
-    }).catch(() => {});
-    return () => {
-      try { subscription?.close?.(); } catch {}
-    };
-  }, [toolSlug]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const sendView = async () => {
-      try {
-        await trackEvent('view', toolSlug, currentUserId || undefined);
-        if (cancelled) return;
-        if (currentUserId) {
-          // mark recently viewed for logged-in users
-          await trackEvent('recent', toolSlug, currentUserId);
-        } else {
-          // localStorage fallback for anonymous users
-          try {
-            const rv = JSON.parse(localStorage.getItem('recently_viewed') || '[]');
-            const newRv = [toolId, ...rv.filter((id: string) => id !== toolId)].slice(0, 4);
-            localStorage.setItem('recently_viewed', JSON.stringify(newRv));
-          } catch {}
-        }
-      } catch {}
-    };
-
-    void sendView();
-
-    return () => { cancelled = true };
-  }, [toolSlug, currentUserId]);
-
-  const toggleLike = () => {
-    const nextLiked = !hasLiked;
-    setHasLiked(nextLiked);
-    setLikes((prev) => Math.max(0, prev + (hasLiked ? -1 : 1)));
-
-    if (!currentUserId) {
-      const likedTools = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
-      const asArray = Array.isArray(likedTools) ? likedTools : [];
-      const updated = nextLiked
-        ? Array.from(new Set([...asArray, toolSlug]))
-        : asArray.filter((slug: string) => slug !== toolSlug);
-      localStorage.setItem('qofeno_likes', JSON.stringify(updated));
-    }
-
-    const eventType = hasLiked ? 'unlike' : 'like';
-    void trackEvent(eventType, toolSlug, currentUserId || undefined).catch(() => {
-      // Revert optimistic update only on request failure.
-      setHasLiked(hasLiked);
-      setLikes((prev) => Math.max(0, prev + (hasLiked ? 1 : -1)));
-    });
-  };
-
-  const [inputText, setInputText] = useState('');
-  const [outputText, setOutputText] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [statsObj, setStatsObj] = useState<any>({ words: 0, chars: 0, readingTime: 0 });
-  const [actionMode, setActionMode] = useState<'encode' | 'decode'>('encode');
-  
-  const [downloadState, setDownloadState] = useState<{ isBatch: boolean; currentCount: number; totalCount: number; progress: number } | null>(null);
-
-  const handleDownload = () => {
-    const lines = outputText.trim().split('\n').length;
-    const isBatch = lines > 1;
-    const totalCount = isBatch ? lines : 1;
-    
-    setDownloadState({ isBatch, currentCount: 0, totalCount, progress: 0 });
-    
-    // Simulate reading stream progress
-    const interval = setInterval(() => {
-      setDownloadState(prev => {
-        if (!prev) return prev;
-        let newProgress = prev.progress + (100 / totalCount / 10);
-        let newCount = Math.floor((newProgress / 100) * totalCount);
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            setDownloadState(null);
-            
-            // Actual file download
-            const blob = new Blob([outputText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `qofeno_result_${toolId}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            toast.success("File downloaded!");
-          }, 400);
-          return { ...prev, progress: 100, currentCount: totalCount };
-        }
-        return { ...prev, progress: newProgress, currentCount: newCount };
-      });
-    }, 100);
-  };
-
-  // Real-time processing
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!inputText) {
-      setOutputText('');
-      setStatsObj({ words: 0, chars: 0, readingTime: 0 });
-      setIsProcessing(false);
-      return;
-    }
-
-    setIsProcessing(true);
-    const timer = window.setTimeout(async () => {
-      try {
-        if (toolSlug === 'json-formatter') {
-          const result = await runJsonFormatter(inputText, 'format');
-          if (cancelled) return;
-          if (result?.success) {
-            setOutputText(result.result || '');
-          } else {
-            setOutputText(result?.error ? `// ${result.error}` : '// Invalid JSON');
-          }
-        } else if (toolSlug === 'base64-encoder') {
-          try {
-            const result = await runBase64Encoder(inputText, actionMode);
-            if (cancelled) return;
-            if (result?.success) {
-              setOutputText(result.result || '');
-            } else {
-              setOutputText(result?.error ? `// ${result.error}` : '// Error processing input.');
-            }
-          } catch {
-            if (cancelled) return;
-            if (actionMode === 'encode') {
-              setOutputText(btoa(inputText));
-            } else {
-              setOutputText(atob(inputText));
-            }
-          }
-        } else if (toolSlug === 'word-counter') {
-          const result = await runWordCounter(inputText);
-          if (cancelled) return;
-          if (result?.success !== false) {
-            setStatsObj({
-              words: Number(result?.words || 0),
-              chars: Number(result?.characters || result?.chars || 0),
-              readingTime: Number(result?.reading_time_minutes || result?.readingTime || 0),
-            });
-          }
-        }
-      } catch (e: any) {
-        if (cancelled) return;
-        if (toolSlug === 'json-formatter') {
-          setOutputText('// Invalid JSON');
-        } else if (toolSlug === 'base64-encoder' && actionMode === 'decode') {
-          setOutputText('// Invalid Base64 string');
-        } else if (toolSlug === 'word-counter') {
-          const text = inputText.trim();
-          const words = text ? text.split(/\s+/).length : 0;
-          const chars = inputText.length;
-          setStatsObj({ words, chars, readingTime: Math.ceil(words / 200) });
-        } else {
-          setOutputText('// Error processing input.');
-        }
-      } finally {
-        if (!cancelled) {
-          setIsProcessing(false);
-        }
-      }
-    }, 180);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [inputText, actionMode, toolSlug]);
-
-  const [docSearchQuery, setDocSearchQuery] = useState('');
-
-  const getInstructions = (id: string) => {
-    if (id === 'json-formatter') {
-      return [
-        { q: "How to parse and format JSON data?", a: "Paste standard raw or minified JSON text into the Input text area. The parser will immediately clean, structure, validate and format indentations dynamically in real-time." },
-        { q: "How to fix invalid JSON syntax errors or warnings?", a: "If the output text displays '// Invalid JSON', review your input block for issues such as missing double quotes around keys, unclosed brackets, or dangling trailing commas." },
-        { q: "How to copy and download formatted JSON results?", a: "Click the 'Copy Result' button to add the formatted code directly to your clipboard, or click 'Download' to save the beautified code as a file locally." },
-        { q: "How is local security policy handled for files?", a: "Your JSON data is parsed entirely locally in your browser workspace memory. Absolutely no JSON input drafts leave your computer." }
-      ];
-    } else if (id === 'base64-encoder') {
-      return [
-        { q: "How to Encode regular text characters to Base64 format?", a: "Set operations mode to 'Encode Base64', input standard plain text inside the input box, and copy the safe encoded characters instantly." },
-        { q: "How to Decode a Base64 string back to human-readable text?", a: "Set status mode to 'Decode Base64', input standard Base64 string content, and standard text output is returned immediately on the flyer." },
-        { q: "How does local sandboxed Base64 conversion process work?", a: "All conversion procedures are performed entirely in-memory using native browser APIs with high performance. Offline compatible and 100% private." }
-      ];
-    } else {
-      return [
-        { q: "How do I measure copywriting stats like word count?", a: "Type draft paragraphs of text inside the text input field. Calculated metrics like words index, character length, and estimated reading time are measured dynamically." },
-        { q: "How is the estimated human reading session calculated?", a: "Calculations assume an average human reading index speed of 200 words-per-minute for standard accuracy." }
-      ];
-    }
-  };
-
-  const FAQs = [
-    { q: `How do I use this ${tool.name}?`, a: "Simply paste your input text or upload the required raw file, configure any available mode options, and click to process. The result will instantly appear." },
-    { q: "Is my data secure?", a: "Yes. All processing is either executed completely locally within your browser sandbox or securely transmitted and instantly deleted from our servers." },
-    { q: `What formats does ${tool.name} support?`, a: "We support all standard formats required for this operation. The platform accepts valid input seamlessly." },
-    { q: "Is there a usage limit?", a: "You can use this tool repeatedly. However, for extremely large datasets or files, you might need a Pro plan to bypass standard limitations." },
-    { q: "Who can I contact if I face an issue?", a: "You can reach out to our support team via the Contact Page, and we'll be happy to assist you immediately." },
-  ];
-
-  const isFileTool = FILE_TOOL_SLUGS.has(toolSlug);
-  const isProLocked = tool.type === 'Pro' && user?.plan !== 'pro';
-
-  if (isProLocked) {
-    return (
-      <div className="min-h-screen bg-[#FAFAFA] pt-28 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">
-        <SEO title={`${tool.name} (PRO)`} description={tool.desc} schemaMarkup={tool.schemaMarkup} />
-        <div className="max-w-4xl mx-auto space-y-6 text-center mt-10">
-           <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-             <FontAwesomeIcon icon={faShieldHalved} className="w-10 h-10 text-purple-600" />
-           </div>
-           <h1 className="text-3xl md:text-4xl font-black text-[#0F0A1E] mb-4">{tool.name} is a PRO feature</h1>
-           <p className="text-neutral-500 mb-8 max-w-lg mx-auto leading-relaxed">Upgrade to Qofeno PRO to unlock this tool and enjoy unlimited access to all features, faster processing, and dedicated support.</p>
-           <PayPalButton />
-           <div className="mt-8">
-              <button
-                onClick={() => onNavigate('tools')}
-                className="inline-flex items-center gap-2 text-neutral-500 hover:text-purple-600 transition-colors font-bold text-sm cursor-pointer"
-              >
                <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Back to Tools
               </button>
            </div>
