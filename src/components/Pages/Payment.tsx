@@ -4,9 +4,11 @@ import { faShieldHalved, faCircleCheck } from '@fortawesome/free-solid-svg-icons
 import { PayPalButton } from '../PayPal/PayPalButton';
 import { SEO } from '../../components/SEO';
 import { motion } from 'framer-motion';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) {
   const [isYearly, setIsYearly] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-24 px-4 select-none relative overflow-hidden">
@@ -65,7 +67,21 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
 
         {/* PayPal button */}
         <div className="mb-4">
-          <PayPalButton />
+          {(!import.meta.env.VITE_TURNSTILE_SITE_KEY || turnstileToken) ? (
+            <PayPalButton />
+          ) : (
+            <div className="flex flex-col items-center">
+              <p className="text-sm font-bold text-neutral-500 mb-3 text-center">Please complete the captcha to checkout securely.</p>
+              <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-100">
+                {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
+                  <Turnstile
+                    siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+                    onSuccess={(token) => setTurnstileToken(token)}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Coming soon payment methods */}
