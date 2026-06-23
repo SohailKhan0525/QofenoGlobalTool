@@ -559,7 +559,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'crop-image': {
-    icon: faImage, accept: 'image/*', multiple: false,
+    icon: faImageIcon, accept: 'image/*', multiple: false,
     helper: 'Upload an image to crop it.', description: 'Crop image to specific width/height.', processLabel: 'Crop Image', functionId: FUNCTION_IDS.imageManipulator,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'crop', hide: true },
@@ -570,7 +570,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'jpg-to-png': {
-    icon: faImage, accept: 'image/jpeg,image/jpg', multiple: false,
+    icon: faImageIcon, accept: 'image/jpeg,image/jpg', multiple: false,
     helper: 'Upload a JPG to convert it to PNG.', description: 'Convert JPG to PNG.', processLabel: 'Convert to PNG', functionId: FUNCTION_IDS.imageManipulator,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
@@ -578,7 +578,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'png-to-webp': {
-    icon: faImage, accept: 'image/png', multiple: false,
+    icon: faImageIcon, accept: 'image/png', multiple: false,
     helper: 'Upload a PNG to convert it to WebP.', description: 'Convert PNG to WebP.', processLabel: 'Convert to WebP', functionId: FUNCTION_IDS.imageManipulator,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
