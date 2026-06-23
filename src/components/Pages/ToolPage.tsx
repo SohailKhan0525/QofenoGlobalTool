@@ -348,7 +348,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   if (isProLocked) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] pt-28 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">
-        <SEO title={`${tool.name} (PRO)`} description={tool.desc} />
+        <SEO title={`${tool.name} (PRO)`} description={tool.desc} schemaMarkup={tool.schemaMarkup} />
         <div className="max-w-4xl mx-auto space-y-6 text-center mt-10">
            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
              <FontAwesomeIcon icon={faShieldHalved} className="w-10 h-10 text-purple-600" />
@@ -372,7 +372,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   if (isFileTool) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] pt-28 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">
-        <SEO title={tool.name} description={tool.desc} />
+        <SEO title={tool.name} description={tool.desc} schemaMarkup={tool.schemaMarkup} />
         <div className="max-w-6xl mx-auto space-y-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <nav className="flex items-center gap-2 text-sm font-bold text-neutral-500 min-w-0">
@@ -616,14 +616,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-32 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">
-      <SEO title={tool.name} description={tool.desc} />
-      {/* @ts-ignore */}
-      {tool.schemaMarkup && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: tool.schemaMarkup }}
-        />
-      )}
+      <SEO title={tool.name} description={tool.desc} schemaMarkup={tool.schemaMarkup} />
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           {/* Breadcrumb Navigation */}

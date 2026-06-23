@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { executeJsonFunction, FUNCTION_IDS } from '../../lib/qofeno-appwrite';
 import type { ToolCard } from '../../lib/toolCatalog';
 
+import { useAuth } from '../../context/AuthContext';
 export const FILE_TOOL_SLUGS = new Set([
   // FREE PDF Tools
   'pdf-compressor',
@@ -535,7 +536,8 @@ type Stage = 'idle' | 'file_selected' | 'processing' | 'done' | 'error';
 export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: string | null }) {
   const config = FILE_TOOL_CONFIG[tool.slug as FileToolSlug];
   const inputRef = useRef<HTMLInputElement>(null);
-
+  const { user } = useAuth();
+  
   const [stage, setStage] = useState<Stage>('idle');
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -686,7 +688,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
 
       setResult(response);
       setStage('done');
-      toast.success('âœ… Processing complete!');
+      toast.success('Processing complete!');
     } catch (err: any) {
       const message = err?.message || 'Something went wrong while processing the file.';
       setErrorMsg(message);
@@ -698,7 +700,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     }
   };
 
-  // â”€â”€â”€ STAGE: IDLE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- STAGE: IDLE ----------------------------------------------------
   if (stage === 'idle') {
     return (
       <div className="w-full">
@@ -751,7 +753,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           </button>
 
           <p className="text-xs text-neutral-400 mt-5">
-            Accepts: {acceptedExts} Â· up to 500 MB
+            Accepts: {acceptedExts} · up to {user?.plan === 'pro' ? '1 GB' : '100 MB'}
           </p>
         </div>
 
@@ -767,7 +769,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     );
   }
 
-  // â”€â”€â”€ STAGE: PROCESSING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- STAGE: PROCESSING ----------------------------------------------------
   if (stage === 'processing') {
     return (
       <motion.div
@@ -786,8 +788,8 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           </div>
         </div>
         <div className="text-center">
-          <p className="text-xl font-bold text-[#0F0A1E]">Processing your fileâ€¦</p>
-          <p className="text-sm text-neutral-500 mt-1">Running on our servers â€” this won't take long</p>
+          <p className="text-xl font-bold text-[#0F0A1E]">Processing your file...</p>
+          <p className="text-sm text-neutral-500 mt-1">Running on our servers &mdash; this won't take long</p>
         </div>
         <div className="w-full max-w-xs bg-neutral-100 rounded-full h-2 overflow-hidden">
           <motion.div
@@ -800,7 +802,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     );
   }
 
-  // â”€â”€â”€ STAGE: DONE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- STAGE: DONE ----------------------------------------------------
   if (stage === 'done' && result) {
     const outputs = result.outputs;
     return (
@@ -847,7 +849,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
               <div>
                 <p className="text-lg font-black text-green-800">Your file is ready!</p>
                 <p className="text-sm text-green-600">
-                  {result.output_filename || 'output'}{result.output_size ? ` Â· ${humanFileSize(result.output_size)}` : ''}
+                  {result.output_filename || 'output'}{result.output_size ? ` · ${humanFileSize(result.output_size)}` : ''}
                 </p>
               </div>
             </div>
@@ -876,10 +878,10 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
               onClick={resetTool}
               className="w-full py-3 text-purple-600 font-semibold hover:text-purple-800 transition-colors hover:underline"
             >
-              â†© Process another file
+              ⮌ Process another file
             </button>
             <p className="text-xs text-center text-neutral-400 mt-2">
-              ðŸ”’ Your file will be automatically deleted from our servers
+              🔒 Your file will be automatically deleted from our servers
             </p>
           </div>
         )}
@@ -887,14 +889,14 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         {/* Process another */}
         {outputs && outputs.length > 0 && (
           <button onClick={resetTool} className="w-full py-3 text-purple-600 font-semibold hover:underline transition-colors">
-            â†© Process another file
+            ⮌ Process another file
           </button>
         )}
       </motion.div>
     );
   }
 
-  // â”€â”€â”€ STAGE: ERROR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- STAGE: ERROR ----------------------------------------------------
   if (stage === 'error') {
     return (
       <motion.div
@@ -919,7 +921,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     );
   }
 
-  // â”€â”€â”€ STAGE: FILE SELECTED â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- STAGE: FILE SELECTED ----------------------------------------------------
   return (
     <div className="w-full space-y-4">
       {/* Selected file(s) info */}
@@ -970,7 +972,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         )}
       </motion.div>
 
-      {/* Settings panel â€” only visible after file selected */}
+      {/* Settings panel - only visible after file selected */}
       {config.fields.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -1072,7 +1074,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
 
       {/* Change file */}
       <button onClick={resetTool} className="w-full text-center text-sm text-neutral-400 hover:text-neutral-700 transition-colors">
-        â†© Choose a different file
+        ⮌ Choose a different file
       </button>
 
       <input
