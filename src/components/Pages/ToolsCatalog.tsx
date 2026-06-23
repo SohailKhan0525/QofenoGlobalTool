@@ -56,8 +56,6 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
-  const [isFiltering, setIsFiltering] = useState(false);
-
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const getOrCreateAnonId = () => {
@@ -106,11 +104,6 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
     window.history.replaceState({}, '', url);
   }, [debouncedSearch, selectedCategory, selectedSubCategory, activeFilterTag]);
 
-  useEffect(() => {
-    setIsFiltering(true);
-    const t = setTimeout(() => setIsFiltering(false), 300);
-    return () => clearTimeout(t);
-  }, [debouncedSearch, selectedCategory, selectedSubCategory, activeFilterTag]);
 
   useEffect(() => {
     let cancelled = false;
@@ -425,50 +418,23 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
               </button>
             </div>
 
-            <motion.div 
-              layout 
-              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-            >
-              <AnimatePresence mode="popLayout">
-                {isFiltering ? (
-                  [...Array(6)].map((_, i) => (
-                    <motion.div
-                      key={`skeleton-${i}`}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white border border-neutral-200/50 rounded-3xl p-6 flex flex-col h-full"
-                    >
-                      <div className="w-full h-32 rounded-xl bg-neutral-100 flex items-center justify-center mb-6 overflow-hidden">
-                        <Skeleton className="w-12 h-12 rounded-2xl" />
-                      </div>
-                      <Skeleton className="h-3 w-24 mb-3" />
-                      <Skeleton className="h-6 w-3/4 mb-4" />
-                      <div className="space-y-2 mt-auto">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-5/6" />
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  filteredTools.map((tool) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <AnimatePresence>
+                  {filteredTools.map((tool) => {
                     const ToolIcon = tool.icon;
                     return (
                       <motion.div
-                        layout
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ duration: 0.2 }}
                         key={tool.id}
                         onClick={() => {
                           localStorage.setItem('selected_tool_id', tool.id);
                           onNavigate('tool');
                         }}
-                        whileHover={{ scale: 1.02, rotateX: 2, rotateY: -2, z: 20 }}
-                        style={{ perspective: 1000 }}
-                        className="group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-2xl hover:shadow-purple-500/15 cursor-pointer flex flex-col transition-all duration-300 relative"
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        className="group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer flex flex-col transition-all duration-300 relative"
                       >
                         <div className="absolute top-6 right-6 flex items-center gap-1.5 z-10">
                           <button 
@@ -513,10 +479,9 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                         </div>
                       </motion.div>
                     );
-                  })
-                )}
+                  })}
               </AnimatePresence>
-            </motion.div>
+            </div>
 
             {filteredTools.length === 0 && (
               <motion.div 
