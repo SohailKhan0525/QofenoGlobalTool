@@ -13,6 +13,7 @@ export type AppPage =
   | 'profile'
   | 'settings'
   | 'forgot-password'
+  | 'reset-password'
   | 'auth-callback'
   | 'terms'
   | 'policy'
@@ -40,6 +41,7 @@ const PAGE_TO_PATH: Record<Exclude<AppPage, 'tool' | 'not-found'>, string> = {
   profile: '/profile',
   settings: '/settings',
   'forgot-password': '/forgot-password',
+  'reset-password': '/reset-password',
   'auth-callback': '/auth/callback',
   terms: '/terms',
   policy: '/policy',
@@ -80,6 +82,7 @@ export function parseRoute(pathname: string, search = ''): RouteState {
   if (normalizedPath === '/profile') return { page: 'profile', pathname, search };
   if (normalizedPath === '/settings') return { page: 'settings', pathname, search };
   if (normalizedPath === '/forgot-password') return { page: 'forgot-password', pathname, search };
+  if (normalizedPath === '/reset-password') return { page: 'reset-password', pathname, search };
   if (normalizedPath === '/auth/callback') return { page: 'auth-callback', pathname, search };
   if (normalizedPath === '/terms') return { page: 'terms', pathname, search };
   if (normalizedPath === '/policy') return { page: 'policy', pathname, search };

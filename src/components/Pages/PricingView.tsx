@@ -1,6 +1,8 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faCircleQuestion, faChevronDown, faWandMagicSparkles, faCircleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import gsap from 'gsap';
-import { Check, HelpCircle, ChevronDown, Sparkles, AlertCircle } from 'lucide-react';
+
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -134,7 +136,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
                   exit={{ scale: 0.8, opacity: 0, y: 10 }}
                   className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-100 text-pink-700 text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-pink-200 whitespace-nowrap z-20 pointer-events-none"
                 >
-                  <Sparkles className="w-3 h-3 animate-spin" /> Save 40%
+                  <FontAwesomeIcon icon={faWandMagicSparkles}  className="w-3 h-3 animate-spin" /> Save 40%
                 </motion.span>
               )}
             </AnimatePresence>
@@ -165,7 +167,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
               <ul className="space-y-4">
                 {['Hundreds of free tools', 'No login required', 'Server-processed instantly', 'Files deleted after processing'].map((f, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-neutral-600 font-medium">
-                    <Check className="w-4.5 h-4.5 text-purple-600 bg-purple-50 rounded p-0.5" />
+                    <FontAwesomeIcon icon={faCheck}  className="w-4.5 h-4.5 text-purple-600 bg-purple-50 rounded p-0.5" />
                     {f}
                   </li>
                 ))}
@@ -184,12 +186,12 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
             </div>
 
             <div className="mt-4">
-              <h3 className="font-display text-2xl font-black mb-2 flex items-center gap-1.5">Pro <Sparkles className="w-5 h-5 text-amber-400 fill-amber-400" /></h3>
+              <h3 className="font-display text-2xl font-black mb-2 flex items-center gap-1.5">Pro <FontAwesomeIcon icon={faWandMagicSparkles}  className="w-5 h-5 text-amber-400 fill-amber-400" /></h3>
               <p className="text-sm text-purple-200/80 mb-6">Designed directly for high-volume content developers & creators.</p>
               
               <div className="flex items-baseline mb-8">
-                <span className="text-5xl font-black tracking-tight">${pricePro}</span>
-                <span className="text-purple-300 font-semibold ml-1">/{isYearly ? 'mo billed year' : 'mo'}</span>
+                <span className="text-5xl font-black tracking-tight flex items-baseline">$<motion.span key={isYearly ? "yearly" : "monthly"} initial={{ opacity: 0, y: 15, filter: "blur(4px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>{isYearly ? "5.40" : "9.00"}</motion.span></span>
+                <span className="text-purple-300 font-semibold ml-1">/{isYearly ? 'mo billed yearly' : 'mo'}</span>
               </div>
 
               <button onClick={() => (onGetPro ? onGetPro() : onNavigate && onNavigate(isAuthenticated ? 'payment' : 'login'))} className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity cursor-pointer">
@@ -199,7 +201,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
               <ul className="space-y-4">
                 {['Everything in Free', 'All tools — no restrictions', 'Large file support (up to 500MB)', 'Priority server processing', 'Saved processing history', 'No ads'].map((f, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-purple-100 font-medium">
-                    <Check className="w-4.5 h-4.5 text-purple-350 bg-purple-900/50 rounded p-0.5" />
+                    <FontAwesomeIcon icon={faCheck}  className="w-4.5 h-4.5 text-purple-350 bg-purple-900/50 rounded p-0.5" />
                     {f}
                   </li>
                 ))}
@@ -227,7 +229,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
               <ul className="space-y-4">
                 {['Everything in Pro', 'API access (server-to-server)', 'Bulk file processing', 'Team accounts', 'Dedicated support'].map((f, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-neutral-400 font-medium">
-                    <Check className="w-4.5 h-4.5 text-purple-600 bg-purple-900/40 rounded p-0.5" />
+                    <FontAwesomeIcon icon={faCheck}  className="w-4.5 h-4.5 text-purple-600 bg-purple-900/40 rounded p-0.5" />
                     {f}
                   </li>
                 ))}
@@ -253,13 +255,13 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
                 <tr key={idx} className="border-b border-neutral-150 hover:bg-purple-50/20 transition-colors">
                   <td className="p-5 font-semibold text-neutral-700">{feat.name}</td>
                   <td className="p-5 text-center text-neutral-500 font-semibold">
-                    {typeof feat.free === 'boolean' ? (feat.free ? <Check className="w-5 h-5 text-purple-600 mx-auto" /> : '-') : feat.free}
+                    {typeof feat.free === 'boolean' ? (feat.free ? <FontAwesomeIcon icon={faCheck}  className="w-5 h-5 text-purple-600 mx-auto" /> : '-') : feat.free}
                   </td>
                   <td className="p-5 text-center text-purple-900 font-bold">
-                    {typeof feat.pro === 'boolean' ? (feat.pro ? <Check className="w-5 h-5 text-purple-600 mx-auto" /> : '-') : feat.pro}
+                    {typeof feat.pro === 'boolean' ? (feat.pro ? <FontAwesomeIcon icon={faCheck}  className="w-5 h-5 text-purple-600 mx-auto" /> : '-') : feat.pro}
                   </td>
                   <td className="p-5 text-center text-neutral-500 font-semibold">
-                    {typeof feat.enterprise === 'boolean' ? (feat.enterprise ? <Check className="w-5 h-5 text-purple-600 mx-auto" /> : '-') : feat.enterprise}
+                    {typeof feat.enterprise === 'boolean' ? (feat.enterprise ? <FontAwesomeIcon icon={faCheck}  className="w-5 h-5 text-purple-600 mx-auto" /> : '-') : feat.enterprise}
                   </td>
                 </tr>
               ))}
@@ -280,7 +282,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
                     className="w-full flex items-center justify-between p-6 text-left font-bold text-[#0F0A1E] hover:bg-neutral-100 transition-colors cursor-pointer"
                   >
                     <span>{faq.q}</span>
-                    <ChevronDown className={cn("w-5 h-5 text-purple-600 transition-transform duration-300", isOpen ? "rotate-180" : "")} />
+                    <FontAwesomeIcon icon={faChevronDown}  className={cn("w-5 h-5 text-purple-600 transition-transform duration-300", isOpen ? "rotate-180" : "")} />
                   </button>
                   <AnimatePresence initial={false}>
                     {isOpen && (

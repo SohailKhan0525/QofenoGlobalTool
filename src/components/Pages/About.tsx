@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { ArrowRight, Unlock, ShieldCheck, TrendingUp, ChevronRight } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowRight, faShieldHalved, faUnlock, faRotate } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 
 const VALUES = [
-  { icon: Unlock, title: "Free & Open", desc: "Core tools are always free. Everyone deserves access to quality software without arbitrary paywalls." },
-  { icon: ShieldCheck, title: "Privacy First", desc: "Files process locally when possible, and cloud operations never store data longer than needed." },
-  { icon: TrendingUp, title: "Always Growing", desc: "New tools are added every week. If something's missing, let me know and I'll build it." }
+  { icon: faUnlock, title: "Free & Open", desc: "Core tools are always free. Everyone deserves access to quality software without arbitrary paywalls." },
+  { icon: faShieldHalved, title: "Privacy First", desc: "Files process locally when possible, and cloud operations never store data longer than needed." },
+  { icon: faRotate, title: "Always Growing", desc: "New tools are added every week. If something's missing, let me know and I'll build it." }
 ];
 
 const ROADMAP = [
@@ -71,10 +71,11 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
               </div>
             </div>
             <div className="md:w-2/5 aspect-square bg-[#352565] flex items-center justify-center relative overflow-hidden">
-               {/* Honest generic avatar representation */}
-               <div className="w-40 h-40 bg-gradient-to-tr from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl">
-                 <span className="text-5xl font-black text-white">MZ</span>
-               </div>
+               <img 
+                 src="/qofeno.png" 
+                 alt="Mohd Zaheer Uddin" 
+                 className="w-40 h-40 rounded-full border-4 border-purple-200/20 shadow-2xl object-cover bg-white relative z-10"
+               />
                <div className="absolute inset-0 bg-[radial-gradient(#ffffff20_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
             </div>
           </div>
@@ -87,7 +88,7 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
             {VALUES.map((val, idx) => (
               <div key={idx} className="bg-white border border-neutral-150 p-8 rounded-2xl hover:border-purple-200 hover:shadow-xl hover:shadow-purple-500/5 transition-all">
                 <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center mb-6">
-                  <val.icon className="w-6 h-6" />
+                  <FontAwesomeIcon icon={val.icon} className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold text-[#0F0A1E] mb-3">{val.title}</h3>
                 <p className="text-neutral-500 leading-relaxed text-sm">{val.desc}</p>
@@ -108,7 +109,7 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
               {ROADMAP.map((item, i) => (
                 <div key={i} className="flex gap-4">
                   <div className="mt-1 shrink-0">
-                    {item.status === 'done' && <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-4 border-emerald-100"><ShieldCheck className="w-2.5 h-2.5 text-white" /></div>}
+                    {item.status === 'done' && <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-4 border-emerald-100"><FontAwesomeIcon icon={faShieldHalved} className="w-2.5 h-2.5 text-white" /></div>}
                     {item.status === 'doing' && <div className="w-5 h-5 rounded-full bg-amber-500 animate-pulse border-4 border-amber-100" />}
                     {item.status === 'next' && <div className="w-5 h-5 rounded-full border-[3px] border-neutral-300 bg-white" />}
                   </div>
@@ -129,7 +130,7 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
           <h2 className="font-display text-2xl font-bold text-purple-900 mb-4">Have a suggestion? Found a bug?</h2>
           <p className="text-purple-700/80 mb-8 max-w-md mx-auto">I read every single message. Help me build exactly what you need.</p>
           <button onClick={() => onNavigate && onNavigate('contact')} className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-8 py-4 rounded-xl transition-colors cursor-pointer">
-            Say Hello <ArrowRight className="w-4 h-4" />
+            Say Hello <FontAwesomeIcon icon={faArrowRight} className="w-4 h-4" />
           </button>
         </div>
 

@@ -1,15 +1,13 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { 
-  FileText, Image as ImageIcon, Video, Cpu, Code2, Sparkles, 
-  BarChart3, GraduationCap, Scale, ShieldAlert, Mail, Zap, 
-  ChevronRight, ArrowRight, User, Laptop, Users, Calendar, 
-  Search, ShieldCheck, Heart, Star, Plus, CheckCircle2, MessageSquare
-} from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileLines, faImage, faVideo, faMicrochip, faCode, faWandMagicSparkles, faChartColumn, faGraduationCap, faScaleBalanced, faShieldHalved, faEnvelope, faBolt, faChevronRight, faArrowRight, faUser, faLaptop, faUsers, faCalendar, faMagnifyingGlass, faHeart, faStar, faPlus, faCircleCheck, faMessage } from '@fortawesome/free-solid-svg-icons';
 import gsap from 'gsap';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 import { useToolCatalog } from '../../lib/toolCatalog';
+import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
+import { Query } from 'appwrite';
 
 // Types and props
 interface HomeProps {
@@ -19,11 +17,11 @@ interface HomeProps {
 
 
 const HOME_CATEGORY_META: Record<string, { icon: any; color: string }> = {
-  'Developer Tools': { icon: Code2, color: 'text-cyan-600 bg-cyan-50' },
-  'AI & Automation': { icon: Cpu, color: 'text-amber-600 bg-amber-50' },
-  'PDF & Documents': { icon: FileText, color: 'text-purple-600 bg-purple-50' },
-  'Image Tools': { icon: ImageIcon, color: 'text-pink-600 bg-pink-50' },
-  'Video Tools': { icon: Video, color: 'text-red-600 bg-red-50' },
+  'Developer Tools': { icon: faCode, color: 'text-cyan-600 bg-cyan-50' },
+  'AI & Automation': { icon: faMicrochip, color: 'text-amber-600 bg-amber-50' },
+  'PDF & Documents': { icon: faFileLines, color: 'text-purple-600 bg-purple-50' },
+  'Image Tools': { icon: faImage, color: 'text-pink-600 bg-pink-50' },
+  'Video Tools': { icon: faVideo, color: 'text-red-600 bg-red-50' },
 };
 
 const STORY_STEPS = [
@@ -45,10 +43,10 @@ const STORY_STEPS = [
 ];
 
 const PERSONAS = [
-  { id: 'students', label: '🎓 Students', title: 'Ace your study sessions', desc: 'Compress files, generate citations, convert formats, and create study planners. Everything you need to finish assignments ahead of schedule without installing clunky software.', bgClass: 'bg-gradient-to-br from-purple-100 to-pink-100', icon: GraduationCap, iconColor: 'text-purple-600' },
-  { id: 'devs', label: '👨‍💻 Developers', title: 'Slick daily utilities', desc: 'Format JSON, encode/decode, generate regex, test APIs, and clean payloads. All the key tools dev teams use daily in an intuitive UI, running securely on our servers.', bgClass: 'bg-gradient-to-br from-cyan-100 to-blue-100', icon: Code2, iconColor: 'text-cyan-600' },
-  { id: 'professionals', label: '💼 Professionals', title: 'Work faster, not harder', desc: 'Edit PDFs, resize images, convert documents to text, and build presentation outlines. Professional-grade utilities that don\'t require IT approval or paid subscriptions.', bgClass: 'bg-gradient-to-br from-emerald-100 to-teal-100', icon: BarChart3, iconColor: 'text-emerald-600' },
-  { id: 'everyone', label: '🌍 Everyone Else', title: 'Impossibly simple for all', desc: 'If you can click a button, you can use Qofeno. No learning curves. Made readable with clean high-contrast elements, perfect for everyday utility tasks.', bgClass: 'bg-gradient-to-br from-amber-100 to-orange-100', icon: Sparkles, iconColor: 'text-amber-600' }
+  { id: 'students', label: '🎓 Students', title: 'Ace your study sessions', desc: 'Compress files, generate citations, convert formats, and create study planners. Everything you need to finish assignments ahead of schedule without installing clunky software.', bgClass: 'bg-gradient-to-br from-purple-100 to-pink-100', icon: faGraduationCap, iconColor: 'text-purple-600' },
+  { id: 'devs', label: '👨‍💻 Developers', title: 'Slick daily utilities', desc: 'Format JSON, encode/decode, generate regex, test APIs, and clean payloads. All the key tools dev teams use daily in an intuitive UI, running securely on our servers.', bgClass: 'bg-gradient-to-br from-cyan-100 to-blue-100', icon: faCode, iconColor: 'text-cyan-600' },
+  { id: 'professionals', label: '💼 Professionals', title: 'Work faster, not harder', desc: 'Edit PDFs, resize images, convert documents to text, and build presentation outlines. Professional-grade utilities that don\'t require IT approval or paid subscriptions.', bgClass: 'bg-gradient-to-br from-emerald-100 to-teal-100', icon: faChartColumn, iconColor: 'text-emerald-600' },
+  { id: 'everyone', label: '🌍 Everyone Else', title: 'Impossibly simple for all', desc: 'If you can click a button, you can use Qofeno. No learning curves. Made readable with clean high-contrast elements, perfect for everyday utility tasks.', bgClass: 'bg-gradient-to-br from-amber-100 to-orange-100', icon: faWandMagicSparkles, iconColor: 'text-amber-600' }
 ];
 
 export function Home({ onNavigate, onRequestTool }: HomeProps) {
@@ -57,6 +55,9 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategoryTab, setActiveCategoryTab] = useState('All');
   const [stats, setStats] = useState({ tools: 0, files: 0, countries: 0 });
+  const [dynamicFeaturedTools, setDynamicFeaturedTools] = useState<any[]>([]);
+  const [dynamicToolsCount, setDynamicToolsCount] = useState(0);
+  const [toolsAddedRecently, setToolsAddedRecently] = useState(false);
 
   // GSAP Ref nodes
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -121,7 +122,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
     const source = categoryCards.filter((category) => category.name !== 'All Tools');
     return source
       .map((category) => {
-        const meta = HOME_CATEGORY_META[category.name] || { icon: Code2, color: 'text-neutral-600 bg-neutral-50' };
+        const meta = HOME_CATEGORY_META[category.name] || { icon: faCode, color: 'text-neutral-600 bg-neutral-50' };
         const categoryTools = tools.filter((tool) => tool.category === category.name);
         return {
           ...category,
@@ -223,7 +224,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
               className="w-full sm:w-auto px-8 py-4.5 bg-gradient-to-r from-purple-600 to-violet-500 text-white rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer"
             >
               Explore Tools
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <FontAwesomeIcon icon={faArrowRight} className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </motion.button>
             <motion.button 
               whileHover={{ scale: 1.05, y: -2, x: -2 }}
@@ -237,7 +238,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
 
           {/* Quick Search Panel */}
           <div className="w-full max-w-xl bg-white/70 backdrop-blur-xl border border-neutral-100 rounded-2xl p-2 shadow-2xl shadow-purple-500/5 flex items-center gap-2">
-            <Search className="w-6 h-6 text-neutral-400 ml-3 shrink-0" />
+            <FontAwesomeIcon icon={faMagnifyingGlass} className="w-6 h-6 text-neutral-400 ml-3 shrink-0" />
             <input 
               type="text" 
               placeholder="Search tools (e.g., format json)..." 
@@ -329,7 +330,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   whileHover={{ y: -8, boxShadow: '0 20px 40px -10px rgba(124, 58, 237, 0.08)' }}
                 >
                   <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300", cat.color)}>
-                    <IconComp className="w-7 h-7" />
+                    <FontAwesomeIcon icon={IconComp} className="w-7 h-7" />
                   </div>
                   <div className="absolute top-6 right-6">
                     <span className="bg-purple-100/40 text-purple-700 text-xs font-semibold px-2.5 py-1 rounded-full">
@@ -351,7 +352,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   </div>
 
                   <div className="mt-6 flex items-center text-purple-600 font-semibold text-sm group-hover:translate-x-1 transition-transform">
-                    Explore inside <ChevronRight className="w-4 h-4" />
+                    Explore inside <FontAwesomeIcon icon={faChevronRight} className="w-4 h-4" />
                   </div>
                 </motion.div>
               );
@@ -367,7 +368,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
           {/* Sticky Left Column */}
           <div className="lg:sticky lg:top-32 flex flex-col justify-center">
             <div className="inline-flex items-center gap-2 bg-purple-50 border border-purple-100 px-3 py-1.5 rounded-full text-purple-700 font-bold text-xs uppercase mb-6 w-fit">
-              <Zap className="w-3.5 h-3.5 text-pink-500 fill-pink-500" /> Let's get things done
+              <FontAwesomeIcon icon={faBolt} className="w-3.5 h-3.5 text-pink-500 fill-pink-500" /> Let's get things done
             </div>
             <h2 className="font-display text-3xl md:text-6xl font-black text-[#0F0A1E] tracking-tight mb-6">How Qofeno Works</h2>
             <p className="text-lg text-neutral-500 max-w-md mb-8">
@@ -400,7 +401,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
             <div className="bg-white border border-neutral-100 p-12 rounded-3xl shadow-xl shadow-purple-900/5 aspect-video flex flex-col justify-center items-center relative overflow-hidden">
               <div className="absolute inset-0 bg-[radial-gradient(#7c3aed0a_1px,transparent_1px)] [background-size:16px_16px] opacity-60 pointer-events-none" />
               <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-4 flex items-center gap-3 relative z-10 animate-[bounce_3s_ease-in-out_infinite]">
-                <Search className="w-6 h-6 text-neutral-300" />
+                <FontAwesomeIcon icon={faMagnifyingGlass} className="w-6 h-6 text-neutral-300" />
                 <div className="h-4 w-32 bg-neutral-200 rounded-md animate-pulse"></div>
                 <div className="w-px h-6 bg-purple-600 animate-[pulse_1s_infinite]"></div>
               </div>
@@ -409,7 +410,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
             {/* Step 2 Visual */}
             <div className="bg-white border border-neutral-100 p-12 rounded-3xl shadow-xl shadow-purple-900/5 aspect-video flex justify-center items-center relative overflow-hidden gap-8">
               <div className="flex flex-col items-center animate-[bounce_4s_ease-in-out_infinite]">
-                 <FileText className="w-16 h-16 text-neutral-300" />
+                 <FontAwesomeIcon icon={faFileLines} className="w-16 h-16 text-neutral-300" />
                  <span className="text-xs font-bold text-neutral-400 mt-2 hover:text-purple-600">INPUT FILE</span>
               </div>
               
@@ -419,12 +420,12 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                     <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse delay-150"></div>
                     <div className="w-2 h-2 rounded-full bg-purple-600 animate-pulse delay-300"></div>
                  </div>
-                 <ArrowRight className="w-8 h-8 text-purple-600" />
+                 <FontAwesomeIcon icon={faArrowRight} className="w-8 h-8 text-purple-600" />
               </div>
 
               <div className="flex flex-col items-center relative z-10 animate-[bounce_4s_ease-in-out_infinite_reverse]">
                  <div className="w-20 h-20 bg-purple-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-purple-600/30">
-                    <Cpu className="w-10 h-10 text-white" />
+                    <FontAwesomeIcon icon={faMicrochip} className="w-10 h-10 text-white" />
                  </div>
                  <span className="text-xs font-bold text-purple-600 mt-4 uppercase tracking-widest bg-purple-50 px-2 py-0.5 rounded-full">Server</span>
               </div>
@@ -434,11 +435,11 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
             <div className="bg-white border border-neutral-100 p-12 rounded-3xl shadow-xl shadow-purple-900/5 aspect-video flex flex-col justify-center items-center relative overflow-hidden">
                <div className="absolute inset-0 bg-[radial-gradient(#10b9810a_1px,transparent_1px)] [background-size:16px_16px] opacity-60 pointer-events-none" />
                <div className="w-32 h-32 bg-green-50 rounded-full flex items-center justify-center mb-6 relative z-10">
-                  <CheckCircle2 className="w-16 h-16 text-green-500" />
+                  <FontAwesomeIcon icon={faCircleCheck} className="w-16 h-16 text-green-500" />
                </div>
                <div className="w-full max-w-xs bg-white rounded-2xl shadow-xl border border-neutral-100 p-4 flex justify-between items-center relative z-10">
                   <div className="flex items-center gap-3">
-                     <FileText className="w-6 h-6 text-green-500" />
+                     <FontAwesomeIcon icon={faFileLines} className="w-6 h-6 text-green-500" />
                      <div className="h-2.5 w-20 bg-neutral-200 rounded-full"></div>
                   </div>
                   <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center">
@@ -465,7 +466,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
               onClick={() => onNavigate('tools')}
               className="text-purple-600 font-bold hover:text-purple-800 flex items-center gap-1 shrink-0 text-base"
             >
-              See all tools <ChevronRight className="w-5 h-5" />
+              See all tools <FontAwesomeIcon icon={faChevronRight} className="w-5 h-5" />
             </button>
           </div>
 
@@ -476,7 +477,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                 <div key={index} className="w-[320px] shrink-0 bg-[#FAFAFA] border border-neutral-100 hover:border-purple-200 hover:bg-white p-6 rounded-3xl snap-start flex flex-col justify-between transition-all duration-300">
                   <div>
                     <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center mb-6">
-                      <ToolIcon className="w-6 h-6 text-purple-600 animate-pulse" />
+                      <FontAwesomeIcon icon={ToolIcon} className="w-6 h-6 text-purple-600 animate-pulse" />
                     </div>
                     <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 bg-neutral-100 py-1 px-2.5 rounded-full inline-block mb-3">
                       {tool.category}
@@ -544,7 +545,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   </div>
                   <div className={cn("relative aspect-video rounded-3xl overflow-hidden shadow-2xl flex items-center justify-center", p.bgClass)}>
                     <div className="absolute inset-0 bg-[radial-gradient(black_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.03] pointer-events-none" />
-                    {p.icon && <p.icon className={cn("w-28 h-28 opacity-60 hover:scale-110 transition-transform duration-700", p.iconColor)} />}
+                    {p.icon && <FontAwesomeIcon icon={p.icon} className={cn("w-28 h-28 opacity-60 hover:scale-110 transition-transform duration-700", p.iconColor)} />}
                   </div>
                 </div>
               );
@@ -568,9 +569,9 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                 <h3 className="font-display text-xl font-bold mb-2">Free</h3>
                 <div className="text-4xl font-black text-[#0F0A1E] mb-6">$0<span className="text-lg text-neutral-400 font-medium">/forever</span></div>
                 <ul className="space-y-3 mb-8 text-sm text-neutral-600 font-medium">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Access to core tools</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Browser-based, no signup</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Instant execution</li>
+                  <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600" /> Access to core tools</li>
+                  <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600" /> Browser-based, no signup</li>
+                  <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600" /> Instant execution</li>
                 </ul>
               </div>
               <button onClick={() => onNavigate('tools')} className="w-full py-3 rounded-xl border border-purple-200 text-purple-700 font-bold hover:bg-purple-50 transition-colors">
@@ -589,10 +590,10 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   <h3 className="font-display text-xl font-bold mb-2 text-purple-900">Pro</h3>
                   <div className="text-4xl font-black text-[#0F0A1E] mb-6">$9<span className="text-lg text-neutral-400 font-medium">/mo</span></div>
                   <ul className="space-y-3 mb-8 text-sm text-[#0F0A1E] font-medium">
-                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Everything in Free</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> All 18+ PRO PDF Tools unlocked</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Priority server processing</li>
-                    <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-purple-600" /> Higher file size limits</li>
+                    <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600" /> Everything in Free</li>
+                    <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600" /> All 18+ PRO PDF Tools unlocked</li>
+                    <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600" /> Priority server processing</li>
+                    <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600" /> Higher file size limits</li>
                   </ul>
                 </div>
                 <button onClick={() => onNavigate('pricing')} className="w-full py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/20 cursor-pointer">
@@ -607,9 +608,9 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                 <h3 className="font-display text-xl font-bold mb-2">Enterprise</h3>
                 <div className="text-4xl font-black mb-6">Custom</div>
                 <ul className="space-y-3 mb-8 text-sm text-neutral-400 font-medium">
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400" /> Bulk processing</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400" /> API Access</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-green-400" /> Team accounts</li>
+                  <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-green-400" /> Bulk processing</li>
+                  <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-green-400" /> API Access</li>
+                  <li className="flex items-center gap-2"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-green-400" /> Team accounts</li>
                 </ul>
               </div>
               <button onClick={() => onNavigate('contact')} className="w-full py-3 rounded-xl bg-white text-[#0F0A1E] font-bold hover:bg-neutral-200 transition-colors">
@@ -637,7 +638,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
             onClick={() => onNavigate('contact')}
             className="inline-flex items-center gap-2 px-8 py-4 bg-[#0F0A1E] text-white font-bold rounded-2xl hover:bg-neutral-800 transition-colors"
           >
-            Say hello <ArrowRight className="w-5 h-5" />
+            Say hello <FontAwesomeIcon icon={faArrowRight} className="w-5 h-5" />
           </button>
         </div>
       </section>
@@ -652,7 +653,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full w-[25%]" />
           </div>
           <div className="flex justify-between max-w-xl mx-auto text-neutral-400 text-sm font-semibold mb-12">
-            <span>Currently: 142 tools</span>
+            <span>Currently: {tools.length} tools</span>
             <span>Goal: 500 tools by end of year</span>
           </div>
 
@@ -669,8 +670,8 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
       <section className="py-28 bg-gradient-to-br from-purple-900 to-[#2B1B54] text-white relative z-20 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none -z-10">
            {/* Drifting tool icons */}
-           <FileText className="absolute top-10 left-[10%] w-24 h-24 text-white opacity-5 animate-slow-drift" />
-           <ImageIcon className="absolute bottom-10 right-[15%] w-32 h-32 text-white opacity-5 animate-slow-drift-reverse" />
+           <FontAwesomeIcon icon={faFileLines} className="absolute top-10 left-[10%] w-24 h-24 text-white opacity-5 animate-slow-drift" />
+           <FontAwesomeIcon icon={faImage} className="absolute bottom-10 right-[15%] w-32 h-32 text-white opacity-5 animate-slow-drift-reverse" />
         </div>
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="font-display text-4xl md:text-7xl font-extrabold mb-8 tracking-tight leading-none">Start using Qofeno today</h2>

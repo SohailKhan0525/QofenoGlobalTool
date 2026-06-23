@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, Home, RotateCcw } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTriangleExclamation, faHouse, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
 import { SEO } from './SEO';
 
 interface Props {
@@ -32,7 +33,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 bg-white select-none">
           <SEO title="Something went wrong" />
           <div className="w-20 h-20 bg-rose-100 text-rose-500 rounded-3xl flex items-center justify-center mb-8">
-            <AlertTriangle className="w-10 h-10" />
+            <FontAwesomeIcon icon={faTriangleExclamation} className="w-10 h-10" />
           </div>
           <h1 className="text-3xl font-black text-[#0F0A1E] mb-4 text-center">We hit a roadblock</h1>
           <p className="text-neutral-500 text-center max-w-md mb-8">
@@ -50,7 +51,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               }}
               className="px-6 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-bold rounded-xl transition-colors flex items-center gap-2"
             >
-              <RotateCcw className="w-4 h-4" />
+              <FontAwesomeIcon icon={faRotateLeft} className="w-4 h-4" />
               Try Again
             </button>
             <button
@@ -60,7 +61,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
               }}
               className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-purple-500/20 flex items-center gap-2"
             >
-              <Home className="w-4 h-4" />
+              <FontAwesomeIcon icon={faHouse} className="w-4 h-4" />
               Back to Home
             </button>
           </div>

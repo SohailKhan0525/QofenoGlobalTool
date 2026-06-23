@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { 
-  Mail, MessageSquare, Phone, Globe, Send, Loader2, CheckCircle2, 
-  HelpCircle, AlertCircle
-} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope, faSpinner, faPaperPlane, faCircleExclamation, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 import { submitContactForm } from '../../lib/qofeno-appwrite';
@@ -103,7 +101,7 @@ export function Contact() {
           <div className="space-y-6 w-full max-w-sm">
             <div className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl">
               <div className="p-3 bg-purple-100 text-purple-705 rounded-xl">
-                <Mail className="w-5 h-5 text-purple-600" />
+                <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5 text-purple-600" />
               </div>
               <div>
                 <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">Email Assistance</h4>
@@ -170,11 +168,11 @@ export function Contact() {
                 </div>
 
                 {errorShake && (
-                  <p className="text-xs text-rose-600 font-bold flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> Please complete all descriptive details before submitting.</p>
+                  <p className="text-xs text-rose-600 font-bold flex items-center gap-1.5"><FontAwesomeIcon icon={faCircleExclamation} className="w-4 h-4" /> Please complete all descriptive details before submitting.</p>
                 )}
 
                 {submitError && (
-                  <p className="text-xs text-rose-600 font-bold flex items-center gap-1.5"><AlertCircle className="w-4 h-4" /> {submitError}</p>
+                  <p className="text-xs text-rose-600 font-bold flex items-center gap-1.5"><FontAwesomeIcon icon={faCircleExclamation} className="w-4 h-4" /> {submitError}</p>
                 )}
 
                 <button 
@@ -184,12 +182,12 @@ export function Contact() {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <FontAwesomeIcon icon={faSpinner} className="w-4 h-4 animate-spin" />
                       <span>Sending...</span>
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" />
+                      <FontAwesomeIcon icon={faPaperPlane} className="w-4 h-4" />
                       <span>Send Message</span>
                     </>
                   )}
@@ -201,7 +199,7 @@ export function Contact() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-12 space-y-6"
               >
-                <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto animate-bounce" />
+                <FontAwesomeIcon icon={faCircleCheck} className="w-16 h-16 text-green-500 mx-auto animate-bounce" />
                 <h3 className="font-black text-2xl text-neutral-900">Message Sent!</h3>
                 <p className="text-neutral-500 text-sm max-w-sm mx-auto">
                   I'll read your message and respond as soon as I can.

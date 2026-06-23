@@ -15,22 +15,40 @@ import { Auth } from './components/Pages/Auth';
 import { Payment } from './components/Pages/Payment';
 import { ToolPage } from './components/Pages/ToolPage';
 import { Terms } from './components/Pages/Terms';
+import { Cookies } from './components/Pages/Cookies';
 import { Policy } from './components/Pages/Policy';
 import { ForgotPassword } from './components/Pages/ForgotPassword';
+import { ResetPassword } from './components/Pages/ResetPassword';
 import { AuthCallback } from './components/Pages/AuthCallback';
 import { Dashboard } from './components/Pages/Dashboard';
 import { Profile } from './components/Pages/Profile';
 import { Settings as SettingsPage } from './components/Pages/Settings';
 import { NotFound } from './components/Pages/NotFound';
-import { FaGithub, FaInstagram } from 'react-icons/fa';
-import { FaToolbox } from 'react-icons/fa6';
 
 // shadcn / UI components
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-// Icons & animations
-import { Search, Plus, Calendar, Mail, FileText, CheckCircle2, User, Menu, X, LogOut, ChevronDown, Bell, Settings as SettingsIcon, Moon, Sun, Monitor, Sparkles } from 'lucide-react';
+// Font Awesome icons — ALL icons use Font Awesome only
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faSearch, faPlus, faCalendar, faEnvelope, faFileText, faCheckCircle,
+  faUser, faBars, faXmark, faRightFromBracket, faChevronDown,
+  faBell, faGear, faMoon, faSun, faDesktop, faWandMagicSparkles,
+  faFilePdf, faImage, faVideo, faRobot, faCode,
+  faPenNib, faDatabase, faShield, faBolt,
+  faDownload, faUpload, faCheck, faStar,
+  faLock, faUnlock, faKey, faArrowRight, faArrowLeft, faRotate,
+  faMagnifyingGlass, faFilter, faSliders, faChevronUp,
+  faEye, faEyeSlash, faTriangleExclamation, faCircleInfo, faSpinner,
+  faFileWord, faFileExcel, faFilePowerpoint, faFileImage,
+  faFileZipper, faFileLines, faCrop, faScissors, faCompressArrowsAlt,
+  faExpand, faFont, faShareNodes, faBookOpen, faTools,
+  faHouse, faTag, faHeart, faWater,
+} from '@fortawesome/free-solid-svg-icons';
+import { faGithub, faXTwitter, faLinkedin, faInstagram } from '@fortawesome/free-brands-svg-icons';
+import { faCheckCircle as faCheckCircleReg, faBell as faBellReg } from '@fortawesome/free-regular-svg-icons';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import gsap from 'gsap';
 import { cn } from './lib/utils';
@@ -42,6 +60,38 @@ import { databases, DATABASE_ID, realtime } from './lib/qofeno-appwrite';
 import { Query } from 'appwrite';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
+
+// QofenoLogo component — shows qofeno.png + text
+function QofenoLogo({ size = 36, showText = true, textClass = '' }: { size?: number; showText?: boolean; textClass?: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <img
+        src="/qofeno.png"
+        alt="Qofeno"
+        width={size}
+        height={size}
+        className="rounded-xl object-contain"
+        onError={(e) => {
+          // Fallback gradient box if png not found
+          const el = e.currentTarget;
+          el.style.display = 'none';
+          const next = el.nextElementSibling as HTMLElement;
+          if (next) next.style.display = 'flex';
+        }}
+      />
+      <div
+        style={{ display: 'none', width: size, height: size }}
+        className="bg-gradient-to-tr from-purple-600 to-pink-500 rounded-xl items-center justify-center shadow-lg"
+      >
+        <FontAwesomeIcon icon={faTools} className="text-white" style={{ fontSize: size * 0.5 }} />
+      </div>
+      {showText && (
+        <span className={cn('font-extrabold tracking-tight text-[#0F0A1E]', textClass)}>Qofeno</span>
+      )}
+    </div>
+  );
+}
 
 // Page Transitions config as specified:
 // Exit: opacity: 1→0, translateY: 0→-20, scale: 1→0.98, duration: 350ms
@@ -354,16 +404,16 @@ export default function App() {
                  className="bg-white border border-neutral-100 rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
                  onClick={(e) => e.stopPropagation()}
                >
-                 <button onClick={() => setShowPreferences(false)} className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-900 font-bold"><X className="w-5 h-5"/></button>
-                 <h3 className="text-xl font-black text-[#0F0A1E] mb-6 flex items-center gap-2"><SettingsIcon className="w-5 h-5 text-purple-600" /> Preferences</h3>
+                 <button onClick={() => setShowPreferences(false)} className="absolute top-6 right-6 text-neutral-400 hover:text-neutral-900 font-bold"><FontAwesomeIcon icon={faXmark} className="w-5 h-5"/></button>
+                 <h3 className="text-xl font-black text-[#0F0A1E] mb-6 flex items-center gap-2"><FontAwesomeIcon icon={faGear} className="w-5 h-5 text-purple-600" /> Preferences</h3>
                  
                  <div className="space-y-6 overflow-y-auto pr-1 flex-1 font-sans">
                    <div className="space-y-3">
                      <label className="text-xs font-black text-neutral-500 uppercase tracking-widest block">Theme</label>
                      <div className="grid grid-cols-3 gap-2">
-                       <button onClick={() => { setTheme('light'); toast.success("Theme updated to Light"); }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer", theme === 'light' ? "border-purple-600 bg-purple-50 text-purple-600" : "border-neutral-200 hover:border-purple-300 text-neutral-500")}><Sun className="w-5 h-5" /><span className="text-xs font-bold font-sans">Light</span></button>
-                       <button onClick={() => { setTheme('dark'); toast.success("Theme updated to Dark"); }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer", theme === 'dark' ? "border-purple-600 bg-purple-50 text-purple-600" : "border-neutral-200 hover:border-purple-300 text-neutral-500")}><Moon className="w-5 h-5" /><span className="text-xs font-bold font-sans">Dark</span></button>
-                       <button onClick={() => { setTheme('system'); toast.success("Theme updated to System"); }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer", theme === 'system' ? "border-purple-600 bg-purple-50 text-purple-600" : "border-neutral-200 hover:border-purple-300 text-neutral-500")}><Monitor className="w-5 h-5" /><span className="text-xs font-bold font-sans">System</span></button>
+                       <button onClick={() => { setTheme('light'); toast.success("Theme updated to Light"); }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer", theme === 'light' ? "border-purple-600 bg-purple-50 text-purple-600" : "border-neutral-200 hover:border-purple-300 text-neutral-500")}><FontAwesomeIcon icon={faSun} className="w-5 h-5" /><span className="text-xs font-bold font-sans">Light</span></button>
+                       <button onClick={() => { setTheme('dark'); toast.success("Theme updated to Dark"); }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer", theme === 'dark' ? "border-purple-600 bg-purple-50 text-purple-600" : "border-neutral-200 hover:border-purple-300 text-neutral-500")}><FontAwesomeIcon icon={faMoon} className="w-5 h-5" /><span className="text-xs font-bold font-sans">Dark</span></button>
+                       <button onClick={() => { setTheme('system'); toast.success("Theme updated to System"); }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl border transition-all cursor-pointer", theme === 'system' ? "border-purple-600 bg-purple-50 text-purple-600" : "border-neutral-200 hover:border-purple-300 text-neutral-500")}><FontAwesomeIcon icon={faDesktop} className="w-5 h-5" /><span className="text-xs font-bold font-sans">System</span></button>
                      </div>
                    </div>
 
@@ -484,12 +534,7 @@ export default function App() {
           onClick={() => setActiveTab('home')}
           className="flex items-center gap-2.5 cursor-pointer group"
         >
-          <div className="w-10 h-10 bg-gradient-to-tr from-purple-600 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20 group-hover:rotate-3 transition-transform">
-            <span className="text-white text-[18px]"><FaToolbox /></span>
-          </div>
-          <span className="font-extrabold text-xl md:text-2xl tracking-tight text-[#0F0A1E] font-sans">
-            Qofeno
-          </span>
+          <QofenoLogo size={38} showText={true} textClass="text-xl md:text-2xl font-sans" />
         </div>
 
         {/* Wide nav categories linking tabs */}
@@ -553,7 +598,7 @@ export default function App() {
                       className="group flex items-center justify-between cursor-pointer py-1.5"
                     >
                       <span className="text-sm font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors">{tool.name}</span>
-                      {tool.isNew ? (
+                      {(tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew) ? (
                         <span className="text-[9px] font-black text-white bg-purple-600 rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0 shadow-sm">New</span>
                       ) : tool.isPopular ? (
                         <span className="text-[9px] font-black text-white bg-amber-500 rounded px-1.5 py-0.5 uppercase tracking-wider shrink-0 shadow-sm">Popular</span>
@@ -564,7 +609,7 @@ export default function App() {
                   ))}
                   <div className="mt-6 pt-4 border-t border-neutral-100">
                     <button onClick={() => { setActiveTab('tools'); setSearchOpen(true); }} className="text-xs font-bold bg-neutral-100 hover:bg-neutral-200 text-neutral-600 w-full py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2">
-                       <Search className="w-3.5 h-3.5" /> Search all tools
+                       <FontAwesomeIcon icon={faSearch} className="w-3.5 h-3.5" /> Search all tools
                     </button>
                   </div>
                 </div>
@@ -608,7 +653,7 @@ export default function App() {
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="w-10 h-10 rounded-xl hover:bg-neutral-100 flex items-center justify-center text-neutral-500 transition-colors relative cursor-pointer"
               >
-                <Bell className="w-5 h-5 animate-none hover:animate-swing" />
+                <FontAwesomeIcon icon={faBell} className="w-5 h-5" />
                 {notifications.some(n => !n.read) && (
                   <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
                 )}
@@ -670,7 +715,7 @@ export default function App() {
                         }} 
                         className="text-xs font-bold text-neutral-500 hover:text-purple-600 flex items-center justify-center gap-1 w-full"
                       >
-                        <SettingsIcon className="w-3.5 h-3.5" /> Notification Settings
+                        <FontAwesomeIcon icon={faGear} className="w-3.5 h-3.5" /> Notification Settings
                       </button>
                     </div>
                   </motion.div>
@@ -708,7 +753,7 @@ export default function App() {
               }}
               className="p-1.5 hover:bg-neutral-150 rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
             >
-              <Search className="w-4.5 h-4.5" />
+              <FontAwesomeIcon icon={faMagnifyingGlass} className="w-4 h-4" />
             </button>
 
             {/* Suggestions Dropdown */}
@@ -739,12 +784,12 @@ export default function App() {
                               }}
                             >
                               <div className="w-8 h-8 rounded-lg bg-neutral-100 group-hover:bg-purple-100 flex items-center justify-center text-neutral-500 group-hover:text-purple-600 transition-colors">
-                                <tool.icon className="w-4 h-4" />
+                                <FontAwesomeIcon icon={faFilePdf} className="w-4 h-4" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <h4 className="font-bold text-xs text-[#0F0A1E] truncate flex items-center gap-2">
                                   {tool.name}
-                                  {tool.isPopular && <span className="text-[9px] px-1.5 py-0.5 rounded flex items-center gap-1 bg-amber-100 text-amber-700 uppercase tracking-widest"><Sparkles className="w-2.5 h-2.5" /> Popular</span>}
+                                  {tool.isPopular && <span className="text-[9px] px-1.5 py-0.5 rounded flex items-center gap-1 bg-amber-100 text-amber-700 uppercase tracking-widest"><FontAwesomeIcon icon={faStar} className="w-2.5 h-2.5" /> Popular</span>}
                                 </h4>
                                 <p className="text-[10px] text-neutral-400 truncate w-full">{tool.desc}</p>
                               </div>
@@ -765,7 +810,7 @@ export default function App() {
                                 setNavbarSearchText('');
                               }}
                             >
-                              <tool.icon className="w-3.5 h-3.5 text-neutral-400 group-hover:text-purple-600" />
+                              <FontAwesomeIcon icon={faFilePdf} className="w-3.5 h-3.5 text-neutral-400 group-hover:text-purple-600" />
                               <span className="text-xs font-bold text-[#0F0A1E] truncate">{tool.name}</span>
                             </button>
                           ))}
@@ -787,7 +832,7 @@ export default function App() {
                             }}
                           >
                             <div className="w-7 h-7 rounded-lg bg-amber-50 group-hover:bg-purple-100 flex items-center justify-center text-amber-600 group-hover:text-purple-600 transition-colors">
-                              <tool.icon className="w-3.5 h-3.5" />
+                              <FontAwesomeIcon icon={faStar} className="w-3.5 h-3.5" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-bold text-xs text-[#0F0A1E] truncate">{tool.name}</h4>
@@ -808,7 +853,7 @@ export default function App() {
               className="p-2 text-neutral-600 hover:text-purple-600 cursor-pointer relative"
               onClick={() => setShowNotifications(!showNotifications)}
             >
-              <Bell className="w-5 h-5" />
+              <FontAwesomeIcon icon={faBell} className="w-5 h-5" />
               {notifications.some(n => !n.read) && (
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
               )}
@@ -817,13 +862,13 @@ export default function App() {
               className="p-2 text-neutral-600 hover:text-purple-600 cursor-pointer"
               onClick={() => setActiveTab('tools')}
             >
-              <Search className="w-5 h-5" />
+              <FontAwesomeIcon icon={faMagnifyingGlass} className="w-5 h-5" />
             </button>
             <button 
               className="p-2 text-neutral-600 hover:text-purple-600 cursor-pointer"
               onClick={() => setIsMobileNavOpen(true)}
             >
-              <Menu className="w-6 h-6" />
+              <FontAwesomeIcon icon={faBars} className="w-6 h-6" />
             </button>
 
             <AnimatePresence>
@@ -879,7 +924,7 @@ export default function App() {
                 <div className="w-6 h-6 rounded-md bg-purple-600 flex items-center justify-center text-white text-[10px] font-bold">{(user?.name || 'User').slice(0, 2).toUpperCase()}</div>
                 <span className="text-sm font-bold text-[#0F0A1E]">{user?.name || 'User'}</span>
                 <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-purple-700">{user?.plan === 'pro' ? 'Pro' : 'Free'}</span>
-                <ChevronDown className="w-3 h-3 text-neutral-500" />
+                <FontAwesomeIcon icon={faChevronDown} className="w-3 h-3 text-neutral-500" />
               </button>
               
               <AnimatePresence>
@@ -897,7 +942,7 @@ export default function App() {
                       onClick={() => { setShowProfileMenu(false); setShowPreferences(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer mb-1"
                     >
-                      <SettingsIcon className="w-4 h-4" /> Preferences
+                      <FontAwesomeIcon icon={faGear} className="w-4 h-4" /> Preferences
                     </button>
                     <button 
                       onClick={() => {
@@ -906,7 +951,7 @@ export default function App() {
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                     >
-                      <LogOut className="w-4 h-4" /> Logout
+                      <FontAwesomeIcon icon={faRightFromBracket} className="w-4 h-4" /> Logout
                     </button>
                   </motion.div>
                 )}
@@ -949,16 +994,13 @@ export default function App() {
                   className="font-black text-xl tracking-tight text-[#0F0A1E] flex items-center gap-1.5 cursor-pointer"
                   onClick={() => { setIsMobileNavOpen(false); setActiveTab('home'); }}
                 >
-                  <div className="w-7 h-7 bg-purple-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-[12px]"><FaToolbox /></span>
-                  </div>
-                  Qofeno
+                  <QofenoLogo size={32} showText={true} textClass="text-xl" />
                 </div>
                 <button 
                   onClick={() => setIsMobileNavOpen(false)}
                   className="p-2 text-neutral-500 bg-neutral-100 rounded-full hover:bg-neutral-200 cursor-pointer"
                 >
-                  <X className="w-5 h-5" />
+                  <FontAwesomeIcon icon={faXmark} className="w-5 h-5" />
                 </button>
               </div>
 
@@ -1032,7 +1074,7 @@ export default function App() {
               {activeTab === 'payment' && <Payment onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'forgot-password' && <ForgotPassword onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'auth-callback' && <AuthCallback onNavigate={(page) => setActiveTab(page)} />}
-              {activeTab === 'dashboard' && <Dashboard />}
+              {activeTab === 'dashboard' && <Profile />}  {/* dashboard redirects to profile */}
               {activeTab === 'profile' && <Profile />}
               {activeTab === 'settings' && <SettingsPage />}
               {activeTab === 'coming-soon' && <ComingSoon onBack={() => setActiveTab('home')} />}
@@ -1118,7 +1160,7 @@ export default function App() {
                     animate={{ scale: 1, opacity: 1 }}
                     className="text-center py-6 space-y-4"
                   >
-                    <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto animate-bounce" />
+                    <FontAwesomeIcon icon={faCheckCircle} className="w-14 h-14 text-green-500 mx-auto animate-bounce" />
                     <h3 className="font-extrabold text-xl text-[#0F0A1E]">Specification Submitted!</h3>
                     <p className="text-xs text-neutral-400 max-w-xs mx-auto">We've added '{requestToolName}' to our development queue. Our agent builder will publish this module shortly.</p>
                   </motion.div>
@@ -1135,23 +1177,20 @@ export default function App() {
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-12 font-sans mb-16">
           <div className="col-span-2 md:col-span-3 lg:col-span-2">
             <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={() => setActiveTab('home')}>
-              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-[14px]"><FaToolbox /></span>
-              </div>
-              <span className="font-extrabold text-xl tracking-tight">Qofeno</span>
+              <QofenoLogo size={32} showText={true} textClass="text-xl text-white" />
             </div>
             <p className="text-purple-200/60 max-w-sm text-sm leading-relaxed mb-8 font-medium">
-              Every tool you'll ever need.
+              Every tool you'll ever need — PDF, image, video, AI, developer, and more. Built by Mohd Zaheer Uddin.
             </p>
             <div className="flex items-center gap-4">
               <a href="https://github.com/MohdZaheerU" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-white hover:scale-115 transition-all w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
-                GH
+                <FontAwesomeIcon icon={faGithub} className="w-5 h-5" />
               </a>
               <button onClick={() => setActiveTab('coming-soon')} className="text-neutral-500 hover:text-[#1DA1F2] hover:scale-115 transition-all w-10 h-10 rounded-full bg-white/5 flex items-center justify-center cursor-pointer">
-                𝕏
+                <FontAwesomeIcon icon={faXTwitter} className="w-5 h-5" />
               </button>
               <button onClick={() => setActiveTab('coming-soon')} className="text-neutral-500 hover:text-[#0A66C2] hover:scale-115 transition-all w-10 h-10 rounded-full bg-white/5 flex items-center justify-center cursor-pointer">
-                IN
+                <FontAwesomeIcon icon={faLinkedin} className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -1197,7 +1236,9 @@ export default function App() {
           <div className="flex items-center gap-4">
             <span>© {new Date().getFullYear()} Qofeno. Built by Mohd Zaheer Uddin.</span>
             <div className="flex items-center gap-3">
-              <a href="https://github.com/MohdZaheerU" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white transition-colors"><span className="text-[16px]"><FaGithub /></span></a>
+              <a href="https://github.com/MohdZaheerU" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white transition-colors">
+                <FontAwesomeIcon icon={faGithub} className="text-base" />
+              </a>
             </div>
           </div>
           <div className="flex gap-6">

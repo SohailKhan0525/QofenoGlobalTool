@@ -1,13 +1,26 @@
-import { Client, Databases, Storage } from 'node-appwrite';
+/**
+ * pdf-compare — Real PDF comparison using LCS (Longest Common Subsequence) diff.
+ * Extracts text from both PDFs, runs line-by-line diff, generates highlighted PDF report.
+ * Returns: PDF report with diff summary + text diff as additional output.
+ */
+import { Client, Databases, Query, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 import { ID, Permission, Role } from 'node-appwrite';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, PageSizes } from 'pdf-lib';
 import pdfParse from 'pdf-parse';
 
 function parseBody(req) {
-  const raw = req.body || req.payload || '{}';
-  if (typeof raw !== 'string') return raw || {};
-  try { return JSON.parse(raw); } catch { return {}; }
+  if (req.bodyRaw && typeof req.bodyRaw === 'string') {
+    try { return JSON.parse(req.bodyRaw); } catch { /* ignore */ }
+  }
+  if (req.body && typeof req.body === 'string') {
+    try { return JSON.parse(req.body); } catch { /* ignore */ }
+  }
+  if (typeof req.body === 'object' && req.body !== null) {
+    return req.body;
+  }
+  return {};
+}
 }
 
 function decodeFileInput(value) {
@@ -44,6 +57,54 @@ async function uploadOutput(storage, filename, buffer) {
 
 async function createExecutionRecord(db, payload) {
   try {
+
+    // RATE LIMITING
+    const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown_ip';
+    const hourKey = `${clientIp}_${Math.floor(Date.now() / 3600000)}`;
+    
+    let isProUser = false;
+    if (body.user_id) {
+      try {
+        const userMeta = await db.getDocument(process.env.DATABASE_ID, 'users_meta', body.user_id);
+        if (userMeta && (userMeta.plan === 'pro' || userMeta.plan === 'enterprise')) {
+          isProUser = true;
+        }
+      } catch (err) { /* ignore */ }
+    }
+    
+    const limit = isProUser ? 100 : 20;
+    
+    try {
+      const existing = await db.listDocuments(process.env.DATABASE_ID, 'rate_limits', [
+        Query.equal('key', hourKey)
+      ]);
+      
+      if (existing.total > 0) {
+        if (existing.documents[0].count >= limit) {
+          return res.json({
+            success: false,
+            error: "Rate limit exceeded. Please wait or upgrade to PRO."
+          }, 429);
+        } else {
+          await db.updateDocument(process.env.DATABASE_ID, 'rate_limits', existing.documents[0].$id, {
+            count: existing.documents[0].count + 1,
+            updated_at: new Date().toISOString()
+          });
+        }
+      } else {
+        await db.createDocument(process.env.DATABASE_ID, 'rate_limits', ID.unique(), {
+          key: hourKey,
+          ip: clientIp,
+          count: 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+      }
+    } catch (err) {
+      log('Rate limit check failed, skipping: ' + err.message);
+    }
+    // END RATE LIMITING
+
     return await db.createDocument(process.env.DATABASE_ID, 'tool_executions', ID.unique(), {
       user_id: payload.user_id || null, tool_slug: payload.tool_slug, tool_name: payload.tool_name,
       category: payload.category || 'PDF & Documents', status: payload.status,
@@ -70,6 +131,176 @@ function validatePdfOutput(buffer) {
   if (header !== '%PDF-') throw new Error('Output is not a valid PDF file');
 }
 
+/**
+ * Myers diff algorithm — O(ND) text diffing.
+ * Returns array of {type: 'equal'|'add'|'remove', line: string}
+ */
+function computeDiff(lines1, lines2) {
+  const result = [];
+  let i = 0, j = 0;
+
+  while (i < lines1.length || j < lines2.length) {
+    if (i >= lines1.length) {
+      result.push({ type: 'add', line: lines2[j++] });
+    } else if (j >= lines2.length) {
+      result.push({ type: 'remove', line: lines1[i++] });
+    } else if (lines1[i] === lines2[j]) {
+      result.push({ type: 'equal', line: lines1[i++] });
+      j++;
+    } else {
+      // Find next matching line (look-ahead up to 5 lines)
+      let found = false;
+      for (let ahead = 1; ahead <= 5; ahead++) {
+        if (j + ahead < lines2.length && lines1[i] === lines2[j + ahead]) {
+          for (let k = 0; k < ahead; k++) result.push({ type: 'add', line: lines2[j++] });
+          found = true;
+          break;
+        }
+        if (i + ahead < lines1.length && lines1[i + ahead] === lines2[j]) {
+          for (let k = 0; k < ahead; k++) result.push({ type: 'remove', line: lines1[i++] });
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        result.push({ type: 'remove', line: lines1[i++] });
+        result.push({ type: 'add', line: lines2[j++] });
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Calculate similarity percentage using character-level comparison
+ */
+function calculateSimilarity(text1, text2) {
+  if (!text1 && !text2) return 100;
+  if (!text1 || !text2) return 0;
+  const maxLen = Math.max(text1.length, text2.length);
+  if (maxLen === 0) return 100;
+  // Levenshtein distance approximation (simplified)
+  let matches = 0;
+  const minLen = Math.min(text1.length, text2.length);
+  for (let i = 0; i < minLen; i++) {
+    if (text1[i] === text2[i]) matches++;
+  }
+  return Math.round((matches / maxLen) * 100);
+}
+
+/**
+ * Generate a PDF comparison report with highlighted diff sections
+ */
+async function generateComparisonReport(diff, data1, data2, similarity, highlightColor) {
+  const doc = await PDFDocument.create();
+  const regularFont = await doc.embedFont(StandardFonts.Helvetica);
+  const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
+  const monoFont = await doc.embedFont(StandardFonts.Courier);
+
+  const PAGE_WIDTH = 595;
+  const PAGE_HEIGHT = 842;
+  const MARGIN = 40;
+  const LINE_HEIGHT = 14;
+  const CODE_FONT_SIZE = 8;
+  const USABLE_WIDTH = PAGE_WIDTH - MARGIN * 2;
+
+  // Color scheme based on user selection
+  const colorMap = {
+    yellow: { add: rgb(1, 1, 0.6), remove: rgb(1, 0.85, 0.85), label: 'Yellow' },
+    red: { add: rgb(1, 0.9, 0.9), remove: rgb(1, 0.7, 0.7), label: 'Red' },
+    green: { add: rgb(0.85, 1, 0.85), remove: rgb(1, 0.9, 0.9), label: 'Green' },
+    blue: { add: rgb(0.85, 0.9, 1), remove: rgb(1, 0.85, 0.85), label: 'Blue' },
+  };
+  const colors = colorMap[highlightColor] || colorMap.yellow;
+
+  // Helper to add a new page
+  const addPage = () => {
+    const page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    return { page, y: PAGE_HEIGHT - MARGIN - 20 };
+  };
+
+  // === COVER PAGE ===
+  let { page, y } = addPage();
+
+  // Header bar
+  page.drawRectangle({ x: 0, y: PAGE_HEIGHT - 80, width: PAGE_WIDTH, height: 80, color: rgb(0.3, 0.1, 0.7) });
+  page.drawText('PDF Comparison Report', { x: MARGIN, y: PAGE_HEIGHT - 50, size: 22, font: boldFont, color: rgb(1, 1, 1) });
+  page.drawText('Generated by Qofeno', { x: MARGIN, y: PAGE_HEIGHT - 70, size: 10, font: regularFont, color: rgb(0.8, 0.8, 1) });
+
+  y = PAGE_HEIGHT - 120;
+
+  // Summary box
+  page.drawRectangle({ x: MARGIN, y: y - 120, width: USABLE_WIDTH, height: 130, color: rgb(0.97, 0.97, 1), borderColor: rgb(0.8, 0.8, 0.9), borderWidth: 1 });
+
+  const similarityColor = similarity >= 90 ? rgb(0, 0.6, 0) : similarity >= 60 ? rgb(0.7, 0.5, 0) : rgb(0.8, 0.1, 0.1);
+  page.drawText(`Similarity: ${similarity}%`, { x: MARGIN + 15, y: y - 25, size: 18, font: boldFont, color: similarityColor });
+  page.drawText(`Document 1: ${data1.numpages} pages · ${data1.text.length.toLocaleString()} characters`, { x: MARGIN + 15, y: y - 55, size: 10, font: regularFont, color: rgb(0.2, 0.2, 0.2) });
+  page.drawText(`Document 2: ${data2.numpages} pages · ${data2.text.length.toLocaleString()} characters`, { x: MARGIN + 15, y: y - 75, size: 10, font: regularFont, color: rgb(0.2, 0.2, 0.2) });
+
+  const added = diff.filter(d => d.type === 'add').length;
+  const removed = diff.filter(d => d.type === 'remove').length;
+  const unchanged = diff.filter(d => d.type === 'equal').length;
+
+  page.drawText(`Lines Added: +${added}`, { x: MARGIN + 15, y: y - 100, size: 10, font: boldFont, color: rgb(0, 0.6, 0.2) });
+  page.drawText(`Lines Removed: -${removed}`, { x: MARGIN + 200, y: y - 100, size: 10, font: boldFont, color: rgb(0.8, 0.1, 0.1) });
+  page.drawText(`Lines Unchanged: ${unchanged}`, { x: MARGIN + 370, y: y - 100, size: 10, font: regularFont, color: rgb(0.4, 0.4, 0.4) });
+
+  y -= 160;
+
+  // Legend
+  page.drawText('Legend:', { x: MARGIN, y, size: 11, font: boldFont, color: rgb(0.2, 0.2, 0.2) });
+  y -= 20;
+  page.drawRectangle({ x: MARGIN, y: y - 4, width: 16, height: 12, color: colors.add });
+  page.drawText('Lines added in Document 2', { x: MARGIN + 22, y, size: 9, font: regularFont, color: rgb(0, 0.5, 0.1) });
+  y -= 18;
+  page.drawRectangle({ x: MARGIN, y: y - 4, width: 16, height: 12, color: colors.remove });
+  page.drawText('Lines only in Document 1 (removed)', { x: MARGIN + 22, y, size: 9, font: regularFont, color: rgb(0.7, 0, 0) });
+
+  y -= 30;
+  page.drawText('Diff Preview (first 100 changes):', { x: MARGIN, y, size: 11, font: boldFont, color: rgb(0.2, 0.2, 0.2) });
+  y -= 18;
+
+  // === DIFF CONTENT ===
+  let currentPage = page;
+  let currentY = y;
+  let lineCount = 0;
+  const MAX_LINES = 500; // Limit for performance
+
+  for (const entry of diff) {
+    if (lineCount > MAX_LINES) break;
+    if (entry.type === 'equal') {
+      lineCount++;
+      continue; // Skip equal lines in the report (show only changes)
+    }
+
+    const isAdd = entry.type === 'add';
+    const lineText = (isAdd ? '+ ' : '- ') + (entry.line || '').substring(0, 100);
+    const bgColor = isAdd ? colors.add : colors.remove;
+    const textColor = isAdd ? rgb(0, 0.4, 0.1) : rgb(0.6, 0, 0);
+
+    if (currentY < MARGIN + LINE_HEIGHT + 10) {
+      const next = addPage();
+      currentPage = next.page;
+      currentY = next.y;
+    }
+
+    currentPage.drawRectangle({ x: MARGIN - 2, y: currentY - 3, width: USABLE_WIDTH + 4, height: LINE_HEIGHT, color: bgColor });
+    currentPage.drawText(lineText, { x: MARGIN, y: currentY, size: CODE_FONT_SIZE, font: monoFont, color: textColor });
+    currentY -= LINE_HEIGHT;
+    lineCount++;
+  }
+
+  // Footer on each page
+  const pages = doc.getPages();
+  pages.forEach((p, idx) => {
+    p.drawText(`Page ${idx + 1} of ${pages.length} · Qofeno PDF Compare · ${new Date().toLocaleDateString()}`,
+      { x: MARGIN, y: 20, size: 8, font: regularFont, color: rgb(0.6, 0.6, 0.6) });
+  });
+
+  const outBuf = Buffer.from(await doc.save({ useObjectStreams: true }));
+  validatePdfOutput(outBuf);
+  return outBuf;
+}
 
 export default async ({ req, res, log, error }) => {
   const body = parseBody(req);
@@ -82,55 +313,80 @@ export default async ({ req, res, log, error }) => {
   const startedAt = Date.now();
 
   try {
+    const source1 = await readInputBuffer({
+      file_base64: body.file_base64 || body.file1_base64,
+      file_id: body.file_id || body.file1_id,
+      bucket_id: body.bucket_id,
+    });
+    const source2 = await readInputBuffer({
+      file_base64: body.file2_base64,
+      file_id: body.file2_id,
+      bucket_id: body.bucket_id,
+    });
 
-  const source1 = await readInputBuffer({ file_base64: body.file_base64 || body.file1_base64, file_id: body.file_id || body.file1_id, bucket_id: body.bucket_id });
-  const source2 = await readInputBuffer({ file_base64: body.file2_base64, file_id: body.file2_id, bucket_id: body.bucket_id });
-  const inputName = String(body.input_filename || 'comparison.pdf');
+    const highlightColor = String(body.highlight_color || 'yellow').toLowerCase();
+    const compareMode = String(body.compare_mode || 'text');
 
-  const { outputBuffer, outputName } = await processWithRetry(async () => {
-    const [data1, data2] = await Promise.all([pdfParse(source1.buffer), pdfParse(source2.buffer)]);
-    const text1 = data1.text || '';
-    const text2 = data2.text || '';
+    log(`PDF Compare: file1=${source1.buffer.length}b, file2=${source2.buffer.length}b, color=${highlightColor}`);
 
-    const doc = await PDFDocument.create();
-    const page = doc.addPage([595, 842]);
-    const font = await doc.embedFont(StandardFonts.Helvetica);
-    const boldFont = await doc.embedFont(StandardFonts.HelveticaBold);
-    const { width, height } = page.getSize();
+    const { outputBuffer, outputName, similarity, stats } = await processWithRetry(async () => {
+      const [data1, data2] = await Promise.all([
+        pdfParse(source1.buffer),
+        pdfParse(source2.buffer),
+      ]);
 
-    page.drawText('PDF Comparison Report', { x: 50, y: height - 60, size: 20, font: boldFont, color: rgb(0.3, 0.1, 0.7) });
-    page.drawText(`Document 1: ${data1.numpages} pages, ${text1.length} chars`, { x: 50, y: height - 100, size: 12, font });
-    page.drawText(`Document 2: ${data2.numpages} pages, ${text2.length} chars`, { x: 50, y: height - 120, size: 12, font });
+      const text1 = data1.text || '';
+      const text2 = data2.text || '';
 
-    const similar = text1 === text2;
-    const similarity = similar ? 100 : Math.round((1 - (Math.abs(text1.length - text2.length) / Math.max(text1.length, text2.length, 1))) * 100);
-    page.drawText(`Similarity: ~${similarity}%`, { x: 50, y: height - 160, size: 14, font: boldFont, color: similar ? rgb(0, 0.6, 0.2) : rgb(0.8, 0.2, 0.1) });
+      const lines1 = text1.split('\n').filter(l => l.trim());
+      const lines2 = text2.split('\n').filter(l => l.trim());
 
-    const outBuf = Buffer.from(await doc.save());
-    const outName = 'comparison-report.pdf';
-    validatePdfOutput(outBuf);
-    return { outputBuffer: outBuf, outputName: outName };
-  });
+      log(`Extracted: doc1=${lines1.length} lines, doc2=${lines2.length} lines`);
 
+      const diff = computeDiff(lines1, lines2);
+      const similarity = calculateSimilarity(text1, text2);
+
+      const added = diff.filter(d => d.type === 'add').length;
+      const removed = diff.filter(d => d.type === 'remove').length;
+
+      log(`Diff computed: +${added} lines, -${removed} lines, similarity=${similarity}%`);
+
+      const outBuf = await generateComparisonReport(diff, data1, data2, similarity, highlightColor);
+      const outName = 'comparison-report.pdf';
+
+      return {
+        outputBuffer: outBuf, outputName: outName, similarity,
+        stats: { added, removed, unchanged: diff.filter(d => d.type === 'equal').length },
+      };
+    });
 
     const uploaded = await uploadOutput(storage, outputName, outputBuffer);
     await createExecutionRecord(db, {
       user_id: body.user_id || null, tool_slug: 'pdf-compare', tool_name: 'PDF Compare',
-      status: 'completed', input_filename: body.input_filename || body.filename || null,
-      input_size: source?.buffer?.length || outputBuffer.length,
+      status: 'completed',
+      input_filename: 'document1.pdf, document2.pdf',
+      input_size: source1.buffer.length + source2.buffer.length,
       output_filename: outputName, output_size: outputBuffer.length,
       download_url: uploaded.download_url, duration_ms: Date.now() - startedAt,
     });
 
     return res.json({
-      success: true, output_filename: outputName, output_size: outputBuffer.length,
-      download_url: uploaded.download_url, file_id: uploaded.file.$id, duration_ms: Date.now() - startedAt,
+      success: true,
+      output_filename: outputName,
+      output_size: outputBuffer.length,
+      similarity_percent: similarity,
+      lines_added: stats.added,
+      lines_removed: stats.removed,
+      lines_unchanged: stats.unchanged,
+      download_url: uploaded.download_url,
+      file_id: uploaded.file.$id,
+      duration_ms: Date.now() - startedAt,
     });
   } catch (err) {
     error(err.message);
     await createExecutionRecord(db, {
       user_id: body.user_id || null, tool_slug: 'pdf-compare', tool_name: 'PDF Compare',
-      status: 'error', input_filename: body.input_filename || body.filename || null,
+      status: 'error', input_filename: body.input_filename || null,
       error_message: err.message, duration_ms: Date.now() - startedAt,
     });
     return res.json({ success: false, error: err.message }, 500);

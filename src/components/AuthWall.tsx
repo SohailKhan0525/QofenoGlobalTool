@@ -1,4 +1,5 @@
-import { Lock } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLock } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 
 export function AuthWall({ onUpgrade, onSignIn }: { onUpgrade: () => void; onSignIn: () => void }) {
@@ -11,8 +12,9 @@ export function AuthWall({ onUpgrade, onSignIn }: { onUpgrade: () => void; onSig
       <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-50 text-purple-600">
-            <Lock className="h-5 w-5" />
+            <FontAwesomeIcon icon={faLock} className="h-5 w-5" />
           </div>
+
           <div>
             <h3 className="text-lg font-black text-[#0F0A1E]">This tool requires a Pro plan</h3>
             <p className="text-sm text-neutral-500">Upgrade to unlock this workflow and keep your files moving.</p>

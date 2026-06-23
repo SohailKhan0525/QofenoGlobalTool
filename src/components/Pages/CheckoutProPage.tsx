@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
-import { ShieldCheck, CheckCircle2, Zap, HardDrive, Clock, DownloadCloud } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShieldHalved, faCircleCheck, faBolt, faHardDrive, faClock, faCloudArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { PayPalButton } from '../PayPal/PayPalButton';
 import { SEO } from '../SEO';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 const PRO_FEATURES = [
-  { icon: Zap, text: 'Access to all 18+ PRO PDF Tools' },
-  { icon: HardDrive, text: 'File uploads up to 500MB (vs 50MB free)' },
-  { icon: Clock, text: 'Priority server processing' },
-  { icon: DownloadCloud, text: 'Unlimited daily operations' },
-  { icon: CheckCircle2, text: 'No watermarks on outputs' },
-  { icon: CheckCircle2, text: 'PDF OCR, Protect, Redact, Watermark & more' },
+  { icon: faBolt, text: 'Access to all 18+ PRO PDF Tools' },
+  { icon: faHardDrive, text: 'File uploads up to 500MB (vs 50MB free)' },
+  { icon: faClock, text: 'Priority server processing' },
+  { icon: faCloudArrowDown, text: 'Unlimited daily operations' },
+  { icon: faCircleCheck, text: 'No watermarks on outputs' },
+  { icon: faCircleCheck, text: 'PDF OCR, Protect, Redact, Watermark & more' },
 ];
 
 export function CheckoutProPage() {
   const [isYearly, setIsYearly] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const monthlyPrice = 9;
   const yearlyMonthlyPrice = 5.4;
@@ -27,7 +30,7 @@ export function CheckoutProPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-purple-600/20 border border-purple-500/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck className="w-8 h-8 text-purple-400" />
+            <FontAwesomeIcon icon={faShieldHalved} className="w-8 h-8 text-purple-400" />
           </div>
           <h1 className="text-4xl font-black text-white">Upgrade to <span className="text-purple-400">PRO</span></h1>
           <p className="text-neutral-400 mt-2 text-lg">Unlock the full power of Qofeno's PDF suite.</p>
@@ -70,14 +73,29 @@ export function CheckoutProPage() {
           <ul className="space-y-3 mb-6">
             {PRO_FEATURES.map(({ icon: Icon, text }, idx) => (
               <li key={idx} className="flex items-start gap-3">
-                <Icon className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+                <FontAwesomeIcon icon={Icon} className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
                 <span className="text-sm font-medium text-neutral-300">{text}</span>
               </li>
             ))}
           </ul>
 
           {/* PayPal Button */}
-          <PayPalButton isYearly={isYearly} />
+          
+          {turnstileToken ? (
+            <PayPalButton isYearly={isYearly} />
+          ) : (
+            <div className="flex flex-col items-center">
+              <p className="text-sm text-neutral-400 mb-3 text-center">Please complete the captcha to checkout securely.</p>
+              <div className="bg-white/5 rounded-xl p-2 border border-white/10">
+                <Turnstile
+                  siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
+                  onSuccess={(token) => setTurnstileToken(token)}
+                  options={{ theme: 'dark' }}
+                />
+              </div>
+            </div>
+          )}
+  
         </div>
 
         {/* Coming Soon */}

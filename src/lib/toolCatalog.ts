@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Query } from 'appwrite';
+import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import {
-  BarChart3,
-  Code2,
-  Cpu,
-  FileText,
-  GraduationCap,
-  Image as ImageIcon,
-  type LucideIcon,
-  Sparkles,
-  Video,
-} from 'lucide-react';
+  faFileLines, faFilePdf, faImage as faImageIcon, faVideo, faRobot, faCode,
+  faGraduationCap, faChartBar, faPenNib, faDatabase, faFileWord, faFileExcel,
+  faFilePowerpoint, faCompress, faScissors, faCut, faRotate, faShield, faLock,
+  faUnlock, faMagnifyingGlass, faWater, faListOl, faObjectUngroup, faExpand,
+  faDroplet, faTools, faFolder, faCog, faBroom, faCrop, faImage,
+  faFileZipper, faKey, faEye, faBolt, faPen, faEyeSlash, faStar,
+  faLayerGroup, faCompressArrowsAlt, faColumns, faAlignLeft,
+  faFileCode, faFloppyDisk, faArrowsAlt, faFileMedical, faBriefcase, faPalette,
+} from '@fortawesome/free-solid-svg-icons';
 import { DATABASE_ID, databases, isAppwriteConfigured } from './qofeno-appwrite';
 
 export interface ToolCard {
@@ -20,11 +20,12 @@ export interface ToolCard {
   category: string;
   subcategory: string;
   type: 'Free' | 'Pro';
-  isNew: boolean;
+  isNew?: boolean;
+  addedAt?: string;
   isPopular: boolean;
   runs: string;
   desc: string;
-  icon: LucideIcon;
+  icon: IconDefinition;
   imageUrl: string | null;
   schemaMarkup: string;
   functionId?: string;
@@ -44,15 +45,15 @@ export interface ToolCatalogState {
   loading: boolean;
 }
 
-const TOOL_ICON_MAP: Record<string, LucideIcon> = {
-  'PDF & Documents': FileText,
-  'Image Tools': ImageIcon,
-  'Video Tools': Video,
-  'AI & Automation': Cpu,
-  'Developer Tools': Code2,
-  'Data Tools': BarChart3,
-  'Study Tools': GraduationCap,
-  'Writing Tools': Sparkles,
+const TOOL_ICON_MAP: Record<string, IconDefinition> = {
+  'PDF & Documents': faFilePdf,
+  'Image Tools': faImageIcon,
+  'Video Tools': faVideo,
+  'AI & Automation': faRobot,
+  'Developer Tools': faCode,
+  'Data Tools': faChartBar,
+  'Study Tools': faGraduationCap,
+  'Writing Tools': faPenNib,
 };
 
 export const FALLBACK_TOOLS: ToolCard[] = [
@@ -63,11 +64,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'Developer Tools',
     subcategory: 'Parsers',
     type: 'Free',
-    isNew: true,
-    isPopular: true,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: true,
     runs: '0',
     desc: 'Format, validate, and beautify your JSON data directly in your browser. No data leaves your machine.',
-    icon: Code2,
+    icon: faCode,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -90,7 +90,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: true,
     runs: '0',
     desc: 'Securely encode or decode text and strings into Base64 format locally.',
-    icon: Code2,
+    icon: faCode,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -113,7 +113,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: false,
     runs: '0',
     desc: 'Instantly count words, characters, and reading time for any block of text.',
-    icon: Code2,
+    icon: faCode,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -136,7 +136,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: false,
     runs: '0',
     desc: 'Convert text between lower, upper, title, camel, snake, kebab, and pascal case instantly.',
-    icon: Code2,
+    icon: faCode,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -155,11 +155,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'PDF & Documents',
     subcategory: 'Compressors',
     type: 'Free',
-    isNew: true,
-    isPopular: true,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: true,
     runs: '0',
     desc: 'Compress PDF files while keeping pages readable and delivery-friendly.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -182,7 +181,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: true,
     runs: '0',
     desc: 'Combine multiple PDF files into one clean document.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -205,7 +204,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: false,
     runs: '0',
     desc: 'Split a PDF into individual pages or custom page ranges.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -228,7 +227,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: false,
     runs: '0',
     desc: 'Extract text from PDFs and convert it into a Word document.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -247,11 +246,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'PDF & Documents',
     subcategory: 'Editors',
     type: 'Free',
-    isNew: true,
-    isPopular: false,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false,
     runs: '0',
     desc: 'Rotate PDF pages permanently.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -270,11 +268,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'PDF & Documents',
     subcategory: 'Converters',
     type: 'Free',
-    isNew: true,
-    isPopular: true,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: true,
     runs: '0',
     desc: 'Convert PDF pages into high-quality JPG images.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -293,11 +290,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'PDF & Documents',
     subcategory: 'Converters',
     type: 'Free',
-    isNew: true,
-    isPopular: true,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: true,
     runs: '0',
     desc: 'Convert JPG images into a single PDF document.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -316,11 +312,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'PDF & Documents',
     subcategory: 'Editors',
     type: 'Free',
-    isNew: true,
-    isPopular: false,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false,
     runs: '0',
     desc: 'Add page numbers into PDFs with ease.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -339,11 +334,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'PDF & Documents',
     subcategory: 'Converters',
     type: 'Free',
-    isNew: true,
-    isPopular: false,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false,
     runs: '0',
     desc: 'Extract text content from your PDF documents.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -362,11 +356,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'PDF & Documents',
     subcategory: 'Analyzers',
     type: 'Free',
-    isNew: true,
-    isPopular: false,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false,
     runs: '0',
     desc: 'Count the total number of words and characters in a PDF.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -385,11 +378,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'PDF & Documents',
     subcategory: 'Analyzers',
     type: 'Free',
-    isNew: true,
-    isPopular: false,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false,
     runs: '0',
     desc: 'View hidden metadata attributes in a PDF file.',
-    icon: FileText,
+    icon: faFileLines,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -401,23 +393,23 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     }),
     functionId: 'pdf-metadata-viewer',
   },
-  { id: 'pdf-to-excel', slug: 'pdf-to-excel', name: 'PDF to Excel', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Convert PDF tables into Excel spreadsheet.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-to-excel' },
-  { id: 'pdf-to-powerpoint', slug: 'pdf-to-powerpoint', name: 'PDF to PowerPoint', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Convert PDF presentation into PowerPoint.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-to-powerpoint' },
-  { id: 'pdf-to-html', slug: 'pdf-to-html', name: 'PDF to HTML', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Convert PDF to HTML web pages.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-to-html' },
-  { id: 'word-to-pdf', slug: 'word-to-pdf', name: 'Word to PDF', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Convert Word documents to PDF.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'word-to-pdf' },
-  { id: 'excel-to-pdf', slug: 'excel-to-pdf', name: 'Excel to PDF', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Convert Excel spreadsheets to PDF.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'excel-to-pdf' },
-  { id: 'powerpoint-to-pdf', slug: 'powerpoint-to-pdf', name: 'PowerPoint to PDF', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Convert PowerPoint presentations to PDF.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'powerpoint-to-pdf' },
-  { id: 'pdf-ocr', slug: 'pdf-ocr', name: 'PDF OCR', category: 'PDF & Documents', subcategory: 'Analyzers', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Make scanned PDFs searchable.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-ocr' },
-  { id: 'pdf-redact', slug: 'pdf-redact', name: 'PDF Redact', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Remove sensitive information from PDFs.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-redact' },
-  { id: 'pdf-watermark', slug: 'pdf-watermark', name: 'PDF Watermark', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Add watermark to PDFs.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-watermark' },
-  { id: 'pdf-unlock', slug: 'pdf-unlock', name: 'Unlock PDF', category: 'PDF & Documents', subcategory: 'Security', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Remove password from PDF.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-unlock' },
-  { id: 'pdf-protect', slug: 'pdf-protect', name: 'Protect PDF', category: 'PDF & Documents', subcategory: 'Security', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Add password protection to PDF.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-protect' },
-  { id: 'pdf-sign', slug: 'pdf-sign', name: 'Sign PDF', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Add digital signature to PDF.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-sign' },
-  { id: 'pdf-crop', slug: 'pdf-crop', name: 'Crop PDF', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Crop PDF pages and margins.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-crop' },
-  { id: 'pdf-repair', slug: 'pdf-repair', name: 'Repair PDF', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Fix corrupted PDF files.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-repair' },
-  { id: 'pdf-compare', slug: 'pdf-compare', name: 'Compare PDF', category: 'PDF & Documents', subcategory: 'Analyzers', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Compare two PDFs for differences.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-compare' },
-  { id: 'pdf-flatten', slug: 'pdf-flatten', name: 'Flatten PDF', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Flatten PDF form fields and annotations.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-flatten' },
-  { id: 'pdf-thumbnail', slug: 'pdf-thumbnail', name: 'PDF Thumbnail', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: true, isPopular: false, runs: '0', desc: 'Generate thumbnails from PDF pages.', icon: FileText, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-thumbnail' },
+  { id: 'pdf-to-excel', slug: 'pdf-to-excel', name: 'PDF to Excel', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Convert PDF tables into Excel spreadsheet.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-to-excel' },
+  { id: 'pdf-to-powerpoint', slug: 'pdf-to-powerpoint', name: 'PDF to PowerPoint', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Convert PDF presentation into PowerPoint.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-to-powerpoint' },
+  { id: 'pdf-to-html', slug: 'pdf-to-html', name: 'PDF to HTML', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Convert PDF to HTML web pages.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-to-html' },
+  { id: 'word-to-pdf', slug: 'word-to-pdf', name: 'Word to PDF', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Convert Word documents to PDF.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'word-to-pdf' },
+  { id: 'excel-to-pdf', slug: 'excel-to-pdf', name: 'Excel to PDF', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Convert Excel spreadsheets to PDF.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'excel-to-pdf' },
+  { id: 'powerpoint-to-pdf', slug: 'powerpoint-to-pdf', name: 'PowerPoint to PDF', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Convert PowerPoint presentations to PDF.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'powerpoint-to-pdf' },
+  { id: 'pdf-ocr', slug: 'pdf-ocr', name: 'PDF OCR', category: 'PDF & Documents', subcategory: 'Analyzers', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Make scanned PDFs searchable.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-ocr' },
+  { id: 'pdf-redact', slug: 'pdf-redact', name: 'PDF Redact', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Remove sensitive information from PDFs.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-redact' },
+  { id: 'pdf-watermark', slug: 'pdf-watermark', name: 'PDF Watermark', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Add watermark to PDFs.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-watermark' },
+  { id: 'pdf-unlock', slug: 'pdf-unlock', name: 'Unlock PDF', category: 'PDF & Documents', subcategory: 'Security', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Remove password from PDF.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-unlock' },
+  { id: 'pdf-protect', slug: 'pdf-protect', name: 'Protect PDF', category: 'PDF & Documents', subcategory: 'Security', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Add password protection to PDF.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-protect' },
+  { id: 'pdf-sign', slug: 'pdf-sign', name: 'Sign PDF', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Add digital signature to PDF.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-sign' },
+  { id: 'pdf-crop', slug: 'pdf-crop', name: 'Crop PDF', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Crop PDF pages and margins.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-crop' },
+  { id: 'pdf-repair', slug: 'pdf-repair', name: 'Repair PDF', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Fix corrupted PDF files.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-repair' },
+  { id: 'pdf-compare', slug: 'pdf-compare', name: 'Compare PDF', category: 'PDF & Documents', subcategory: 'Analyzers', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Compare two PDFs for differences.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-compare' },
+  { id: 'pdf-flatten', slug: 'pdf-flatten', name: 'Flatten PDF', category: 'PDF & Documents', subcategory: 'Editors', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Flatten PDF form fields and annotations.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-flatten' },
+  { id: 'pdf-thumbnail', slug: 'pdf-thumbnail', name: 'PDF Thumbnail', category: 'PDF & Documents', subcategory: 'Converters', type: 'Pro', isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0', desc: 'Generate thumbnails from PDF pages.', icon: faFileLines, imageUrl: null, schemaMarkup: '{}', functionId: 'pdf-thumbnail' },
   {
     id: 'image-resizer',
     slug: 'image-resizer',
@@ -429,7 +421,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: true,
     runs: '0',
     desc: 'Resize images to specific dimensions and output formats.',
-    icon: ImageIcon,
+    icon: faImageIcon,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -452,7 +444,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: true,
     runs: '0',
     desc: 'Reduce image file size with quality controls and modern formats.',
-    icon: ImageIcon,
+    icon: faImageIcon,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -475,7 +467,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: false,
     runs: '0',
     desc: 'Convert images between PNG, JPG, WEBP, AVIF, GIF, and TIFF.',
-    icon: ImageIcon,
+    icon: faImageIcon,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -494,11 +486,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'Image Tools',
     subcategory: 'Enhancers',
     type: 'Free',
-    isNew: true,
-    isPopular: false,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false,
     runs: '0',
     desc: 'Remove simple backgrounds from images and export transparent PNGs.',
-    icon: ImageIcon,
+    icon: faImageIcon,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -517,11 +508,10 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     category: 'Video Tools',
     subcategory: 'Compressors',
     type: 'Free',
-    isNew: true,
-    isPopular: true,
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: true,
     runs: '0',
     desc: 'Compress videos for faster uploads and smaller sharing sizes.',
-    icon: Video,
+    icon: faVideo,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -544,7 +534,7 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     isPopular: false,
     runs: '0',
     desc: 'Trim video clips to the exact start and end points you need.',
-    icon: Video,
+    icon: faVideo,
     imageUrl: null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
@@ -556,12 +546,335 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     }),
     functionId: '94b5e417d36a4c5284618d8f70bd644b',
   },
+  // ─── FREE PDF TOOLS ───────────────────────────────────────────────────────
+  {
+    id: 'pdf-compressor', slug: 'pdf-compressor', name: 'PDF Compressor',
+    category: 'PDF & Documents', subcategory: 'Compression', type: 'Free',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Compress PDF files with real Ghostscript compression. Choose Low, Medium, High, or Maximum quality.',
+    icon: faCompress, imageUrl: null, functionId: '2f40b396e5dc35cbda8f2f9e5c07a6a2',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Compressor', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Compress PDF files with real Ghostscript compression.' }),
+  },
+
+  {
+    id: 'pdf-merger', slug: 'pdf-merger', name: 'PDF Merger',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Free',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Merge multiple PDFs into one. Drag-and-drop reorder before merging.',
+    icon: faLayerGroup, imageUrl: null, functionId: '43d43f35eea8c0ceb04eb0e3e0c48d0a',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Merger', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Merge multiple PDFs into one.' }),
+  },
+  {
+    id: 'pdf-splitter', slug: 'pdf-splitter', name: 'PDF Splitter',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Free',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Split a PDF by page ranges, every N pages, or at bookmarks. Output single PDF or ZIP.',
+    icon: faScissors, imageUrl: null, functionId: '8e4efe2e5c2b26f0a2a0c76e3e57d0a7',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Splitter', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Split a PDF by page ranges.' }),
+  },
+  {
+    id: 'pdf-rotate', slug: 'pdf-rotate', name: 'Rotate PDF Pages',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Free',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Rotate PDF pages 90°, 180°, or 270°. Apply to all, odd, even, or specific pages.',
+    icon: faRotate, imageUrl: null, functionId: 'b9c4d12e3f5a7e8b1c2d4e5f6a7b8c9d',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Rotate PDF', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Rotate PDF pages.' }),
+  },
+  {
+    id: 'pdf-to-jpg', slug: 'pdf-to-jpg', name: 'PDF to JPG',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Free',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Convert PDF pages to JPG images. Choose quality (50-100) and DPI (72-600). Output as ZIP.',
+    icon: faImageIcon, imageUrl: null, functionId: 'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF to JPG', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert PDF to JPG images.' }),
+  },
+  {
+    id: 'jpg-to-pdf', slug: 'jpg-to-pdf', name: 'JPG to PDF',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Free',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Convert JPG/PNG images to PDF. Multiple images, drag-and-drop order, page size and margin control.',
+    icon: faFilePdf, imageUrl: null, functionId: 'c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'JPG to PDF', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert images to PDF.' }),
+  },
+  {
+    id: 'pdf-page-numbers', slug: 'pdf-page-numbers', name: 'Add Page Numbers to PDF',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Free',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Add page numbers to any PDF. Choose position, format (1, Page 1, 1 of N), font size, and start number.',
+    icon: faListOl, imageUrl: null, functionId: 'd1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Add Page Numbers to PDF', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Add page numbers to PDF.' }),
+  },
+  {
+    id: 'pdf-to-text', slug: 'pdf-to-text', name: 'PDF to Text',
+    category: 'PDF & Documents', subcategory: 'Extraction', type: 'Free',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Extract all text from a PDF and download as a .txt file. Preserves paragraph structure.',
+    icon: faFileLines, imageUrl: null, functionId: 'e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF to Text', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Extract text from PDF.' }),
+  },
+  {
+    id: 'pdf-metadata-viewer', slug: 'pdf-metadata-viewer', name: 'View PDF Metadata',
+    category: 'PDF & Documents', subcategory: 'Metadata', type: 'Free',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'View all metadata embedded in a PDF: title, author, subject, keywords, creation date, page count.',
+    icon: faEye, imageUrl: null, functionId: 'f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Metadata Viewer', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'View PDF metadata.' }),
+  },
+  {
+    id: 'pdf-delete-pages', slug: 'pdf-delete-pages', name: 'Delete PDF Pages',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Free',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Delete specific pages from a PDF. Enter page ranges like 1,3,5-7 and download the result.',
+    icon: faBroom, imageUrl: null, functionId: 'pdf-delete-pages',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Delete PDF Pages', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Delete specific pages from a PDF.' }),
+  },
+  {
+    id: 'pdf-reorder-pages', slug: 'pdf-reorder-pages', name: 'Reorder PDF Pages',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Free',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Reorder pages in a PDF. Specify the new page order or drag-and-drop to rearrange.',
+    icon: faArrowsAlt, imageUrl: null, functionId: 'pdf-reorder-pages',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Reorder PDF Pages', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Reorder pages in a PDF.' }),
+  },
+  {
+    id: 'pdf-extract-pages', slug: 'pdf-extract-pages', name: 'Extract PDF Pages',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Free',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Extract specific pages from a PDF document to create a new PDF.',
+    icon: faFileLines, imageUrl: null, functionId: 'pdf-extract-pages',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Extract PDF Pages', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Extract specific pages from a PDF document.' }),
+  },
+  // ─── PRO PDF TOOLS ────────────────────────────────────────────────────────
+  {
+    id: 'pdf-to-word', slug: 'pdf-to-word', name: 'PDF to Word',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Pro',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Convert PDF to editable Word .docx file. Extracts text and preserves paragraph structure.',
+    icon: faFileWord, imageUrl: null, functionId: '1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF to Word', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert PDF to Word.' }),
+  },
+  {
+    id: 'pdf-to-excel', slug: 'pdf-to-excel', name: 'PDF to Excel',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Pro',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Convert PDF data tables to Excel .xlsx spreadsheets. Real table detection and formatting.',
+    icon: faFileExcel, imageUrl: null, functionId: '2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF to Excel', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert PDF to Excel.' }),
+  },
+  {
+    id: 'pdf-to-powerpoint', slug: 'pdf-to-powerpoint', name: 'PDF to PowerPoint',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Pro',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Convert PDF slides or pages to PowerPoint .pptx presentation slides.',
+    icon: faFilePowerpoint, imageUrl: null, functionId: '3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF to PowerPoint', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert PDF to PowerPoint.' }),
+  },
+  {
+    id: 'word-to-pdf', slug: 'word-to-pdf', name: 'Word to PDF',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Pro',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Convert Word .docx files to PDF. Preserves fonts, images, tables, and layout.',
+    icon: faFilePdf, imageUrl: null, functionId: '4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Word to PDF', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert Word to PDF.' }),
+  },
+  {
+    id: 'excel-to-pdf', slug: 'excel-to-pdf', name: 'Excel to PDF',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Pro',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Convert Excel .xlsx spreadsheets to PDF. All sheets, formulas resolved, formatted output.',
+    icon: faFilePdf, imageUrl: null, functionId: '5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Excel to PDF', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert Excel to PDF.' }),
+  },
+  {
+    id: 'powerpoint-to-pdf', slug: 'powerpoint-to-pdf', name: 'PowerPoint to PDF',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Pro',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Convert PowerPoint .pptx presentations to PDF. All slides, animations flattened.',
+    icon: faFilePdf, imageUrl: null, functionId: '6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PowerPoint to PDF', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert PowerPoint to PDF.' }),
+  },
+  {
+    id: 'pdf-watermark', slug: 'pdf-watermark', name: 'Add Watermark to PDF',
+    category: 'PDF & Documents', subcategory: 'Security', type: 'Pro',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Add text or image watermark to PDF. Control position, opacity, font size, rotation, and color.',
+    icon: faWater, imageUrl: null, functionId: '7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Watermark', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Add watermark to PDF.' }),
+  },
+  {
+    id: 'pdf-protect', slug: 'pdf-protect', name: 'Protect PDF',
+    category: 'PDF & Documents', subcategory: 'Security', type: 'Pro',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Add password protection and permission restrictions to PDF. Owner and user password support.',
+    icon: faShield, imageUrl: null, functionId: '8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Protect PDF', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Password protect a PDF.' }),
+  },
+  {
+    id: 'pdf-unlock', slug: 'pdf-unlock', name: 'Unlock PDF',
+    category: 'PDF & Documents', subcategory: 'Security', type: 'Pro',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Remove password protection and restrictions from PDF files you own.',
+    icon: faUnlock, imageUrl: null, functionId: '9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Unlock PDF', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Remove PDF password.' }),
+  },
+  {
+    id: 'pdf-ocr', slug: 'pdf-ocr', name: 'PDF OCR',
+    category: 'PDF & Documents', subcategory: 'Extraction', type: 'Pro',
+    isNew: false, isPopular: true, runs: '0',
+    desc: 'Run OCR on scanned PDFs using Tesseract. Extract text and create searchable PDF. Supports multiple languages.',
+    icon: faMagnifyingGlass, imageUrl: null, functionId: '0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF OCR', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'OCR scanned PDFs.' }),
+  },
+  {
+    id: 'pdf-compare', slug: 'pdf-compare', name: 'PDF Comparison',
+    category: 'PDF & Documents', subcategory: 'Analysis', type: 'Pro',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Compare two PDFs and highlight differences. Shows similarity %, added/removed lines, generates diff report.',
+    icon: faColumns, imageUrl: null, functionId: '1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Compare', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Compare two PDFs.' }),
+  },
+  {
+    id: 'pdf-flatten', slug: 'pdf-flatten', name: 'PDF Flatten',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Pro',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Flatten PDF form fields and annotations into the page content. Prevents editing of filled forms.',
+    icon: faAlignLeft, imageUrl: null, functionId: '2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Flatten', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Flatten PDF form fields.' }),
+  },
+  {
+    id: 'pdf-repair', slug: 'pdf-repair', name: 'PDF Repair',
+    category: 'PDF & Documents', subcategory: 'Recovery', type: 'Pro',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Attempt to repair corrupted or broken PDF files. Re-saves with valid structure.',
+    icon: faFileMedical, imageUrl: null, functionId: '3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Repair', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Repair corrupted PDFs.' }),
+  },
+  {
+    id: 'pdf-crop', slug: 'pdf-crop', name: 'PDF Crop Tool',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Pro',
+    isNew: false, isPopular: false, runs: '0',
+    desc: 'Crop PDF pages by defining margins to remove. Specify top, bottom, left, right trim values.',
+    icon: faCrop, imageUrl: null, functionId: '4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Crop', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Crop PDF pages.' }),
+  },
+  {
+    id: 'pdf-metadata-editor', slug: 'pdf-metadata-editor', name: 'PDF Metadata Editor',
+    category: 'PDF & Documents', subcategory: 'Metadata', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Edit PDF metadata: title, author, subject, keywords, producer, creator. Saves to new PDF.',
+    icon: faPen, imageUrl: null, functionId: 'pdf-metadata-editor',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Metadata Editor', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Edit PDF metadata.' }),
+  },
+  {
+    id: 'pdf-header-footer', slug: 'pdf-header-footer', name: 'PDF Header/Footer Editor',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Add custom header and footer text to every page of a PDF. Supports {page}, {total}, {date} templates.',
+    icon: faFileLines, imageUrl: null, functionId: 'pdf-header-footer',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Header Footer', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Add header/footer to PDF.' }),
+  },
+  {
+    id: 'pdf-resize', slug: 'pdf-resize', name: 'PDF Resize Tool',
+    category: 'PDF & Documents', subcategory: 'Editing', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Resize PDF pages to A4, Letter, Legal, A3, A5, or custom dimensions. Scale content to fit.',
+    icon: faExpand, imageUrl: null, functionId: 'pdf-resize',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Resize', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Resize PDF pages.' }),
+  },
+  {
+    id: 'pdf-grayscale', slug: 'pdf-grayscale', name: 'PDF Grayscale Converter',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Convert color PDF to grayscale. Uses Ghostscript for accurate color removal.',
+    icon: faDroplet, imageUrl: null, functionId: 'pdf-grayscale',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Grayscale', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert PDF to grayscale.' }),
+  },
+  {
+    id: 'batch-merge-pdfs', slug: 'batch-merge-pdfs', name: 'Batch Merge PDFs',
+    category: 'PDF & Documents', subcategory: 'Batch Processing', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Merge up to 50 PDFs in a single batch operation. All pages combined in order.',
+    icon: faFolder, imageUrl: null, functionId: 'batch-merge-pdfs',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Batch Merge PDFs', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Batch merge up to 50 PDFs.' }),
+  },
+  {
+    id: 'pdf-form-creator', slug: 'pdf-form-creator', name: 'PDF Form Creator',
+    category: 'PDF & Documents', subcategory: 'Forms', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Create interactive PDF forms with text fields, checkboxes, radio buttons, and dropdowns.',
+    icon: faPenNib, imageUrl: null, functionId: 'pdf-form-creator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Form Creator', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Create PDF forms.' }),
+  },
+  {
+    id: 'pdf-form-filler', slug: 'pdf-form-filler', name: 'PDF Form Filler',
+    category: 'PDF & Documents', subcategory: 'Forms', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Fill existing PDF form fields programmatically by supplying field values in JSON.',
+    icon: faCog, imageUrl: null, functionId: 'pdf-form-filler',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Form Filler', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Fill PDF form fields.' }),
+  },
+  {
+    id: 'batch-compress-pdfs', slug: 'batch-compress-pdfs', name: 'Batch Compress PDFs',
+    category: 'PDF & Documents', subcategory: 'Batch Processing', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Compress multiple PDF files simultaneously with Ghostscript. Maximum quality retention.',
+    icon: faCompressArrowsAlt, imageUrl: null, functionId: 'batch-compress-pdfs',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Batch Compress PDFs', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Compress multiple PDF files simultaneously.' }),
+  },
+  {
+    id: 'batch-convert-pdfs', slug: 'batch-convert-pdfs', name: 'Batch Convert PDFs',
+    category: 'PDF & Documents', subcategory: 'Batch Processing', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Convert multiple files to or from PDF in one bulk operation.',
+    icon: faFolder, imageUrl: null, functionId: 'batch-convert-pdfs',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Batch Convert PDFs', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Batch convert PDF files.' }),
+  },
+  {
+    id: 'pdf-booklet-creator', slug: 'pdf-booklet-creator', name: 'PDF Booklet Creator',
+    category: 'PDF & Documents', subcategory: 'Formatting', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Format standard PDFs into print-ready booklets with proper page imposition.',
+    icon: faFileLines, imageUrl: null, functionId: 'pdf-booklet-creator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Booklet Creator', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Create PDF booklets.' }),
+  },
+  {
+    id: 'pdf-portfolio-creator', slug: 'pdf-portfolio-creator', name: 'PDF Portfolio Creator',
+    category: 'PDF & Documents', subcategory: 'Formatting', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Combine multiple file types into a single professional PDF portfolio.',
+    icon: faBriefcase, imageUrl: null, functionId: 'pdf-portfolio-creator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Portfolio Creator', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Create PDF portfolios.' }),
+  },
+  {
+    id: 'pdf-page-extractor-bulk', slug: 'pdf-page-extractor-bulk', name: 'PDF Page Extractor Bulk',
+    category: 'PDF & Documents', subcategory: 'Batch Processing', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Extract specific pages from hundreds of PDFs at once.',
+    icon: faScissors, imageUrl: null, functionId: 'pdf-page-extractor-bulk',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Bulk PDF Extractor', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Bulk extract PDF pages.' }),
+  },
+  {
+    id: 'pdf-page-number-customizer', slug: 'pdf-page-number-customizer', name: 'PDF Page Number Customizer',
+    category: 'PDF & Documents', subcategory: 'Formatting', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Advanced page numbering: start at specific pages, use Roman numerals, and custom positioning.',
+    icon: faListOl, imageUrl: null, functionId: 'pdf-page-number-customizer',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Page Number Customizer', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Advanced PDF page numbering.' }),
+  },
+  {
+    id: 'pdf-color-converter', slug: 'pdf-color-converter', name: 'PDF Color Converter',
+    category: 'PDF & Documents', subcategory: 'Conversion', type: 'Pro',
+    isNew: false, addedAt: '2026-06-23T07:23:08.166Z', isPopular: false, runs: '0',
+    desc: 'Convert PDF color spaces (RGB to CMYK, etc) for professional printing.',
+    icon: faPalette, imageUrl: null, functionId: 'pdf-color-converter',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Color Converter', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert PDF color spaces.' }),
+  },
 ];
 
 const FALLBACK_TOOL_LOOKUP = Object.fromEntries(FALLBACK_TOOLS.map((tool) => [tool.slug, tool]));
 
-function iconForTool(doc: any): LucideIcon {
-  return TOOL_ICON_MAP[doc.category] || TOOL_ICON_MAP[doc.subcategory] || Code2;
+function iconForTool(doc: any): IconDefinition {
+  return TOOL_ICON_MAP[doc.category] || TOOL_ICON_MAP[doc.subcategory] || faCode;
 }
 
 function toCard(doc: any, viewsBySlug: Record<string, number> = {}): ToolCard {
@@ -648,8 +961,8 @@ export function useToolCatalog(): ToolCatalogState {
 
       try {
         const [toolDocs, viewDocs] = await Promise.all([
-          databases.listDocuments(DATABASE_ID, 'tools', [Query.orderAsc('name')]),
-          databases.listDocuments(DATABASE_ID, 'tool_views', [Query.limit(100)]),
+          databases.listDocuments(DATABASE_ID, 'tools', [Query.orderAsc('name'), Query.limit(500)]),
+          databases.listDocuments(DATABASE_ID, 'tool_views', [Query.limit(500)]),
         ]);
 
         const viewsBySlug = Object.fromEntries(

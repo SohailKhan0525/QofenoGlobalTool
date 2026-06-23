@@ -1,15 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Search,
-  ChevronDown,
-  ChevronRight,
-  Check,
-  Flame,
-  SlidersHorizontal,
-  Settings,
-  Heart,
-  Sparkles,
-} from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faMagnifyingGlass, faFire, faWandMagicSparkles, faSliders, faChevronDown, faChevronRight, faCheck, faHeart, faGear } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
@@ -27,7 +18,7 @@ const ImageWithFallback = ({ src, icon: Icon, alt }: { src?: string | null, icon
   if (!src || imgError) {
     return (
       <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 overflow-hidden relative">
-        <Icon className="w-6 h-6 text-purple-600 relative z-10" />
+        <FontAwesomeIcon icon={Icon} className="w-6 h-6 text-purple-600 relative z-10" />
       </div>
     );
   }
@@ -243,7 +234,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
       } else if (activeFilterTag === 'Pro') {
         matchesTag = tool.type === 'Pro';
       } else if (activeFilterTag === 'New') {
-        matchesTag = tool.isNew;
+        matchesTag = (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew);
       } else if (activeFilterTag === 'Popular') {
         matchesTag = tool.isPopular;
       }
@@ -274,7 +265,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <Search className="w-6 h-6 text-neutral-400 absolute left-5 top-1/2 -translate-y-1/2" />
+              <FontAwesomeIcon icon={faMagnifyingGlass} className="w-6 h-6 text-neutral-400 absolute left-5 top-1/2 -translate-y-1/2" />
               {searchQuery ? (
                 <button
                   onClick={() => setSearchQuery('')}
@@ -299,7 +290,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                       : "bg-white hover:bg-neutral-50 text-neutral-700 border-neutral-200"
                   )}
                 >
-                  {tag === 'Popular' && <Flame className="w-4 h-4 inline mr-1 fill-amber-500 text-amber-500" />}
+                  {tag === 'Popular' && <FontAwesomeIcon icon={faFire} className="w-4 h-4 inline mr-1 fill-amber-500 text-amber-500" />}
                   {tag}
                 </button>
               ))}
@@ -311,7 +302,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
         {recentlyViewed.length > 0 && searchQuery === '' && selectedCategory === 'All Tools' && activeFilterTag === 'All' && (
           <div className="mb-12">
             <h2 className="text-sm uppercase font-bold text-neutral-400 tracking-wider flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4 text-purple-600" />
+              <FontAwesomeIcon icon={faWandMagicSparkles} className="w-4 h-4 text-purple-600" />
               Recently Viewed
             </h2>
             <div className="flex gap-4 overflow-x-auto pb-4 snap-x custom-scrollbar">
@@ -329,7 +320,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                     className="shrink-0 snap-start w-[280px] bg-white border border-neutral-200/50 rounded-2xl p-4 hover:border-purple-200 hover:shadow-lg hover:shadow-purple-500/5 cursor-pointer flex items-center gap-4 transition-all"
                   >
                     <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
-                      <ToolIcon className="w-5 h-5 text-purple-600" />
+                      <FontAwesomeIcon icon={ToolIcon} className="w-5 h-5 text-purple-600" />
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-[#0F0A1E] truncate w-full group-hover:text-purple-600 transition-colors">{tool.name}</h4>
@@ -348,7 +339,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
           {/* LEFT SIDEBAR: CATEGORY filtering (Hidden on Mobile) */}
           <aside className="hidden lg:flex w-full lg:w-72 shrink-0 bg-white border border-neutral-200/60 rounded-3xl p-6 self-start flex-col sticky top-[100px] h-fit max-h-[calc(100vh-120px)] overflow-y-auto">
             <h3 className="text-sm uppercase font-bold text-neutral-400 tracking-wider mb-6 flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-purple-600" /> Filter Categories
+              <FontAwesomeIcon icon={faSliders} className="w-4 h-4 text-purple-600" /> Filter Categories
             </h3>
             
             <nav className="flex flex-col gap-2">
@@ -375,7 +366,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                       <span>{cat.name}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-neutral-400 bg-neutral-100 rounded-lg px-2 py-0.5">{cat.count}</span>
-                        {hasSub && (isExpanded ? <ChevronDown className="w-4 h-4 text-neutral-400" /> : <ChevronRight className="w-4 h-4 text-neutral-400" />)}
+                        {hasSub && (isExpanded ? <FontAwesomeIcon icon={faChevronDown} className="w-4 h-4 text-neutral-400" /> : <FontAwesomeIcon icon={faChevronRight} className="w-4 h-4 text-neutral-400" />)}
                       </div>
                     </button>
 
@@ -402,7 +393,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                                 )}
                               >
                                 <span>{sub}</span>
-                                {isSubSelected && <Check className="w-3.5 h-3.5 text-purple-600" />}
+                                {isSubSelected && <FontAwesomeIcon icon={faCheck} className="w-3.5 h-3.5 text-purple-600" />}
                               </button>
                             );
                           })}
@@ -487,9 +478,9 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                               favorites.includes(tool.id) ? "bg-pink-100 text-pink-600" : "bg-neutral-100 text-neutral-400 hover:text-pink-600 hover:bg-pink-50"
                             )}
                           >
-                            <Heart className={cn("w-4 h-4", favorites.includes(tool.id) && "fill-current")} />
+                            <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", favorites.includes(tool.id) && "fill-current")} />
                           </button>
-                          {tool.isNew && (
+                          {(tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew) && (
                             <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
                               <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
                               NEW
@@ -497,7 +488,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                           )}
                           {tool.isPopular && (
                             <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Flame className="w-3.5 h-3.5 fill-current text-amber-500" />
+                              <FontAwesomeIcon icon={faFire} className="w-3.5 h-3.5 fill-current text-amber-500" />
                               POP
                             </span>
                           )}
@@ -514,7 +505,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                           <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1 flex items-center gap-2">
                             {tool.subcategory}
                             <span className="flex items-center gap-1 text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
-                              <Settings className="w-3 h-3" /> Server-processed
+                              <FontAwesomeIcon icon={faGear} className="w-3 h-3" /> Server-processed
                             </span>
                           </div>
                           <h3 className="text-lg font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors mb-2">{tool.name}</h3>
@@ -535,7 +526,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
               >
                  {/* Honest Empty State SVG/Icon */}
                  <div className="w-16 h-16 rounded-3xl bg-neutral-100 flex items-center justify-center mx-auto mb-6 animate-[bounce_4s_ease-in-out_infinite]">
-                   <Search className="w-6 h-6 text-neutral-400" />
+                   <FontAwesomeIcon icon={faMagnifyingGlass} className="w-6 h-6 text-neutral-400" />
                  </div>
                 <h3 className="font-display font-black text-[#0F0A1E] text-2xl mb-2">No tools found for this search</h3>
                 <p className="text-neutral-500 text-sm mb-8 leading-relaxed">
@@ -557,7 +548,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                     onClick={() => onNavigate && onNavigate('contact')}
                     className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl px-6 py-3 text-sm font-bold transition-colors shadow-lg shadow-purple-600/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    Suggest this tool <ChevronRight className="w-4 h-4" />
+                    Suggest this tool <FontAwesomeIcon icon={faChevronRight} className="w-4 h-4" />
                   </button>
                 </div>
               </motion.div>
@@ -571,7 +562,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
         onClick={() => setIsMobileFilterOpen(true)}
         className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#0F0A1E] text-white px-6 py-3.5 rounded-full shadow-2xl font-bold flex items-center gap-2 z-40 cursor-pointer border border-neutral-700 hover:scale-105 active:scale-95 transition-all"
       >
-        <SlidersHorizontal className="w-4 h-4" /> Filters
+        <FontAwesomeIcon icon={faSliders} className="w-4 h-4" /> Filters
       </button>
 
       {/* MOBILE FILTER BOTTOM SHEET */}
@@ -628,7 +619,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                       <span>{cat.name}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-neutral-400 bg-neutral-100 rounded-lg px-2 py-0.5">{cat.count}</span>
-                        {hasSub && (isExpanded ? <ChevronDown className="w-4 h-4 text-neutral-400" /> : <ChevronRight className="w-4 h-4 text-neutral-400" />)}
+                        {hasSub && (isExpanded ? <FontAwesomeIcon icon={faChevronDown} className="w-4 h-4 text-neutral-400" /> : <FontAwesomeIcon icon={faChevronRight} className="w-4 h-4 text-neutral-400" />)}
                       </div>
                     </button>
 
@@ -654,7 +645,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                                 )}
                               >
                                 <span>{sub}</span>
-                                {isSubSelected && <Check className="w-3.5 h-3.5 text-purple-600" />}
+                                {isSubSelected && <FontAwesomeIcon icon={faCheck} className="w-3.5 h-3.5 text-purple-600" />}
                               </button>
                             );
                           })}

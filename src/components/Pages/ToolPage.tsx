@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
+
 import { motion, AnimatePresence } from 'framer-motion';
-import { UploadCloud, CheckCircle2, ArrowLeft, ShieldCheck, Download, Heart, Eye, PlayCircle, HelpCircle, X, ChevronDown, Share2, Loader2, ChevronRight, Maximize, FileText, Facebook, Twitter, Linkedin, Copy, Search } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faCloudArrowUp, faCircleCheck, faArrowLeft, faShieldHalved, faDownload,
+  faHeart, faEye, faCirclePlay, faCircleQuestion, faXmark, faChevronDown,
+  faShareNodes, faSpinner, faChevronRight, faExpand, faFileLines,
+  faCopy, faMagnifyingGlass,
+} from '@fortawesome/free-solid-svg-icons';
+import { faXTwitter, faFacebook as faFbBrand, faLinkedin } from '@fortawesome/free-brands-svg-icons';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 import { Query } from 'appwrite';
@@ -33,7 +41,6 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   // Fetch tool data
   const toolId = localStorage.getItem('selected_tool_id') || 'json-formatter';
   const tool = tools.find(t => t.id === toolId) || FALLBACK_TOOLS.find(t => t.id === toolId) || tools[0] || FALLBACK_TOOLS[0];
-  const ToolIcon = tool.icon;
   const toolSlug = tool.slug || tool.id;
 
   useEffect(() => {
@@ -54,7 +61,27 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     const timer = setTimeout(() => {
       setIsLoadingTool(false);
     }, 800);
-    return () => clearTimeout(timer);
+    
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: tool.name,
+          text: tool.desc,
+          url: window.location.href,
+        });
+        toast.success("Thanks for sharing!");
+      } catch (err) {
+        console.error("Share failed", err);
+      }
+    } else {
+      // Fallback to copy link
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied to clipboard!");
+    }
+  };
+
+  return () => clearTimeout(timer);
   }, [toolId, user?.id]);
 
   useEffect(() => {
@@ -324,7 +351,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
         <SEO title={`${tool.name} (PRO)`} description={tool.desc} />
         <div className="max-w-4xl mx-auto space-y-6 text-center mt-10">
            <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-             <ShieldCheck className="w-10 h-10 text-purple-600" />
+             <FontAwesomeIcon icon={faShieldHalved} className="w-10 h-10 text-purple-600" />
            </div>
            <h1 className="text-3xl md:text-4xl font-black text-[#0F0A1E] mb-4">{tool.name} is a PRO feature</h1>
            <p className="text-neutral-500 mb-8 max-w-lg mx-auto leading-relaxed">Upgrade to Qofeno PRO to unlock this tool and enjoy unlimited access to all features, faster processing, and dedicated support.</p>
@@ -334,7 +361,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 onClick={() => onNavigate('tools')}
                 className="inline-flex items-center gap-2 text-neutral-500 hover:text-purple-600 transition-colors font-bold text-sm cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" /> Back to Tools
+               <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Back to Tools
               </button>
            </div>
         </div>
@@ -350,9 +377,9 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <nav className="flex items-center gap-2 text-sm font-bold text-neutral-500 min-w-0">
               <button onClick={() => onNavigate('home')} className="hover:text-purple-600 transition-colors cursor-pointer">Home</button>
-              <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+              <FontAwesomeIcon icon={faChevronRight} className="w-3.5 h-3.5 shrink-0" />
               <button onClick={() => onNavigate('tools')} className="hover:text-purple-600 transition-colors cursor-pointer">Tools</button>
-              <ChevronRight className="w-3.5 h-3.5 shrink-0" />
+              <FontAwesomeIcon icon={faChevronRight} className="w-3.5 h-3.5 shrink-0" />
               <span className="text-[#0F0A1E] truncate max-w-[180px] md:max-w-[320px]">{tool.name}</span>
             </nav>
 
@@ -360,7 +387,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
               onClick={() => onNavigate('tools')}
               className="inline-flex items-center gap-2 text-neutral-500 hover:text-purple-600 transition-colors font-bold text-sm cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Tools
+              <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Back to Tools
             </button>
           </div>
 
@@ -370,7 +397,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 <div className="flex flex-col md:flex-row gap-5 md:items-start md:justify-between mb-6">
                   <div className="flex items-start gap-4 min-w-0">
                     <div className="w-14 h-14 shrink-0 bg-purple-50 rounded-2xl flex items-center justify-center">
-                      <ToolIcon className="w-7 h-7 text-purple-600" />
+                      <FontAwesomeIcon icon={tool.icon} className="w-7 h-7 text-purple-600" />
                     </div>
                     <div className="min-w-0">
                       <h1 className="text-2xl md:text-3xl font-black text-[#0F0A1E] mb-2">{tool.name}</h1>
@@ -395,7 +422,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                         }
                       }}
                     >
-                      <Share2 className="w-4 h-4" />
+                      <FontAwesomeIcon icon={faShareNodes} className="w-4 h-4" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Share this tool</p>
@@ -407,14 +434,14 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
                 <div className="mt-6 pt-6 border-t border-neutral-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400">
-                    <ShieldCheck className="w-4 h-4 text-green-500" />
+                    <FontAwesomeIcon icon={faShieldHalved} className="w-4 h-4 text-green-500" />
                     Result auto-deletes in 30 mins
                   </div>
                   <button
                     onClick={() => setIsModalOpen(true)}
                     className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
                   >
-                    <PlayCircle className="w-4 h-4" /> How it works
+                    <FontAwesomeIcon icon={faCirclePlay} className="w-4 h-4" /> How it works
                   </button>
                 </div>
               </div>
@@ -425,13 +452,13 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 <h3 className="font-bold text-[#0F0A1E] text-sm uppercase tracking-wider mb-4">Tool Stats</h3>
                 <div className="flex justify-between items-center py-3 border-b border-neutral-100">
                   <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                    <Eye className="w-4 h-4" /> Views
+                    <FontAwesomeIcon icon={faEye} className="w-4 h-4" /> Views
                   </span>
                   <span className="font-bold text-[#0F0A1E]">{views.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                    <Heart className="w-4 h-4" /> Likes
+                    <FontAwesomeIcon icon={faHeart} className="w-4 h-4" /> Likes
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-[#0F0A1E]">{likes.toLocaleString()}</span>
@@ -442,7 +469,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                         hasLiked ? "bg-pink-100 text-pink-600 shadow-sm" : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600"
                       )}
                     >
-                      <Heart className={cn("w-4 h-4", hasLiked && "fill-current")} />
+                      <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", hasLiked && "text-pink-500")} />
                     </button>
                   </div>
                 </div>
@@ -484,11 +511,11 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   onClick={() => setIsModalOpen(false)}
                   className="absolute top-6 right-6 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors"
                 >
-                  <X className="w-4 h-4 cursor-pointer" />
+                  <FontAwesomeIcon icon={faXmark} className="w-4 h-4 cursor-pointer" />
                 </button>
 
                 <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
-                  <ShieldCheck className="w-6 h-6 text-purple-600" />
+                  <FontAwesomeIcon icon={faShieldHalved} className="w-6 h-6 text-purple-600" />
                 </div>
                 <h3 className="font-black text-2xl text-[#0F0A1E] mb-3">Privacy & Security Assured</h3>
                 <p className="text-neutral-500 text-sm leading-relaxed mb-6">
@@ -527,11 +554,11 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   onClick={() => setIsShareModalOpen(false)}
                   className="absolute top-6 right-6 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors cursor-pointer"
                 >
-                  <X className="w-4 h-4 cursor-pointer" />
+                  <FontAwesomeIcon icon={faXmark} className="w-4 h-4 cursor-pointer" />
                 </button>
 
                 <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-                  <Share2 className="w-6 h-6 text-blue-600" />
+                  <FontAwesomeIcon icon={faShareNodes} className="w-6 h-6 text-blue-600" />
                 </div>
 
                 <h2 className="font-black text-2xl text-[#0F0A1E] mb-2">Share this tool</h2>
@@ -543,7 +570,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                     target="_blank" rel="noopener noreferrer"
                     className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors cursor-pointer"
                   >
-                    <Facebook className="w-6 h-6" />
+                     <FontAwesomeIcon icon={faFbBrand} className="w-6 h-6" />
                     <span className="text-xs font-bold">Facebook</span>
                   </a>
                   <a
@@ -551,7 +578,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                     target="_blank" rel="noopener noreferrer"
                     className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-sky-50 text-sky-500 hover:bg-sky-100 transition-colors cursor-pointer"
                   >
-                    <Twitter className="w-6 h-6" />
+                     <FontAwesomeIcon icon={faXTwitter} className="w-6 h-6" />
                     <span className="text-xs font-bold">Twitter</span>
                   </a>
                   <a
@@ -559,7 +586,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                     target="_blank" rel="noopener noreferrer"
                     className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors cursor-pointer"
                   >
-                    <Linkedin className="w-6 h-6" />
+                    <FontAwesomeIcon icon={faLinkedin} className="w-6 h-6" />
                     <span className="text-xs font-bold">LinkedIn</span>
                   </a>
                 </div>
@@ -576,7 +603,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                     }}
                     className="flex bg-white items-center gap-1.5 py-1.5 px-3 hover:bg-neutral-100 shadow-sm border border-neutral-200 rounded-lg text-neutral-700 text-xs font-bold transition-colors cursor-pointer"
                   >
-                    <Copy className="w-3.5 h-3.5" /> Copy
+                    <FontAwesomeIcon icon={faCopy} className="w-3.5 h-3.5" /> Copy
                   </button>
                 </div>
               </motion.div>
@@ -602,9 +629,9 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
           {/* Breadcrumb Navigation */}
           <nav className="flex items-center gap-2 text-sm font-bold text-neutral-500">
             <button onClick={() => onNavigate('home')} className="hover:text-purple-600 transition-colors cursor-pointer">Home</button>
-            <ChevronRight className="w-3.5 h-3.5" />
+            <FontAwesomeIcon icon={faChevronRight} className="w-3.5 h-3.5" />
             <button onClick={() => onNavigate('tools')} className="hover:text-purple-600 transition-colors cursor-pointer">Tools</button>
-            <ChevronRight className="w-3.5 h-3.5" />
+            <FontAwesomeIcon icon={faChevronRight} className="w-3.5 h-3.5" />
             <span className="text-[#0F0A1E] truncate max-w-[150px] md:max-w-[300px]">{tool.name}</span>
           </nav>
 
@@ -613,7 +640,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
               onClick={() => onNavigate('tools')}
               className="flex items-center gap-2 text-neutral-500 hover:text-purple-600 transition-colors font-bold text-sm cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" /> <span className="hidden md:inline">Back to Tools</span>
+              <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> <span className="hidden md:inline">Back to Tools</span>
             </button>
           </div>
         </div>
@@ -640,7 +667,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                       }
                     }}
                   >
-                    <Share2 className="w-4 h-4" />
+                    <FontAwesomeIcon icon={faShareNodes} className="w-4 h-4" />
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Share this tool</p>
@@ -660,7 +687,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
               ) : (
                 <div className="flex flex-col md:flex-row gap-6 items-start mb-8 pr-0 md:pr-12">
                   <div className="w-16 h-16 shrink-0 bg-purple-50 rounded-2xl flex items-center justify-center">
-                    <ToolIcon className="w-8 h-8 text-purple-600" />
+                    <FontAwesomeIcon icon={tool.icon} className="w-8 h-8 text-purple-600" />
                   </div>
                   <div>
                     <h1 className="text-2xl md:text-3xl font-black text-[#0F0A1E] mb-2">{tool.name}</h1>
@@ -740,7 +767,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                           <button onClick={() => { navigator.clipboard.writeText(outputText); toast.success("Copied!"); }} className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors bg-purple-50 px-3 py-1 rounded-full">Copy Result</button>
                           {outputText && (
                             <button onClick={handleDownload} className="text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 transition-colors px-3 py-1 rounded-full flex items-center gap-1 cursor-pointer">
-                              <Download className="w-3 h-3" /> Download
+                              <FontAwesomeIcon icon={faDownload} className="w-3 h-3" /> Download
                             </button>
                           )}
                         </div>
@@ -758,7 +785,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-purple-50/80 via-white to-pink-50/80 animate-gradient-x z-10"
                                  >
                                    <div className="flex items-center gap-3">
-                                      <Loader2 className="w-5 h-5 text-purple-600 animate-spin shrink-0" />
+                                      <FontAwesomeIcon icon={faSpinner} className="w-5 h-5 text-purple-600 fa-spin shrink-0" />
                                       <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-neutral-400 to-purple-600 animate-shimmer bg-[length:200%_auto] text-base">
                                         Computing formatted output...
                                       </span>
@@ -820,7 +847,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
             <div className="mt-8 pt-6 border-t border-neutral-100 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400">
-                  <ShieldCheck className="w-4 h-4 text-green-500" />
+                  <FontAwesomeIcon icon={faShieldHalved} className="w-4 h-4 text-green-500" />
                   Result auto-deletes in 30 mins
                 </div>
                 <Tooltip>
@@ -828,7 +855,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                     className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors flex items-center gap-1 cursor-pointer relative"
                     onClick={() => setIsModalOpen(true)}
                   >
-                    <PlayCircle className="w-4 h-4" /> How it works
+                    <FontAwesomeIcon icon={faCirclePlay} className="w-4 h-4" /> How it works
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Read about our security & processing</p>
@@ -851,13 +878,13 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 <>
                   <div className="flex justify-between items-center py-3 border-b border-neutral-100">
                     <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                      <Eye className="w-4 h-4" /> Views
+                      <FontAwesomeIcon icon={faEye} className="w-4 h-4" /> Views
                     </span>
                     <span className="font-bold text-[#0F0A1E]">{views.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between items-center py-3">
                     <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                      <Heart className="w-4 h-4" /> Likes
+                      <FontAwesomeIcon icon={faHeart} className="w-4 h-4" /> Likes
                     </span>
                     <div className="flex items-center gap-3">
                       <span className="font-bold text-[#0F0A1E]">{likes.toLocaleString()}</span>
@@ -868,7 +895,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                           hasLiked ? "bg-pink-100 text-pink-600 shadow-sm" : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600"
                         )}
                       >
-                        <Heart className={cn("w-4 h-4", hasLiked && "fill-current")} />
+                        <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", hasLiked && "fill-current")} />
                       </button>
                     </div>
                   </div>
@@ -895,7 +922,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
         <div className="mt-16 bg-white border border-neutral-200/80 rounded-3xl p-5 md:p-10 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-neutral-100">
             <div className="flex items-center gap-3">
-              <HelpCircle className="w-6 h-6 text-[#0F0A1E]" />
+              <FontAwesomeIcon icon={faCircleQuestion} className="w-6 h-6 text-[#0F0A1E]" />
               <div>
                 <h2 className="text-xl md:text-2xl font-black text-[#0F0A1E]">Documentation & FAQ</h2>
                 <p className="text-neutral-500 text-xs mt-0.5">Explore search-guided instructions and answers for {tool.name}</p>
@@ -905,7 +932,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
             {/* Live Search Input */}
             <div className="relative w-full md:w-80 shrink-0">
               <span className="absolute inset-y-0 left-3.5 flex items-center text-neutral-400">
-                <Search className="w-4 h-4 text-purple-600" />
+                <FontAwesomeIcon icon={faMagnifyingGlass} className="w-4 h-4 text-purple-600" />
               </span>
               <input
                 type="text"
@@ -923,7 +950,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   onClick={() => setDocSearchQuery('')}
                   className="absolute inset-y-0 right-3 flex items-center text-neutral-400 hover:text-neutral-600 transition-colors p-1"
                 >
-                  <X className="w-4 h-4 cursor-pointer" />
+                  <FontAwesomeIcon icon={faXmark} className="w-4 h-4 cursor-pointer" />
                 </button>
               )}
             </div>
@@ -991,7 +1018,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                             <span className="text-[#0F0A1E] font-extrabold">{highlightText(doc.q, docSearchQuery)}</span>
                           </div>
                           {!isSearching && (
-                            <ChevronDown className={cn("w-5 h-5 text-purple-600 transition-transform duration-300 shrink-0", isOpen ? "rotate-180" : "")} />
+                            <FontAwesomeIcon icon={faChevronDown} className={cn("w-5 h-5 text-purple-600 transition-transform duration-300 shrink-0", isOpen ? "rotate-180" : "")} />
                           )}
                         </button>
                         <AnimatePresence initial={false}>
@@ -1017,7 +1044,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
             return (
               <div className="text-center py-12 px-4 bg-[#FAFAFA] rounded-2xl border border-dashed border-neutral-200">
-                <Search className="w-8 h-8 text-neutral-400 mx-auto mb-3" />
+                <FontAwesomeIcon icon={faMagnifyingGlass} className="w-8 h-8 text-neutral-400 mx-auto mb-3" />
                 <h3 className="text-base font-bold text-neutral-800 mb-1">No matches found</h3>
                 <p className="text-xs text-neutral-500 max-w-sm mx-auto mb-4">
                   No instructions or FAQs matched your query "{docSearchQuery}". Try general keywords like "format", "locally", or "secure".
@@ -1055,11 +1082,11 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 onClick={() => setIsModalOpen(false)}
                 className="absolute top-6 right-6 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors"
               >
-                <X className="w-4 h-4 cursor-pointer" />
+                <FontAwesomeIcon icon={faXmark} className="w-4 h-4 cursor-pointer" />
               </button>
               
               <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
-                <ShieldCheck className="w-6 h-6 text-purple-600" />
+                <FontAwesomeIcon icon={faShieldHalved} className="w-6 h-6 text-purple-600" />
               </div>
               <h3 className="font-black text-2xl text-[#0F0A1E] mb-3">Privacy & Security Assured</h3>
               <p className="text-neutral-500 text-sm leading-relaxed mb-6">
@@ -1099,11 +1126,11 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 onClick={() => setIsShareModalOpen(false)}
                 className="absolute top-6 right-6 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4 cursor-pointer" />
+                <FontAwesomeIcon icon={faXmark} className="w-4 h-4 cursor-pointer" />
               </button>
               
               <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-                <Share2 className="w-6 h-6 text-blue-600" />
+                <FontAwesomeIcon icon={faShareNodes} className="w-6 h-6 text-blue-600" />
               </div>
               
               <h2 className="font-black text-2xl text-[#0F0A1E] mb-2">Share this tool</h2>
@@ -1115,7 +1142,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   target="_blank" rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors cursor-pointer"
                 >
-                  <Facebook className="w-6 h-6" />
+                  <FontAwesomeIcon icon={faFbBrand} className="w-4 h-4 text-[#1877F2]" />
                   <span className="text-xs font-bold">Facebook</span>
                 </a>
                 <a 
@@ -1123,7 +1150,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   target="_blank" rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-sky-50 text-sky-500 hover:bg-sky-100 transition-colors cursor-pointer"
                 >
-                  <Twitter className="w-6 h-6" />
+                  <FontAwesomeIcon icon={faXTwitter} className="w-4 h-4 text-[#000000]" />
                   <span className="text-xs font-bold">Twitter</span>
                 </a>
                 <a 
@@ -1131,7 +1158,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   target="_blank" rel="noopener noreferrer"
                   className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors cursor-pointer"
                 >
-                  <Linkedin className="w-6 h-6" />
+                  <FontAwesomeIcon icon={faLinkedin} className="w-6 h-6" />
                   <span className="text-xs font-bold">LinkedIn</span>
                 </a>
               </div>
@@ -1148,7 +1175,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   }}
                   className="flex bg-white items-center gap-1.5 py-1.5 px-3 hover:bg-neutral-100 shadow-sm border border-neutral-200 rounded-lg text-neutral-700 text-xs font-bold transition-colors cursor-pointer"
                 >
-                  <Copy className="w-3.5 h-3.5" /> Copy
+                  <FontAwesomeIcon icon={faCopy} className="w-3.5 h-3.5" /> Copy
                 </button>
               </div>
             </motion.div>

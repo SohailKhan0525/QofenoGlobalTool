@@ -1,6 +1,6 @@
 import { Account, Client, Databases, Functions, Realtime, Storage } from 'appwrite';
 
-const env = import.meta.env;
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
 const endpoint = env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
 const projectId = env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 

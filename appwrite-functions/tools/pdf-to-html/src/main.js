@@ -1,12 +1,20 @@
-import { Client, Databases, Storage } from 'node-appwrite';
+import { Client, Databases, Query, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 import { ID, Permission, Role } from 'node-appwrite';
 import pdfParse from 'pdf-parse';
 
 function parseBody(req) {
-  const raw = req.body || req.payload || '{}';
-  if (typeof raw !== 'string') return raw || {};
-  try { return JSON.parse(raw); } catch { return {}; }
+  if (req.bodyRaw && typeof req.bodyRaw === 'string') {
+    try { return JSON.parse(req.bodyRaw); } catch { /* ignore */ }
+  }
+  if (req.body && typeof req.body === 'string') {
+    try { return JSON.parse(req.body); } catch { /* ignore */ }
+  }
+  if (typeof req.body === 'object' && req.body !== null) {
+    return req.body;
+  }
+  return {};
+}
 }
 
 function decodeFileInput(value) {

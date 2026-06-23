@@ -1,21 +1,8 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleExclamation, faCircleCheck, faCopy, faFileLines, faSpinner, faPlus, faTrashCan, faCloudArrowUp, faVideo, faImage as faImageIcon, faDownload, faWandMagicSparkles, faSliders } from '@fortawesome/free-solid-svg-icons';
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-  AlertCircle,
-  CheckCircle2,
-  Copy,
-  FileText,
-  Image as ImageIcon,
-  Loader2,
-  LucideIcon,
-  Plus,
-  Trash2,
-  UploadCloud,
-  Video,
-  Download,
-  Sparkles,
-  SlidersHorizontal,
-} from 'lucide-react';
+
 import { Progress } from '@/components/ui/progress';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
@@ -90,7 +77,7 @@ type FileToolField =
   | { type: 'number'; key: string; label: string; min?: number; max?: number; defaultValue?: string };
 
 type FileToolConfig = {
-  icon: LucideIcon;
+  icon: any;
   accept: string;
   multiple: boolean;
   helper: string;
@@ -103,7 +90,7 @@ type FileToolConfig = {
 
 const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   'pdf-compressor': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Drop a PDF or pick one from your device.',
@@ -115,7 +102,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'pdf-merger': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: true,
     helper: 'Select multiple PDFs to merge them into one document.',
@@ -128,7 +115,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     maxFiles: 20,
   },
   'pdf-splitter': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload one PDF, then define page ranges like 1-2, 4, 7-10.',
@@ -141,7 +128,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'pdf-to-word': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload one PDF to extract its text into a Word-ready output.',
@@ -154,13 +141,13 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'pdf-rotate': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to rotate its pages.',
     description: 'Rotate PDF pages permanently.',
     processLabel: 'Rotate Pages',
-    functionId: 'pdf-rotate',
+    functionId: FUNCTION_IDS.pdfRotate || 'pdf-rotate',
     fields: [
       { type: 'select', key: 'rotation', label: 'Rotation', options: ['90Â° Clockwise', '180Â°', '90Â° Counter-clockwise'], defaultValue: '90Â° Clockwise' },
       { type: 'select', key: 'apply_to', label: 'Apply to', options: ['All pages', 'Odd pages', 'Even pages', 'Specific pages'], defaultValue: 'All pages' },
@@ -168,13 +155,13 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'pdf-to-jpg': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to convert it to JPG images.',
     description: 'Convert PDF pages into high-quality JPG images.',
     processLabel: 'Convert to JPG',
-    functionId: 'pdf-to-jpg',
+    functionId: FUNCTION_IDS.pdfToJpg || 'pdf-to-jpg',
     fields: [
       { type: 'range', key: 'quality', label: 'Quality', min: 50, max: 100, step: 1, defaultValue: '90' },
       { type: 'select', key: 'dpi', label: 'DPI', options: ['72', '96', '150', '300', '600'], defaultValue: '300' },
@@ -182,13 +169,13 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'jpg-to-pdf': {
-    icon: FileText,
+    icon: faFileLines,
     accept: 'image/jpeg,image/jpg',
     multiple: true,
     helper: 'Upload JPGs to combine them into a PDF.',
     description: 'Convert JPG images into a single PDF document.',
     processLabel: 'Convert to PDF',
-    functionId: 'jpg-to-pdf',
+    functionId: FUNCTION_IDS.jpgToPdf || 'jpg-to-pdf',
     fields: [
       { type: 'select', key: 'page_size', label: 'Page size', options: ['A4', 'Letter', 'Legal', 'Auto-fit'], defaultValue: 'A4' },
       { type: 'select', key: 'orientation', label: 'Orientation', options: ['Portrait', 'Landscape', 'Auto'], defaultValue: 'Portrait' },
@@ -197,13 +184,13 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     maxFiles: 50,
   },
   'pdf-page-numbers': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to add page numbers.',
     description: 'Add page numbers into PDFs with ease.',
     processLabel: 'Add Page Numbers',
-    functionId: 'pdf-page-numbers',
+    functionId: FUNCTION_IDS.pdfPageNumbers || 'pdf-page-numbers',
     fields: [
       { type: 'select', key: 'position', label: 'Position', options: ['Bottom center', 'Bottom left', 'Bottom right', 'Top center', 'Top left', 'Top right'], defaultValue: 'Bottom center' },
       { type: 'number', key: 'start_number', label: 'Start number', defaultValue: '1' },
@@ -212,37 +199,37 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'pdf-to-text': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to extract its text.',
     description: 'Extract text content from your PDF documents.',
     processLabel: 'Extract Text',
-    functionId: 'pdf-to-text',
+    functionId: FUNCTION_IDS.pdfToText || 'pdf-to-text',
     fields: [],
   },
   'pdf-word-count': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to count words and characters.',
     description: 'Count the total number of words and characters in a PDF.',
     processLabel: 'Count Words',
-    functionId: 'pdf-word-count',
+    functionId: FUNCTION_IDS.pdfWordCount || 'pdf-word-count',
     fields: [],
   },
   'pdf-metadata-viewer': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to view its metadata.',
     description: 'View hidden metadata attributes in a PDF file.',
     processLabel: 'View Metadata',
-    functionId: 'pdf-metadata-viewer',
+    functionId: FUNCTION_IDS.pdfMetadataViewer || 'pdf-metadata-viewer',
     fields: [],
   },
   'image-resizer': {
-    icon: ImageIcon,
+    icon: faImageIcon,
     accept: 'image/*',
     multiple: false,
     helper: 'Upload one image and resize it for your target layout.',
@@ -257,7 +244,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'image-compressor': {
-    icon: ImageIcon,
+    icon: faImageIcon,
     accept: 'image/*',
     multiple: false,
     helper: 'Upload one image to reduce its file size.',
@@ -270,7 +257,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     ],
   },
   'image-converter': {
-    icon: ImageIcon,
+    icon: faImageIcon,
     accept: 'image/*',
     multiple: false,
     helper: 'Upload one image and choose the output format.',
@@ -280,7 +267,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     fields: [{ type: 'select', key: 'output_format', label: 'Output format', options: ['png', 'jpeg', 'webp', 'avif', 'gif'], defaultValue: 'png' }],
   },
   'image-bg-remover': {
-    icon: ImageIcon,
+    icon: faImageIcon,
     accept: 'image/*',
     multiple: false,
     helper: 'Upload a foreground image and remove its background.',
@@ -290,7 +277,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     fields: [{ type: 'range', key: 'threshold', label: 'Background threshold', min: 10, max: 90, step: 1, defaultValue: '30' }],
   },
   'video-compressor': {
-    icon: Video,
+    icon: faVideo,
     accept: 'video/*',
     multiple: false,
     helper: 'Upload one video to reduce its size.',
@@ -300,7 +287,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     fields: [{ type: 'range', key: 'quality', label: 'Quality', min: 25, max: 100, step: 1, defaultValue: '80' }],
   },
   'video-trimmer': {
-    icon: Video,
+    icon: faVideo,
     accept: 'video/*',
     multiple: false,
     helper: 'Upload one video and trim it by start and end times.',
@@ -316,7 +303,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   // â”€â”€ PRO PDF Tools â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   'pdf-watermark': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF and add a text watermark to every page.',
@@ -334,7 +321,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-protect': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to add password protection.',
@@ -348,7 +335,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-ocr': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a scanned PDF to make it text-searchable.',
@@ -362,7 +349,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-unlock': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a password-protected PDF to remove its password.',
@@ -375,7 +362,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-flatten': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to flatten all form fields and annotations.',
@@ -386,7 +373,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-thumbnail': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to generate a thumbnail of the first page.',
@@ -400,7 +387,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-repair': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a corrupted or invalid PDF to attempt repair.',
@@ -411,7 +398,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-redact': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF and enter text to redact (black out) from all pages.',
@@ -424,7 +411,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-sign': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to add a signature placeholder or image.',
@@ -438,7 +425,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-crop': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to crop its page dimensions.',
@@ -454,7 +441,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-compare': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: true,
     helper: 'Upload exactly two PDFs to compare their content.',
@@ -468,7 +455,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-to-excel': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF with tables to convert to Excel.',
@@ -479,7 +466,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-to-powerpoint': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF presentation to convert to PowerPoint.',
@@ -490,7 +477,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'pdf-to-html': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pdf,application/pdf',
     multiple: false,
     helper: 'Upload a PDF to convert its content to an HTML file.',
@@ -501,7 +488,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'word-to-pdf': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     multiple: false,
     helper: 'Upload a Word document (.docx) to convert it to PDF.',
@@ -512,7 +499,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'excel-to-pdf': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     multiple: false,
     helper: 'Upload an Excel spreadsheet (.xlsx) to convert it to PDF.',
@@ -523,7 +510,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
 
   'powerpoint-to-pdf': {
-    icon: FileText,
+    icon: faFileLines,
     accept: '.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation',
     multiple: false,
     helper: 'Upload a PowerPoint file (.pptx) to convert it to PDF.',
@@ -722,7 +709,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
             animate={{ opacity: 1, y: 0 }}
             className="mb-4 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4"
           >
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <FontAwesomeIcon icon={faCircleExclamation}  className="w-5 h-5 text-red-500 flex-shrink-0" />
             <div>
               <p className="font-semibold text-red-800 text-sm">Wrong file type</p>
               <p className="text-xs text-red-600 mt-0.5">This tool accepts <strong>{acceptedExts}</strong> files only</p>
@@ -747,12 +734,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           )}
         >
           <div className="w-20 h-20 mb-5 rounded-2xl bg-purple-100 flex items-center justify-center mx-auto">
-            {config.icon === ImageIcon
-              ? <ImageIcon className="w-10 h-10 text-purple-600" />
-              : config.icon === Video
-              ? <Video className="w-10 h-10 text-purple-600" />
-              : <FileText className="w-10 h-10 text-purple-600" />
-            }
+            <FontAwesomeIcon icon={config.icon} className="w-10 h-10 text-purple-600" />
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-black text-[#0F0A1E] mb-2">
@@ -833,7 +815,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           <div className="rounded-3xl border-2 border-green-200 bg-green-50 p-6 space-y-3">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="w-6 h-6 text-white" />
+                <FontAwesomeIcon icon={faCircleCheck}  className="w-6 h-6 text-white" />
               </div>
               <div>
                 <p className="text-lg font-black text-green-800">Your files are ready!</p>
@@ -849,7 +831,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                 {item.download_url && (
                   <a href={item.download_url} target="_blank" rel="noreferrer"
                     className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 transition-colors">
-                    <Download className="w-3.5 h-3.5" /> Download
+                    <FontAwesomeIcon icon={faDownload}  className="w-3.5 h-3.5" /> Download
                   </a>
                 )}
               </div>
@@ -860,7 +842,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           <div className="rounded-3xl border-2 border-green-200 bg-green-50 p-6">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="w-7 h-7 text-white" />
+                <FontAwesomeIcon icon={faCircleCheck}  className="w-7 h-7 text-white" />
               </div>
               <div>
                 <p className="text-lg font-black text-green-800">Your file is ready!</p>
@@ -878,7 +860,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                 rel="noreferrer"
                 className="flex w-full min-h-[56px] items-center justify-center gap-3 rounded-2xl bg-purple-600 hover:bg-purple-700 active:scale-[0.98] text-white font-black text-lg shadow-lg shadow-purple-200 transition-all mb-3"
               >
-                <Download className="w-6 h-6" />
+                <FontAwesomeIcon icon={faDownload}  className="w-6 h-6" />
                 Download {result.output_filename || 'result'}
               </a>
             ) : (
@@ -921,7 +903,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         className="rounded-3xl border-2 border-red-200 bg-red-50 p-6 w-full"
       >
         <div className="flex items-center gap-3 mb-4">
-          <AlertCircle className="w-8 h-8 text-red-500 flex-shrink-0" />
+          <FontAwesomeIcon icon={faCircleExclamation}  className="w-8 h-8 text-red-500 flex-shrink-0" />
           <div>
             <p className="font-black text-red-800 text-lg">Processing failed</p>
             <p className="text-sm text-red-600 mt-0.5">{errorMsg}</p>
@@ -957,7 +939,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
               className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-neutral-200 shadow-sm"
             >
               <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-                <FileText className="w-5 h-5 text-purple-600" />
+                <FontAwesomeIcon icon={faFileLines}  className="w-5 h-5 text-purple-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-[#0F0A1E] truncate text-sm">{file.name}</p>
@@ -971,7 +953,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                 }}
                 className="p-2 rounded-full text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               >
-                <Trash2 className="w-4 h-4" />
+                <FontAwesomeIcon icon={faTrashCan}  className="w-4 h-4" />
               </button>
             </motion.div>
           ))}
@@ -983,7 +965,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
             onClick={() => inputRef.current?.click()}
             className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-2xl text-sm font-semibold text-neutral-500 hover:border-purple-300 hover:text-purple-600 hover:bg-purple-50 transition-all"
           >
-            <Plus className="w-4 h-4 inline mr-1" /> Add more files
+            <FontAwesomeIcon icon={faPlus}  className="w-4 h-4 inline mr-1" /> Add more files
           </button>
         )}
       </motion.div>
@@ -997,7 +979,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 shadow-sm space-y-3"
         >
           <div className="flex items-center gap-2 text-sm font-black text-[#0F0A1E]">
-            <SlidersHorizontal className="w-4 h-4 text-purple-600" /> Settings
+            <FontAwesomeIcon icon={faSliders}  className="w-4 h-4 text-purple-600" /> Settings
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {config.fields.map((field) => {
@@ -1084,7 +1066,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           active:scale-[0.98] text-white font-black text-xl
           rounded-2xl shadow-xl shadow-purple-200 transition-all"
       >
-        <Sparkles className="w-6 h-6" />
+        <FontAwesomeIcon icon={faWandMagicSparkles}  className="w-6 h-6" />
         {config.processLabel}
       </motion.button>
 

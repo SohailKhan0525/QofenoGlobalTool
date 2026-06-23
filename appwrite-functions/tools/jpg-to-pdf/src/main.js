@@ -1,15 +1,19 @@
-import { Client, Databases, ID, Permission, Role, Storage } from 'node-appwrite';
+import { Client, Databases, Query, ID, Permission, Role, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 import { PDFDocument } from 'pdf-lib';
 
 function parseBody(req) {
-  const raw = req.body || req.payload || '{}';
-  if (typeof raw !== 'string') return raw || {};
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return {};
+  if (req.bodyRaw && typeof req.bodyRaw === 'string') {
+    try { return JSON.parse(req.bodyRaw); } catch { /* ignore */ }
   }
+  if (req.body && typeof req.body === 'string') {
+    try { return JSON.parse(req.body); } catch { /* ignore */ }
+  }
+  if (typeof req.body === 'object' && req.body !== null) {
+    return req.body;
+  }
+  return {};
+}
 }
 
 function decodeFileInput(value) {

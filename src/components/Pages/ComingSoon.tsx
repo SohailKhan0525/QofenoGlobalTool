@@ -1,4 +1,5 @@
-import { ArrowLeft } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { FaToolbox } from 'react-icons/fa6';
 import { SEO } from '../../components/SEO';
 
@@ -17,7 +18,7 @@ export function ComingSoon({ onBack }: { onBack: () => void }) {
         onClick={onBack}
         className="flex items-center gap-2 bg-[#0F0A1E] text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-600 transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" /> Back to Home
+        <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Back to Home
       </button>
     </div>
   );

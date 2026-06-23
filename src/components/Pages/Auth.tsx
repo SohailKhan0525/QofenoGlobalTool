@@ -1,9 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Loader2, Github } from 'lucide-react';
-import { FaToolbox } from 'react-icons/fa6';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {
+  faArrowLeft, faEnvelope, faLock, faEye, faEyeSlash, faCircleExclamation,
+  faCircleCheck, faSpinner, faTools,
+} from '@fortawesome/free-solid-svg-icons';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { useAuth } from '../../context/AuthContext';
 
 export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigate: (page: string) => void }) {
@@ -16,6 +21,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
   const [name, setName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [shake, setShake] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const redirectTarget = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -34,6 +40,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
     if (!password.trim()) return 'Password is required.';
     if (!isLogin && !name.trim()) return 'Full name is required.';
     if (!isLogin && password.length < 8) return 'Password must be at least 8 characters.';
+    if (!isLogin && !turnstileToken) return 'Please complete the captcha verification.';
     return '';
   };
 
@@ -87,7 +94,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
         onClick={() => onNavigate('home')}
         className="absolute top-24 left-6 md:top-28 md:left-10 flex items-center gap-2 text-neutral-500 hover:text-purple-600 transition-colors font-semibold z-10 cursor-pointer"
       >
-        <ArrowLeft className="w-4 h-4" /> Back to home
+        <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Back to home
       </button>
 
       <motion.div
@@ -98,7 +105,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
       >
         <div className="flex justify-center mb-8">
           <div className="w-12 h-12 bg-gradient-to-tr from-purple-600 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
-            <span className="text-white text-xl animate-pulse"><FaToolbox /></span>
+            <FontAwesomeIcon icon={faTools} className="text-white text-xl" />
           </div>
         </div>
 
@@ -144,7 +151,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
                 className="w-full bg-neutral-50 border border-neutral-200 focus:border-purple-600 focus:bg-white pl-10 pr-4 py-3.5 rounded-xl outline-none transition-all text-neutral-800 text-sm font-medium text-[16px]"
                 placeholder="you@example.com"
               />
-              <Mail className="w-4.5 h-4.5 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <FontAwesomeIcon icon={faEnvelope} className="text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             </div>
           </div>
 
@@ -166,13 +173,13 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
                 className="w-full bg-neutral-50 border border-neutral-200 focus:border-purple-600 focus:bg-white pl-10 pr-10 py-3.5 rounded-xl outline-none transition-all text-neutral-800 text-sm font-medium text-[16px]"
                 placeholder="••••••••"
               />
-              <Lock className="w-4.5 h-4.5 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <FontAwesomeIcon icon={faLock} className="text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 cursor-pointer"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <FontAwesomeIcon icon={faEyeSlash} className="w-4 h-4" /> : <FontAwesomeIcon icon={faEye} className="w-4 h-4" />}
               </button>
             </div>
             {!isLogin && password.length > 0 && (
@@ -189,7 +196,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
               <label className="flex items-start gap-2 cursor-pointer group">
                 <div className="relative flex items-center justify-center mt-0.5">
                   <input type="checkbox" required className="peer appearance-none w-4 h-4 border-2 border-neutral-300 rounded focus:ring-2 focus:ring-purple-600 focus:outline-none checked:bg-purple-600 checked:border-purple-600 transition-colors cursor-pointer" />
-                  <CheckCircle2 className="w-3 h-3 text-white absolute opacity-0 peer-checked:opacity-100 pointer-events-none" />
+                  <FontAwesomeIcon icon={faCircleCheck} className="w-3 h-3 text-white absolute opacity-0 peer-checked:opacity-100 pointer-events-none" />
                 </div>
                 <span className="text-[11px] font-medium text-neutral-600 leading-tight">
                   I agree to the <button type="button" onClick={() => onNavigate('terms')} className="text-purple-600 hover:text-purple-800 font-bold underline cursor-pointer">Terms of Service</button> and <button type="button" onClick={() => onNavigate('policy')} className="text-purple-600 hover:text-purple-800 font-bold underline cursor-pointer">Privacy Policy</button>.
@@ -199,16 +206,25 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
               <label className="flex items-start gap-2 cursor-pointer group">
                 <div className="relative flex items-center justify-center mt-0.5">
                   <input type="checkbox" className="peer appearance-none w-4 h-4 border-2 border-neutral-300 rounded focus:ring-2 focus:ring-purple-600 focus:outline-none checked:bg-purple-600 checked:border-purple-600 transition-colors cursor-pointer" />
-                  <CheckCircle2 className="w-3 h-3 text-white absolute opacity-0 peer-checked:opacity-100 pointer-events-none" />
+                  <FontAwesomeIcon icon={faCircleCheck} className="w-3 h-3 text-white absolute opacity-0 peer-checked:opacity-100 pointer-events-none" />
                 </div>
                 <span className="text-[11px] font-medium text-neutral-600 leading-tight">(Optional) Send me product updates, feature announcements, and Qofeno news.</span>
               </label>
             </div>
           )}
 
+          {!isLogin && (
+            <div className="flex justify-center my-4">
+              <Turnstile
+                siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
+                onSuccess={(token) => setTurnstileToken(token)}
+                onError={() => triggerError('Captcha verification failed. Please try again.')}
+              />
+            </div>
+          )}
           {errorMessage && (
             <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <FontAwesomeIcon icon={faCircleExclamation} className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
@@ -218,7 +234,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
             disabled={isLoading}
             className="w-full mt-4 py-3.5 bg-gradient-to-br from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-bold rounded-xl shadow-lg shadow-purple-600/20 transition-all flex items-center justify-center cursor-pointer disabled:opacity-70"
           >
-            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : isLogin ? 'Sign In' : 'Create Account'}
+            {isLoading ? <FontAwesomeIcon icon={faSpinner} className="h-5 w-5 fa-spin" /> : isLogin ? 'Sign In' : 'Create Account'}
           </button>
         </motion.form>
 
@@ -249,7 +265,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
           disabled={isLoading}
           className="mt-3 w-full py-3.5 bg-neutral-900 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-3 cursor-pointer"
         >
-          <Github className="w-4.5 h-4.5" />
+          <FontAwesomeIcon icon={faGithub} className="w-4 h-4" />
           Continue with GitHub
         </button>
 

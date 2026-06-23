@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faShieldHalved, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import { PayPalButton } from '../PayPal/PayPalButton';
 import { SEO } from '../../components/SEO';
 import { motion } from 'framer-motion';
@@ -25,7 +26,7 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
       >
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <ShieldCheck className="w-8 h-8 text-purple-600" />
+            <FontAwesomeIcon icon={faShieldHalved} className="w-8 h-8 text-purple-600" />
           </div>
           <h1 className="text-3xl font-black text-[#0F0A1E]">Upgrade to Pro</h1>
           <p className="text-neutral-500 mt-2">Unlock the full potential of Qofeno.</p>
@@ -55,7 +56,7 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
               "No watermarks on outputs"
             ].map((feature, idx) => (
               <li key={idx} className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                <FontAwesomeIcon icon={faCircleCheck} className="w-5 h-5 text-green-500 shrink-0" />
                 <span className="text-sm font-medium text-neutral-600">{feature}</span>
               </li>
             ))}

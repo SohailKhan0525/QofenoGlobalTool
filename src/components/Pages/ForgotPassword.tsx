@@ -1,5 +1,6 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEnvelope, faSpinner, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import { useState } from 'react';
-import { Mail, Loader2, CheckCircle2 } from 'lucide-react';
 import { SEO } from '../../components/SEO';
 import { useAuth } from '../../context/AuthContext';
 
@@ -48,12 +49,12 @@ export function ForgotPassword({ onNavigate }: { onNavigate: (page: string) => v
                   className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3.5 pl-11 pr-4 text-sm text-neutral-800 outline-none transition-all focus:border-purple-600 focus:bg-white"
                   placeholder="you@example.com"
                 />
-                <Mail className="absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-neutral-400" />
+                <FontAwesomeIcon icon={faEnvelope} className="absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-neutral-400" />
               </div>
             </label>
             {error && <p className="text-sm font-semibold text-rose-600">{error}</p>}
             <button type="submit" disabled={isLoading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 py-3.5 text-sm font-bold text-white transition-colors hover:bg-purple-700 disabled:opacity-70">
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send reset link'}
+              {isLoading ? <FontAwesomeIcon icon={faSpinner} className="h-4 w-4 animate-spin" /> : 'Send reset link'}
             </button>
             <button type="button" onClick={() => onNavigate('login')} className="w-full text-sm font-bold text-neutral-500 hover:text-purple-600">
               Back to login
@@ -61,7 +62,7 @@ export function ForgotPassword({ onNavigate }: { onNavigate: (page: string) => v
           </form>
         ) : (
           <div className="py-8 text-center">
-            <CheckCircle2 className="mx-auto mb-4 h-14 w-14 text-green-500" />
+            <FontAwesomeIcon icon={faCircleCheck} className="mx-auto mb-4 h-14 w-14 text-green-500" />
             <h2 className="text-2xl font-black text-[#0F0A1E]">Check your inbox</h2>
             <p className="mt-2 text-sm text-neutral-500">If that email exists, a reset link has been sent.</p>
           </div>
