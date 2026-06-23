@@ -179,7 +179,7 @@ function calculateSimilarity(text1, text2) {
   if (!text1 || !text2) return 0;
   const maxLen = Math.max(text1.length, text2.length);
   if (maxLen === 0) return 100;
-  // Levenshtein distance approximation (simplified)
+  // Use character-level exact match ratios
   let matches = 0;
   const minLen = Math.min(text1.length, text2.length);
   for (let i = 0; i < minLen; i++) {

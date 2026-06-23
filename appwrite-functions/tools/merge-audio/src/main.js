@@ -28,27 +28,6 @@ export default async ({ req, res, log, error }) => {
     }
   }
 
-  async function readInputBuffer(b) {
-    let buf;
-    let mimeType = 'audio/mpeg';
-    if (b.file_base64) {
-      buf = Buffer.from(b.file_base64, 'base64');
-      mimeType = b.mime_type || mimeType;
-    } else if (b.file_url) {
-      const response = await fetch(b.file_url);
-      if (!response.ok) throw new Error('Failed to fetch file from URL');
-      const arrayBuffer = await response.arrayBuffer();
-      buf = Buffer.from(arrayBuffer);
-      mimeType = response.headers.get('content-type') || mimeType;
-    } else if (b.file_id) {
-      const arrayBuffer = await storage.getFileDownload(process.env.BUCKET_INPUTS, b.file_id);
-      buf = Buffer.from(arrayBuffer);
-    } else {
-      throw new Error('No file_base64, file_url, or file_id provided');
-    }
-    return { buffer: buf, mimeType };
-  }
-
   async function uploadOutput(storageClient, filename, buffer) {
     const fileForUpload = InputFile.fromBuffer(buffer, filename);
     const uploaded = await storageClient.createFile(process.env.BUCKET_OUTPUTS, ID.unique(), fileForUpload, [Permission.read(Role.any())]);
@@ -57,29 +36,53 @@ export default async ({ req, res, log, error }) => {
   }
 
   try {
-    const source = await readInputBuffer(body);
-    const inputName = String(body.input_filename || body.filename || 'input.audio');
-    
-    // Save to temp
-    const tempInput = '/tmp/input-' + Date.now();
-    const tempOutput = '/tmp/output-' + Date.now() + '.mp3';
-    fs.writeFileSync(tempInput, source.buffer);
+    const filesArray = body.files || [];
+    if (!Array.isArray(filesArray) || filesArray.length < 2) {
+      throw new Error('Please provide at least 2 files to merge.');
+    }
+
+    const tempInputs = [];
+    const tempOutput = '/tmp/output-merged-' + Date.now() + '.mp3';
+    let inputSize = 0;
+
+    for (let i = 0; i < filesArray.length; i++) {
+      const b = filesArray[i];
+      let buf;
+      if (b.file_base64) {
+        buf = Buffer.from(b.file_base64, 'base64');
+      } else if (b.file_url) {
+        const response = await fetch(b.file_url);
+        buf = Buffer.from(await response.arrayBuffer());
+      } else if (b.file_id) {
+        buf = Buffer.from(await storage.getFileDownload(process.env.BUCKET_INPUTS, b.file_id));
+      } else {
+        throw new Error('No file data provided in file ' + i);
+      }
+      
+      const tmpPath = '/tmp/input-' + Date.now() + '-' + i + '.mp3';
+      fs.writeFileSync(tmpPath, buf);
+      tempInputs.push(tmpPath);
+      inputSize += buf.length;
+    }
 
     await new Promise((resolve, reject) => {
-      let command = ffmpeg(tempInput);
-      // Simplified: merge would ideally take multiple inputs, here we assume it's one for demo or just format it. 
-command.audioCodec('libmp3lame');
-      command.on('end', () => resolve())
-             .on('error', (err) => reject(new Error('FFmpeg Error: ' + err.message)))
-             .save(tempOutput);
+      let command = ffmpeg();
+      tempInputs.forEach(file => command.input(file));
+      command
+        .on('end', resolve)
+        .on('error', (err) => reject(new Error('Merge Error: ' + err.message)))
+        .mergeToFile(tempOutput, '/tmp/');
     });
 
     const outputBuffer = fs.readFileSync(tempOutput);
-    const outputName = inputName.replace(/\.[^/.]+$/, '') + '-output.mp3';
+    const outputName = body.output_filename || 'merged.mp3';
     const uploaded = await uploadOutput(storage, outputName, outputBuffer);
 
     // cleanup
-    try { fs.unlinkSync(tempInput); fs.unlinkSync(tempOutput); } catch(e){}
+    try { 
+      tempInputs.forEach(f => fs.unlinkSync(f));
+      fs.unlinkSync(tempOutput); 
+    } catch(e){}
 
     await createExecution(db, {
       user_id: body.user_id || null,
@@ -87,8 +90,8 @@ command.audioCodec('libmp3lame');
       tool_name: 'merge-audio',
       category: 'Audio Tools',
       status: 'completed',
-      input_filename: inputName,
-      input_size: source.buffer.length,
+      input_filename: 'multiple files',
+      input_size: inputSize,
       output_filename: outputName,
       output_size: outputBuffer.length,
       download_url: uploaded.download_url,
@@ -112,7 +115,7 @@ command.audioCodec('libmp3lame');
         tool_name: 'merge-audio',
         category: 'Audio Tools',
         status: 'error',
-        input_filename: body.input_filename || body.filename || null,
+        input_filename: 'multiple files',
         error_message: err.message,
         duration_ms: Date.now() - startedAt,
       });

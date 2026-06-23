@@ -125,7 +125,7 @@ export default async ({ req, res, error }) => {
         
         const dims = image.scale(1);
         
-        // Simplified auto-fit for A4 dimensions
+        // Scale to A4 standard dimensions or specific layout
         let pw = 595.28;
         let ph = 841.89;
         

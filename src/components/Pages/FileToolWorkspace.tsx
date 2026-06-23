@@ -1166,11 +1166,11 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     try {
       let payload: Record<string, unknown>;
 
-      if (tool.slug === 'pdf-merger') {
+      if (isMultiple) {
         const inputs = await Promise.all(
           files.map(async (f) => ({ file_base64: await fileToDataUrl(f), input_filename: f.name }))
         );
-        payload = { files: inputs, user_id: userId || null, output_filename: `qofeno-merged-${Date.now()}.pdf` };
+        payload = { files: inputs, user_id: userId || null, ...fields };
       } else {
         const primary = files[0];
         payload = {
