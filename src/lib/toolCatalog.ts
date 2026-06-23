@@ -10,6 +10,7 @@ import {
   faFileZipper, faKey, faEye, faBolt, faPen, faEyeSlash, faStar,
   faLayerGroup, faCompressArrowsAlt, faColumns, faAlignLeft,
   faFileCode, faFloppyDisk, faArrowsAlt, faFileMedical, faBriefcase, faPalette,
+  faRotateRight, faArrowsLeftRight, faWandMagicSparkles, faSun, faCircleHalfStroke, faShieldHalved, faFileImage
 } from '@fortawesome/free-solid-svg-icons';
 import { DATABASE_ID, databases, isAppwriteConfigured } from './qofeno-appwrite';
 
@@ -869,6 +870,86 @@ export const FALLBACK_TOOLS: ToolCard[] = [
     icon: faPalette, imageUrl: null, functionId: 'pdf-color-converter',
     schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PDF Color Converter', applicationCategory: 'UtilityApplication', operatingSystem: 'Web', description: 'Convert PDF color spaces.' }),
   },
+  {
+    id: 'crop-image', slug: 'crop-image', name: 'Crop Image',
+    category: 'Image Tools', subcategory: 'Editing', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Crop your images to specific dimensions instantly.',
+    icon: faScissors, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Crop Image', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Crop images instantly.' }),
+  },
+  {
+    id: 'jpg-to-png', slug: 'jpg-to-png', name: 'JPG to PNG',
+    category: 'Image Tools', subcategory: 'Conversion', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Convert JPG/JPEG images to PNG with transparent background support.',
+    icon: faFileImage, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'JPG to PNG Converter', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Convert JPG to PNG.' }),
+  },
+  {
+    id: 'png-to-webp', slug: 'png-to-webp', name: 'PNG to WebP',
+    category: 'Image Tools', subcategory: 'Conversion', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Convert PNG images to highly optimized WebP format for web performance.',
+    icon: faFileImage, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'PNG to WebP Converter', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Convert PNG to WebP.' }),
+  },
+  {
+    id: 'rotate-image', slug: 'rotate-image', name: 'Rotate Image',
+    category: 'Image Tools', subcategory: 'Editing', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Rotate images by 90, 180, or 270 degrees in seconds.',
+    icon: faRotateRight, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Rotate Image', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Rotate images quickly.' }),
+  },
+  {
+    id: 'flip-image', slug: 'flip-image', name: 'Flip Image',
+    category: 'Image Tools', subcategory: 'Editing', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Mirror and flip your images horizontally or vertically.',
+    icon: faArrowsLeftRight, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Flip Image', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Flip and mirror images.' }),
+  },
+  {
+    id: 'blur-image', slug: 'blur-image', name: 'Blur Image',
+    category: 'Image Tools', subcategory: 'Filters', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Apply a fast Gaussian blur to your images.',
+    icon: faDroplet, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Blur Image', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Blur images.' }),
+  },
+  {
+    id: 'sharpen-image', slug: 'sharpen-image', name: 'Sharpen Image',
+    category: 'Image Tools', subcategory: 'Filters', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Enhance details and sharpen blurry edges in your images.',
+    icon: faWandMagicSparkles, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Sharpen Image', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Sharpen images.' }),
+  },
+  {
+    id: 'brightness-adjust', slug: 'brightness-adjust', name: 'Brightness Adjust',
+    category: 'Image Tools', subcategory: 'Filters', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Increase or decrease the overall brightness of your images.',
+    icon: faSun, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Brightness Adjust', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Adjust image brightness.' }),
+  },
+  {
+    id: 'contrast-adjust', slug: 'contrast-adjust', name: 'Contrast Adjust',
+    category: 'Image Tools', subcategory: 'Filters', type: 'Free',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Enhance the contrast between light and dark areas of your photo.',
+    icon: faCircleHalfStroke, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Contrast Adjust', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Adjust image contrast.' }),
+  },
+  {
+    id: 'watermark-image', slug: 'watermark-image', name: 'Watermark Image',
+    category: 'Image Tools', subcategory: 'Security', type: 'Pro',
+    isNew: true, addedAt: new Date().toISOString(), isPopular: false, runs: '0',
+    desc: 'Add text watermarks to your images to protect your copyrights.',
+    icon: faShieldHalved, imageUrl: null, functionId: 'image-manipulator',
+    schemaMarkup: JSON.stringify({ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Watermark Image', applicationCategory: 'MultimediaApplication', operatingSystem: 'Web', description: 'Add watermark to images.' }),
+  }
 ];
 
 const FALLBACK_TOOL_LOOKUP = Object.fromEntries(FALLBACK_TOOLS.map((tool) => [tool.slug, tool]));

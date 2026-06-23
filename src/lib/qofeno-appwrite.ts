@@ -57,6 +57,7 @@ export const FUNCTION_IDS = {
   imageCompressor:      env.VITE_APPWRITE_FUNCTION_IMAGE_COMPRESSOR_ID      || 'ac2703f31bc2480b94014fe17ae69ff0',
   imageConverter:       env.VITE_APPWRITE_FUNCTION_IMAGE_CONVERTER_ID       || 'e82741d4b61642c290ccb95909d2b1b4',
   imageBgRemover:       env.VITE_APPWRITE_FUNCTION_IMAGE_BG_REMOVER_ID      || '9e1ae1632aeb4ce789399df3c236b24f',
+  imageManipulator:     env.VITE_APPWRITE_FUNCTION_IMAGE_MANIPULATOR_ID     || '',
 
   // Video Tools
   videoCompressor:      env.VITE_APPWRITE_FUNCTION_VIDEO_COMPRESSOR_ID      || '9b6795e4c10643ba80954c6c6cc65f32',

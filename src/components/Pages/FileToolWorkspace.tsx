@@ -46,6 +46,16 @@ export const FILE_TOOL_SLUGS = new Set([
   'image-compressor',
   'image-converter',
   'image-bg-remover',
+  'crop-image',
+  'jpg-to-png',
+  'png-to-webp',
+  'rotate-image',
+  'flip-image',
+  'blur-image',
+  'sharpen-image',
+  'brightness-adjust',
+  'contrast-adjust',
+  'watermark-image',
   // Video Tools
   'video-compressor',
   'video-trimmer',
@@ -519,6 +529,90 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     processLabel: 'Convert to PDF',
     functionId: FUNCTION_IDS.powerpointToPdf || 'powerpoint-to-pdf',
     fields: [],
+  },
+
+  'crop-image': {
+    icon: faImage, accept: 'image/*', multiple: false,
+    helper: 'Upload an image to crop it.', description: 'Crop image to specific width/height.', processLabel: 'Crop Image', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'crop', hide: true },
+      { type: 'number', key: 'width', label: 'Width (px)', min: 10, defaultValue: '500' },
+      { type: 'number', key: 'height', label: 'Height (px)', min: 10, defaultValue: '500' },
+      { type: 'number', key: 'top', label: 'Top offset', min: 0, defaultValue: '0' },
+      { type: 'number', key: 'left', label: 'Left offset', min: 0, defaultValue: '0' },
+    ],
+  },
+  'jpg-to-png': {
+    icon: faImage, accept: 'image/jpeg,image/jpg', multiple: false,
+    helper: 'Upload a JPG to convert it to PNG.', description: 'Convert JPG to PNG.', processLabel: 'Convert to PNG', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
+      { type: 'text', key: 'output_format', label: '', defaultValue: 'png', hide: true }
+    ],
+  },
+  'png-to-webp': {
+    icon: faImage, accept: 'image/png', multiple: false,
+    helper: 'Upload a PNG to convert it to WebP.', description: 'Convert PNG to WebP.', processLabel: 'Convert to WebP', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
+      { type: 'text', key: 'output_format', label: '', defaultValue: 'webp', hide: true }
+    ],
+  },
+  'rotate-image': {
+    icon: faRotateRight, accept: 'image/*', multiple: false,
+    helper: 'Upload an image to rotate.', description: 'Rotate image by angle.', processLabel: 'Rotate Image', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'rotate', hide: true },
+      { type: 'select', key: 'angle', label: 'Rotation Angle', options: ['90', '180', '270'], defaultValue: '90' }
+    ],
+  },
+  'flip-image': {
+    icon: faArrowsLeftRight, accept: 'image/*', multiple: false,
+    helper: 'Upload an image to flip.', description: 'Flip image horizontally or vertically.', processLabel: 'Flip Image', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'flip', hide: true },
+      { type: 'select', key: 'axis', label: 'Axis', options: ['x', 'y'], defaultValue: 'x' }
+    ],
+  },
+  'blur-image': {
+    icon: faDroplet, accept: 'image/*', multiple: false,
+    helper: 'Upload an image to blur.', description: 'Apply Gaussian blur.', processLabel: 'Blur Image', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'blur', hide: true },
+      { type: 'number', key: 'sigma', label: 'Blur Intensity', min: 1, max: 100, defaultValue: '5' }
+    ],
+  },
+  'sharpen-image': {
+    icon: faWandMagicSparkles, accept: 'image/*', multiple: false,
+    helper: 'Upload an image to sharpen.', description: 'Enhance details.', processLabel: 'Sharpen Image', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'sharpen', hide: true },
+      { type: 'number', key: 'sigma', label: 'Sharpen Intensity', min: 1, max: 10, defaultValue: '2' }
+    ],
+  },
+  'brightness-adjust': {
+    icon: faSun, accept: 'image/*', multiple: false,
+    helper: 'Upload an image to adjust brightness.', description: 'Adjust brightness.', processLabel: 'Apply Brightness', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'brightness', hide: true },
+      { type: 'number', key: 'brightness', label: 'Brightness Multiplier (1 = original)', min: 0, defaultValue: '1.5' }
+    ],
+  },
+  'contrast-adjust': {
+    icon: faCircleHalfStroke, accept: 'image/*', multiple: false,
+    helper: 'Upload an image to adjust contrast.', description: 'Adjust contrast.', processLabel: 'Apply Contrast', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'contrast', hide: true },
+      { type: 'number', key: 'contrast', label: 'Contrast Multiplier (1 = original)', min: 0, defaultValue: '1.5' }
+    ],
+  },
+  'watermark-image': {
+    icon: faShieldHalved, accept: 'image/*', multiple: false,
+    helper: 'Upload an image to add watermark.', description: 'Add a text watermark.', processLabel: 'Watermark Image', functionId: FUNCTION_IDS.imageManipulator,
+    fields: [
+      { type: 'text', key: 'action', label: '', defaultValue: 'watermark', hide: true },
+      { type: 'text', key: 'text', label: 'Watermark Text', placeholder: 'Copyright Qofeno', defaultValue: 'Watermark' }
+    ],
   },
 };
 
