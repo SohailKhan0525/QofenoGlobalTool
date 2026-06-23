@@ -369,7 +369,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
            <button
              disabled={!!import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken}
-             onClick={() => user ? onNavigate('checkout') : onNavigate('auth')}
+             onClick={() => user ? onNavigate('payment') : onNavigate('/signup?redirect=/payment')}
              className="inline-flex items-center justify-center min-w-[240px] py-4 bg-gradient-to-br from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-purple-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
            >
              Upgrade to Pro

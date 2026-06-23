@@ -40,7 +40,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
     if (!password.trim()) return 'Password is required.';
     if (!isLogin && !name.trim()) return 'Full name is required.';
     if (!isLogin && password.length < 8) return 'Password must be at least 8 characters.';
-    if (!isLogin && !!import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken) return 'Please complete the captcha verification.';
+    if (!!import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken) return 'Please complete the captcha verification.';
     return '';
   };
 
@@ -213,17 +213,15 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
             </div>
           )}
 
-          {!isLogin && (
-            <div className="flex justify-center my-4">
-              {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
-                <Turnstile
-                  siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-                  onSuccess={(token) => setTurnstileToken(token)}
-                  onError={() => triggerError('Captcha verification failed. Please try again.')}
-                />
-              )}
-            </div>
-          )}
+          <div className="flex justify-center my-4">
+            {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
+              <Turnstile
+                siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+                onSuccess={(token) => setTurnstileToken(token)}
+                onError={() => triggerError('Captcha verification failed. Please try again.')}
+              />
+            )}
+          </div>
           {errorMessage && (
             <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
               <FontAwesomeIcon icon={faCircleExclamation} className="mt-0.5 h-4 w-4 shrink-0" />

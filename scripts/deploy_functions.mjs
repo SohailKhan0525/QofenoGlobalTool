@@ -57,13 +57,27 @@ async function deployFunctions() {
 
   for (const dir of allDirs) {
     const fullDir = path.resolve(scriptDir, '..', dir);
-    const functionId = path.basename(dir);
-    console.log(`\n--- Deploying ${functionId} ---`);
+    const baseName = path.basename(dir);
+    // Find mapped ID in environment
+    const envKeyName = baseName.toUpperCase().replace(/-/g, '_');
+    const envKeysToTry = [
+      `VITE_APPWRITE_FUNCTION_${envKeyName}_ID`,
+      `NEXT_PUBLIC_APPWRITE_FUNCTION_${envKeyName}_ID`
+    ];
+    let mappedId = null;
+    for (const key of envKeysToTry) {
+      if (process.env[key] && process.env[key] !== baseName) {
+        mappedId = process.env[key];
+        break;
+      }
+    }
+    const functionId = mappedId || baseName;
+    console.log(`\n--- Deploying ${baseName} (ID: ${functionId}) ---`);
 
     try {
       // 1. Create or get function with retry logic
       let functionExists = false;
-      let retries = 3;
+      let retries = 10;
       while (retries > 0 && !functionExists) {
         try {
           await functionsApi.get(functionId);
@@ -73,28 +87,35 @@ async function deployFunctions() {
           if (err.code === 404) {
             console.log(`Creating function ${functionId}...`);
             try {
-              await functionsApi.create(functionId, functionId, 'node-18.0', ['any']);
+              await functionsApi.create(functionId, baseName, 'node-18.0', ['any']);
               functionExists = true;
             } catch (createErr) {
               if (createErr.code === 429) {
-                console.log('Rate limited on create. Waiting 15s...');
-                await sleep(15000);
+                console.log('Rate limited on create. Waiting 30s...');
+                await sleep(30000);
                 retries--;
               } else {
-                throw createErr;
+                console.error(`Creation failed for ${functionId}: ${createErr.message}`);
+                retries = 0; // exit loop
               }
             }
           } else if (err.code === 429) {
-            console.log('Rate limited on get. Waiting 15s...');
-            await sleep(15000);
+            console.log('Rate limited on get. Waiting 30s...');
+            await sleep(30000);
             retries--;
           } else {
-            throw err;
+            console.error(`Get failed for ${functionId}: ${err.message}`);
+            retries = 0;
           }
         }
       }
 
-      await sleep(5000); // 5 seconds wait to avoid rate limit between functions
+      if (!functionExists) {
+        console.error(`Skipping deployment for ${functionId} because function creation/get failed.`);
+        continue;
+      }
+
+      await sleep(2000); // 2 seconds wait to avoid rate limit between functions
 
       // 2. Package the code into a tar.gz using native node tar module
       const tarPath = path.join(fullDir, 'code.tar.gz');
