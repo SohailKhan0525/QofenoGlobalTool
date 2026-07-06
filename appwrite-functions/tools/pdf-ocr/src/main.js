@@ -18,54 +18,6 @@ import { join } from 'path';
 const require = createRequire(import.meta.url);
 let pdfjsLib, createCanvas;
 try {
-
-    // RATE LIMITING
-    const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown_ip';
-    const hourKey = `${clientIp}_${Math.floor(Date.now() / 3600000)}`;
-    
-    let isProUser = false;
-    if (body.user_id) {
-      try {
-        const userMeta = await db.getDocument(process.env.DATABASE_ID, 'users_meta', body.user_id);
-        if (userMeta && (userMeta.plan === 'pro' || userMeta.plan === 'enterprise')) {
-          isProUser = true;
-        }
-      } catch (err) { /* ignore */ }
-    }
-    
-    const limit = isProUser ? 100 : 20;
-    
-    try {
-      const existing = await db.listDocuments(process.env.DATABASE_ID, 'rate_limits', [
-        Query.equal('key', hourKey)
-      ]);
-      
-      if (existing.total > 0) {
-        if (existing.documents[0].count >= limit) {
-          return res.json({
-            success: false,
-            error: "Rate limit exceeded. Please wait or upgrade to PRO."
-          }, 429);
-        } else {
-          await db.updateDocument(process.env.DATABASE_ID, 'rate_limits', existing.documents[0].$id, {
-            count: existing.documents[0].count + 1,
-            updated_at: new Date().toISOString()
-          });
-        }
-      } else {
-        await db.createDocument(process.env.DATABASE_ID, 'rate_limits', ID.unique(), {
-          key: hourKey,
-          ip: clientIp,
-          count: 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-      }
-    } catch (err) {
-      log('Rate limit check failed, skipping: ' + err.message);
-    }
-    // END RATE LIMITING
-
   pdfjsLib = require('pdfjs-dist/legacy/build/pdf.js');
   createCanvas = require('canvas').createCanvas;
 } catch (_) {
@@ -84,7 +36,6 @@ function parseBody(req) {
     return req.body;
   }
   return {};
-}
 }
 
 function decodeFileInput(value) {
@@ -239,6 +190,53 @@ export default async ({ req, res, log, error }) => {
   const storage = new Storage(client);
   const db = new Databases(client);
   const startedAt = Date.now();
+
+  // RATE LIMITING
+  const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown_ip';
+  const hourKey = `${clientIp}_${Math.floor(Date.now() / 3600000)}`;
+  
+  let isProUser = false;
+  if (body.user_id) {
+    try {
+      const userMeta = await db.getDocument(process.env.DATABASE_ID, 'users_meta', body.user_id);
+      if (userMeta && (userMeta.plan === 'pro' || userMeta.plan === 'enterprise')) {
+        isProUser = true;
+      }
+    } catch (err) { /* ignore */ }
+  }
+  
+  const limit = isProUser ? 100 : 20;
+  
+  try {
+    const existing = await db.listDocuments(process.env.DATABASE_ID, 'rate_limits', [
+      Query.equal('key', hourKey)
+    ]);
+    
+    if (existing.total > 0) {
+      if (existing.documents[0].count >= limit) {
+        return res.json({
+          success: false,
+          error: "Rate limit exceeded. Please wait or upgrade to PRO."
+        }, 429);
+      } else {
+        await db.updateDocument(process.env.DATABASE_ID, 'rate_limits', existing.documents[0].$id, {
+          count: existing.documents[0].count + 1,
+          updated_at: new Date().toISOString()
+        });
+      }
+    } else {
+      await db.createDocument(process.env.DATABASE_ID, 'rate_limits', ID.unique(), {
+        key: hourKey,
+        ip: clientIp,
+        count: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+    }
+  } catch (err) {
+    log('Rate limit check failed, skipping: ' + err.message);
+  }
+  // END RATE LIMITING
 
   try {
     const source = await readInputBuffer(body);

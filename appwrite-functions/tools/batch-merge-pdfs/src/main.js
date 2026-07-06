@@ -19,7 +19,6 @@ function parseBody(req) {
   }
   return {};
 }
-}
 
 async function readBuffer(item) {
   if (item.file_base64 || item.input_base64) {

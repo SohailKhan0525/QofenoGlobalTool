@@ -5,9 +5,16 @@
 import { Client, Databases, ID, Query } from 'node-appwrite';
 
 function parseBody(req) {
-  const raw = req.body || req.payload || '{}';
-  if (typeof raw !== 'string') return raw || {};
-  try { return JSON.parse(raw); } catch { return {}; }
+  if (req.bodyRaw && typeof req.bodyRaw === 'string') {
+    try { return JSON.parse(req.bodyRaw); } catch { /* ignore */ }
+  }
+  if (req.body && typeof req.body === 'string') {
+    try { return JSON.parse(req.body); } catch { /* ignore */ }
+  }
+  if (typeof req.body === 'object' && req.body !== null) {
+    return req.body;
+  }
+  return {};
 }
 
 async function sendWelcomeEmail(userEmail, userName) {

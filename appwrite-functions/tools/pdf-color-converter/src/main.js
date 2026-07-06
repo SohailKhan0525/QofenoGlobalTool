@@ -30,11 +30,11 @@ async function readInputBuffer(body) {
   const direct = decodeFileInput(body.file_base64 || body.input_base64 || body.data_base64 || body.file);
   if (direct) return direct;
   if (body.file_id && body.bucket_id) {
-    const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
-    const response = await fetch(\`\${endpoint}/storage/buckets/\${body.bucket_id}/files/\${body.file_id}/download\`, {
+    const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
+    const response = await fetch(`${endpoint}/storage/buckets/${body.bucket_id}/files/${body.file_id}/download`, {
       headers: { 'X-Appwrite-Project': process.env.APPWRITE_PROJECT_ID, 'X-Appwrite-Key': process.env.APPWRITE_API_KEY },
     });
-    if (!response.ok) throw new Error(\`Unable to download source file: \${response.status}\`);
+    if (!response.ok) throw new Error(`Unable to download source file: ${response.status}`);
     return { buffer: Buffer.from(await response.arrayBuffer()), mimeType: 'application/pdf' };
   }
   throw new Error('file_base64 or file_id + bucket_id is required');
@@ -46,8 +46,8 @@ async function uploadOutput(storage, filename, buffer) {
     InputFile.fromBuffer(buffer, filename),
     [Permission.read(Role.any()), Permission.delete(Role.any())]
   );
-  const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
-  return { file, download_url: \`\${endpoint}/storage/buckets/\${process.env.BUCKET_OUTPUTS}/files/\${file.$id}/download?project=\${process.env.APPWRITE_PROJECT_ID}\` };
+  const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
+  return { file, download_url: `${endpoint}/storage/buckets/${process.env.BUCKET_OUTPUTS}/files/${file.$id}/download?project=${process.env.APPWRITE_PROJECT_ID}` };
 }
 
 async function createExecutionRecord(db, payload) {
@@ -73,7 +73,7 @@ export default async ({ req, res, log, error }) => {
 
   // RATE LIMITING
   const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown_ip';
-  const hourKey = \`\${clientIp}_\${Math.floor(Date.now() / 3600000)}\`;
+  const hourKey = `${clientIp}_${Math.floor(Date.now() / 3600000)}`;
   let isProUser = false;
   if (body.user_id) {
     try {
@@ -118,16 +118,16 @@ export default async ({ req, res, log, error }) => {
       'gs', '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.4',
       '-dNOPAUSE', '-dQUIET', '-dBATCH',
       gsProfileArgs,
-      \`-sOutputFile=\${outPath}\`, inPath
+      `-sOutputFile=${outPath}`, inPath
     ].join(' ');
 
-    log(\`Running GS Color Conversion: \${cmd}\`);
+    log(`Running GS Color Conversion: ${cmd}`);
     execSync(cmd, { stdio: 'pipe', timeout: 120000 });
 
     if (!existsSync(outPath)) throw new Error('Color conversion failed');
     const outBuf = readFileSync(outPath);
 
-    const outName = inputName.replace(/\\.pdf$/i, '') + \`-\${colorProfile}.pdf\`;
+    const outName = inputName.replace(/\\.pdf$/i, '') + `-${colorProfile}.pdf`;
 
     const uploaded = await uploadOutput(storage, outName, outBuf);
     await createExecutionRecord(db, {

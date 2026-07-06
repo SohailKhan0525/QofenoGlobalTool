@@ -8,9 +8,16 @@ import path from 'path';
 ffmpeg.setFfmpegPath(ffmpegStatic);
 
 function parseBody(req) {
-  const raw = req.body || req.payload || '{}';
-  if (typeof raw !== 'string') return raw || {};
-  try { return JSON.parse(raw); } catch { return {}; }
+  if (req.bodyRaw && typeof req.bodyRaw === 'string') {
+    try { return JSON.parse(req.bodyRaw); } catch { /* ignore */ }
+  }
+  if (req.body && typeof req.body === 'string') {
+    try { return JSON.parse(req.body); } catch { /* ignore */ }
+  }
+  if (typeof req.body === 'object' && req.body !== null) {
+    return req.body;
+  }
+  return {};
 }
 
 export default async ({ req, res, log, error }) => {
@@ -28,11 +35,19 @@ export default async ({ req, res, log, error }) => {
     }
   }
 
+  function decodeBase64Input(value) {
+    if (!value || typeof value !== 'string') return value;
+    // Strip data URL prefix: "data:image/jpeg;base64,/9j/..." => "/9j/..."
+    const match = value.match(/^data:[^;]+;base64,(.+)$/i);
+    return match ? match[1] : value;
+  }
+
   async function readInputBuffer(b) {
     let buf;
-    let mimeType = 'audio/mpeg';
+    let mimeType = 'application/octet-stream';
     if (b.file_base64) {
-      buf = Buffer.from(b.file_base64, 'base64');
+      const raw = decodeBase64Input(b.file_base64);
+      buf = Buffer.from(raw, 'base64');
       mimeType = b.mime_type || mimeType;
     } else if (b.file_url) {
       const response = await fetch(b.file_url);
@@ -44,7 +59,7 @@ export default async ({ req, res, log, error }) => {
       const arrayBuffer = await storage.getFileDownload(process.env.BUCKET_INPUTS, b.file_id);
       buf = Buffer.from(arrayBuffer);
     } else {
-      throw new Error('No file_base64, file_url, or file_id provided');
+      throw new Error('No file provided. Send file_base64, file_url, or file_id.');
     }
     return { buffer: buf, mimeType };
   }

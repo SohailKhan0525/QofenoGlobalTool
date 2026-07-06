@@ -16,7 +16,6 @@ function parseBody(req) {
   }
   return {};
 }
-}
 
 function decodeFileInput(value) {
   if (typeof value !== 'string' || !value) return null;

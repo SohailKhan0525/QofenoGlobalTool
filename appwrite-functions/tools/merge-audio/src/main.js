@@ -8,9 +8,16 @@ import path from 'path';
 ffmpeg.setFfmpegPath(ffmpegStatic);
 
 function parseBody(req) {
-  const raw = req.body || req.payload || '{}';
-  if (typeof raw !== 'string') return raw || {};
-  try { return JSON.parse(raw); } catch { return {}; }
+  if (req.bodyRaw && typeof req.bodyRaw === 'string') {
+    try { return JSON.parse(req.bodyRaw); } catch { /* ignore */ }
+  }
+  if (req.body && typeof req.body === 'string') {
+    try { return JSON.parse(req.body); } catch { /* ignore */ }
+  }
+  if (typeof req.body === 'object' && req.body !== null) {
+    return req.body;
+  }
+  return {};
 }
 
 export default async ({ req, res, log, error }) => {
@@ -49,7 +56,8 @@ export default async ({ req, res, log, error }) => {
       const b = filesArray[i];
       let buf;
       if (b.file_base64) {
-        buf = Buffer.from(b.file_base64, 'base64');
+        const raw = decodeBase64Input(b.file_base64);
+      buf = Buffer.from(raw, 'base64');
       } else if (b.file_url) {
         const response = await fetch(b.file_url);
         buf = Buffer.from(await response.arrayBuffer());

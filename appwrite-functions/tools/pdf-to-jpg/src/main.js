@@ -17,7 +17,6 @@ function parseBody(req) {
   }
   return {};
 }
-}
 
 function decodeFileInput(value) {
   if (typeof value !== 'string' || !value) return null;
@@ -149,7 +148,7 @@ export default async ({ req, res, error }) => {
         await page.render(renderContext).promise;
         
         const jpegBuffer = canvas.toBuffer('image/jpeg', { quality });
-        const outputName = \`\${inputName.replace(/\\.pdf$/i, '')}-page-\${pageNum}.jpg\`;
+        const outputName = `${inputName.replace(/\\.pdf$/i, '')}-page-${pageNum}.jpg`;
         
         const uploaded = await uploadOutput(storage, outputName, jpegBuffer);
         outs.push({

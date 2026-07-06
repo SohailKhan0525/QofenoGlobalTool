@@ -21,10 +21,16 @@ export default async ({ req, res, log, error }) => {
     if (!Array.isArray(filesArray) || filesArray.length < 2) throw new Error('Provide at least 2 videos');
 
     const tempInputs = [];
+    const decodeBase64Input = (value) => {
+      if (!value || typeof value !== 'string') return value;
+      const match = value.match(/^data:[^;]+;base64,(.+)$/i);
+      return match ? match[1] : value;
+    };
+
     for (let i = 0; i < filesArray.length; i++) {
       const b = filesArray[i];
       let buf;
-      if (b.file_base64) buf = Buffer.from(b.file_base64, 'base64');
+      if (b.file_base64) buf = Buffer.from(decodeBase64Input(b.file_base64), 'base64');
       else if (b.file_url) { const r = await fetch(b.file_url); buf = Buffer.from(await r.arrayBuffer()); }
       else if (b.file_id) buf = Buffer.from(await storage.getFileDownload(process.env.BUCKET_INPUTS, b.file_id));
       else throw new Error('Missing file data');

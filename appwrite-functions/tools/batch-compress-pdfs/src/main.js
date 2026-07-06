@@ -31,11 +31,11 @@ async function readInputBuffer(fileInput) {
   const direct = decodeFileInput(fileInput.file_base64 || fileInput.input_base64 || fileInput.data_base64 || fileInput.file);
   if (direct) return direct;
   if (fileInput.file_id && fileInput.bucket_id) {
-    const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
-    const response = await fetch(\`\${endpoint}/storage/buckets/\${fileInput.bucket_id}/files/\${fileInput.file_id}/download\`, {
+    const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
+    const response = await fetch(`${endpoint}/storage/buckets/${fileInput.bucket_id}/files/${fileInput.file_id}/download`, {
       headers: { 'X-Appwrite-Project': process.env.APPWRITE_PROJECT_ID, 'X-Appwrite-Key': process.env.APPWRITE_API_KEY },
     });
-    if (!response.ok) throw new Error(\`Unable to download source file: \${response.status}\`);
+    if (!response.ok) throw new Error(`Unable to download source file: ${response.status}`);
     return { buffer: Buffer.from(await response.arrayBuffer()), mimeType: 'application/pdf' };
   }
   throw new Error('file_base64 or file_id + bucket_id is required');
@@ -47,8 +47,8 @@ async function uploadOutput(storage, filename, buffer) {
     InputFile.fromBuffer(buffer, filename),
     [Permission.read(Role.any()), Permission.delete(Role.any())]
   );
-  const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
-  return { file, download_url: \`\${endpoint}/storage/buckets/\${process.env.BUCKET_OUTPUTS}/files/\${file.$id}/download?project=\${process.env.APPWRITE_PROJECT_ID}\` };
+  const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
+  return { file, download_url: `${endpoint}/storage/buckets/${process.env.BUCKET_OUTPUTS}/files/${file.$id}/download?project=${process.env.APPWRITE_PROJECT_ID}` };
 }
 
 function compressWithGhostscript(inputPath, outputPath, level, log) {
@@ -56,11 +56,11 @@ function compressWithGhostscript(inputPath, outputPath, level, log) {
   const dcsettings = level === 'maximum'
     ? '-dColorImageDownsampleThreshold=1.0 -dGrayImageDownsampleThreshold=1.0 -dMonoImageDownsampleThreshold=1.0' : '';
   const cmd = [
-    'gs', '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.4', \`-dPDFSETTINGS=\${settings[level] || '/ebook'}\`,
+    'gs', '-sDEVICE=pdfwrite', '-dCompatibilityLevel=1.4', `-dPDFSETTINGS=${settings[level] || '/ebook'}`,
     '-dNOPAUSE', '-dQUIET', '-dBATCH', dcsettings, '-dAutoRotatePages=/None',
-    '-dCompressFonts=true', '-dEmbedAllFonts=true', \`-sOutputFile=\${outputPath}\`, inputPath,
+    '-dCompressFonts=true', '-dEmbedAllFonts=true', `-sOutputFile=${outputPath}`, inputPath,
   ].filter(Boolean).join(' ');
-  log(\`Running GS: \${cmd}\`);
+  log(`Running GS: ${cmd}`);
   execSync(cmd, { stdio: 'pipe', timeout: 60000 });
 }
 
@@ -74,7 +74,7 @@ export default async ({ req, res, log, error }) => {
 
   // RATE LIMITING
   const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown_ip';
-  const hourKey = \`\${clientIp}_\${Math.floor(Date.now() / 3600000)}\`;
+  const hourKey = `${clientIp}_${Math.floor(Date.now() / 3600000)}`;
   let isProUser = false;
   if (body.user_id) {
     try {
@@ -112,15 +112,15 @@ export default async ({ req, res, log, error }) => {
       const fileInput = filesInput[i];
       const source = await readInputBuffer(fileInput);
       totalInputSize += source.buffer.length;
-      const inputName = String(fileInput.input_filename || fileInput.filename || \`input_\${i+1}.pdf\`);
+      const inputName = String(fileInput.input_filename || fileInput.filename || `input_${i+1}.pdf`);
       
-      const inPath = join(tmpDir, \`in_\${i}.pdf\`);
-      const outPath = join(tmpDir, \`out_\${i}.pdf\`);
+      const inPath = join(tmpDir, `in_${i}.pdf`);
+      const outPath = join(tmpDir, `out_${i}.pdf`);
       writeFileSync(inPath, source.buffer);
 
       compressWithGhostscript(inPath, outPath, compressionLevel, log);
 
-      if (!existsSync(outPath)) throw new Error(\`Failed to compress \${inputName}\`);
+      if (!existsSync(outPath)) throw new Error(`Failed to compress ${inputName}`);
       const outBuffer = readFileSync(outPath);
       
       const outName = inputName.replace(/\\.pdf$/i, '') + '-compressed.pdf';
@@ -128,7 +128,7 @@ export default async ({ req, res, log, error }) => {
     }
 
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "STORE" });
-    const outputName = \`qofeno-batch-compressed-\${Date.now()}.zip\`;
+    const outputName = `qofeno-batch-compressed-${Date.now()}.zip`;
 
     const uploaded = await uploadOutput(storage, outputName, zipBuffer);
     

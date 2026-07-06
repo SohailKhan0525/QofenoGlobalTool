@@ -27,11 +27,11 @@ async function readInputBuffer(fileInput) {
   const direct = decodeFileInput(fileInput.file_base64 || fileInput.input_base64 || fileInput.data_base64 || fileInput.file);
   if (direct) return direct;
   if (fileInput.file_id && fileInput.bucket_id) {
-    const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
-    const response = await fetch(\`\${endpoint}/storage/buckets/\${fileInput.bucket_id}/files/\${fileInput.file_id}/download\`, {
+    const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
+    const response = await fetch(`${endpoint}/storage/buckets/${fileInput.bucket_id}/files/${fileInput.file_id}/download`, {
       headers: { 'X-Appwrite-Project': process.env.APPWRITE_PROJECT_ID, 'X-Appwrite-Key': process.env.APPWRITE_API_KEY },
     });
-    if (!response.ok) throw new Error(\`Unable to download source file: \${response.status}\`);
+    if (!response.ok) throw new Error(`Unable to download source file: ${response.status}`);
     return { buffer: Buffer.from(await response.arrayBuffer()), mimeType: 'application/pdf' };
   }
   throw new Error('file_base64 or file_id + bucket_id is required');
@@ -43,8 +43,8 @@ async function uploadOutput(storage, filename, buffer) {
     InputFile.fromBuffer(buffer, filename),
     [Permission.read(Role.any()), Permission.delete(Role.any())]
   );
-  const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
-  return { file, download_url: \`\${endpoint}/storage/buckets/\${process.env.BUCKET_OUTPUTS}/files/\${file.$id}/download?project=\${process.env.APPWRITE_PROJECT_ID}\` };
+  const endpoint = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
+  return { file, download_url: `${endpoint}/storage/buckets/${process.env.BUCKET_OUTPUTS}/files/${file.$id}/download?project=${process.env.APPWRITE_PROJECT_ID}` };
 }
 
 async function createExecutionRecord(db, payload) {
@@ -70,7 +70,7 @@ export default async ({ req, res, log, error }) => {
 
   // RATE LIMITING
   const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown_ip';
-  const hourKey = \`\${clientIp}_\${Math.floor(Date.now() / 3600000)}\`;
+  const hourKey = `${clientIp}_${Math.floor(Date.now() / 3600000)}`;
   let isProUser = false;
   if (body.user_id) {
     try {
@@ -110,27 +110,27 @@ export default async ({ req, res, log, error }) => {
     const coverPage = pdfDoc.addPage([595, 842]); // A4
     coverPage.drawText('Qofeno PDF Portfolio', { x: 50, y: 750, size: 24, color: rgb(0.4, 0, 0.8) });
     coverPage.drawText('This document contains embedded files.', { x: 50, y: 700, size: 14 });
-    coverPage.drawText(\`Total embedded files: \${filesInput.length}\`, { x: 50, y: 670, size: 12 });
+    coverPage.drawText(`Total embedded files: ${filesInput.length}`, { x: 50, y: 670, size: 12 });
 
     let totalInputSize = 0;
     for (let i = 0; i < filesInput.length; i++) {
       const fileInput = filesInput[i];
       const source = await readInputBuffer(fileInput);
       totalInputSize += source.buffer.length;
-      const inputName = String(fileInput.input_filename || fileInput.filename || \`attachment_\${i+1}.pdf\`);
+      const inputName = String(fileInput.input_filename || fileInput.filename || `attachment_${i+1}.pdf`);
       
       await pdfDoc.attach(source.buffer, inputName, {
         mimeType: source.mimeType || 'application/pdf',
-        description: \`Portfolio Attachment \${i+1}\`,
+        description: `Portfolio Attachment ${i+1}`,
         creationDate: new Date(),
         modificationDate: new Date()
       });
       
-      coverPage.drawText(\`- \${inputName}\`, { x: 50, y: 640 - (i * 20), size: 12 });
+      coverPage.drawText(`- ${inputName}`, { x: 50, y: 640 - (i * 20), size: 12 });
     }
 
     const outBuf = Buffer.from(await pdfDoc.save({ useObjectStreams: true }));
-    const outName = \`qofeno-portfolio-\${Date.now()}.pdf\`;
+    const outName = `qofeno-portfolio-${Date.now()}.pdf`;
 
     const uploaded = await uploadOutput(storage, outName, outBuf);
     await createExecutionRecord(db, {

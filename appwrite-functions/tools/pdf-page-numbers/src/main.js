@@ -14,7 +14,6 @@ function parseBody(req) {
   }
   return {};
 }
-}
 
 function decodeFileInput(value) {
   if (typeof value !== 'string' || !value) return null;
@@ -112,10 +111,10 @@ export default async ({ req, res, error }) => {
 
       pages.forEach((page, index) => {
         const pageNum = startNum + index;
-        let text = \`\${pageNum}\`;
-        if (format === 'Page 1') text = \`Page \${pageNum}\`;
-        else if (format === '1 of N') text = \`\${pageNum} of \${totalPages}\`;
-        else if (format === 'Page 1 of N') text = \`Page \${pageNum} of \${totalPages}\`;
+        let text = `${pageNum}`;
+        if (format === 'Page 1') text = `Page ${pageNum}`;
+        else if (format === '1 of N') text = `${pageNum} of ${totalPages}`;
+        else if (format === 'Page 1 of N') text = `Page ${pageNum} of ${totalPages}`;
 
         const textWidth = font.widthOfTextAtSize(text, fontSize);
         const { width, height } = page.getSize();

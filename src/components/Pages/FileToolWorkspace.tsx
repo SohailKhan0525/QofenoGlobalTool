@@ -579,7 +579,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
 
   'crop-image': {
     icon: faImageIcon, accept: 'image/*', multiple: false,
-    helper: 'Upload an image to crop it.', description: 'Crop image to specific width/height.', processLabel: 'Crop Image', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload an image to crop it.', description: 'Crop image to specific width/height.', processLabel: 'Crop Image', functionId: FUNCTION_IDS.cropImage,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'crop', hide: true },
       { type: 'number', key: 'width', label: 'Width (px)', min: 10, defaultValue: '500' },
@@ -590,7 +590,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'jpg-to-png': {
     icon: faImageIcon, accept: 'image/jpeg,image/jpg', multiple: false,
-    helper: 'Upload a JPG to convert it to PNG.', description: 'Convert JPG to PNG.', processLabel: 'Convert to PNG', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload a JPG to convert it to PNG.', description: 'Convert JPG to PNG.', processLabel: 'Convert to PNG', functionId: FUNCTION_IDS.imageConverter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'output_format', label: '', defaultValue: 'png', hide: true }
@@ -598,7 +598,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'png-to-webp': {
     icon: faImageIcon, accept: 'image/png', multiple: false,
-    helper: 'Upload a PNG to convert it to WebP.', description: 'Convert PNG to WebP.', processLabel: 'Convert to WebP', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload a PNG to convert it to WebP.', description: 'Convert PNG to WebP.', processLabel: 'Convert to WebP', functionId: FUNCTION_IDS.imageConverter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'output_format', label: '', defaultValue: 'webp', hide: true }
@@ -606,7 +606,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'rotate-image': {
     icon: faRotateRight, accept: 'image/*', multiple: false,
-    helper: 'Upload an image to rotate.', description: 'Rotate image by angle.', processLabel: 'Rotate Image', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload an image to rotate.', description: 'Rotate image by angle.', processLabel: 'Rotate Image', functionId: FUNCTION_IDS.rotateImage,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'rotate', hide: true },
       { type: 'select', key: 'angle', label: 'Rotation Angle', options: ['90', '180', '270'], defaultValue: '90' }
@@ -614,7 +614,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'flip-image': {
     icon: faArrowsLeftRight, accept: 'image/*', multiple: false,
-    helper: 'Upload an image to flip.', description: 'Flip image horizontally or vertically.', processLabel: 'Flip Image', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload an image to flip.', description: 'Flip image horizontally or vertically.', processLabel: 'Flip Image', functionId: FUNCTION_IDS.flipImage,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'flip', hide: true },
       { type: 'select', key: 'axis', label: 'Axis', options: ['x', 'y'], defaultValue: 'x' }
@@ -622,7 +622,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'blur-image': {
     icon: faDroplet, accept: 'image/*', multiple: false,
-    helper: 'Upload an image to blur.', description: 'Apply Gaussian blur.', processLabel: 'Blur Image', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload an image to blur.', description: 'Apply Gaussian blur.', processLabel: 'Blur Image', functionId: FUNCTION_IDS.blurImage,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'blur', hide: true },
       { type: 'number', key: 'sigma', label: 'Blur Intensity', min: 1, max: 100, defaultValue: '5' }
@@ -630,7 +630,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'sharpen-image': {
     icon: faWandMagicSparkles, accept: 'image/*', multiple: false,
-    helper: 'Upload an image to sharpen.', description: 'Enhance details.', processLabel: 'Sharpen Image', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload an image to sharpen.', description: 'Enhance details.', processLabel: 'Sharpen Image', functionId: FUNCTION_IDS.sharpenImage,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'sharpen', hide: true },
       { type: 'number', key: 'sigma', label: 'Sharpen Intensity', min: 1, max: 10, defaultValue: '2' }
@@ -638,7 +638,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'brightness-adjust': {
     icon: faSun, accept: 'image/*', multiple: false,
-    helper: 'Upload an image to adjust brightness.', description: 'Adjust brightness.', processLabel: 'Apply Brightness', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload an image to adjust brightness.', description: 'Adjust brightness.', processLabel: 'Apply Brightness', functionId: FUNCTION_IDS.brightnessAdjust,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'brightness', hide: true },
       { type: 'number', key: 'brightness', label: 'Brightness Multiplier (1 = original)', min: 0, defaultValue: '1.5' }
@@ -646,7 +646,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'contrast-adjust': {
     icon: faCircleHalfStroke, accept: 'image/*', multiple: false,
-    helper: 'Upload an image to adjust contrast.', description: 'Adjust contrast.', processLabel: 'Apply Contrast', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload an image to adjust contrast.', description: 'Adjust contrast.', processLabel: 'Apply Contrast', functionId: FUNCTION_IDS.contrastAdjust,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'contrast', hide: true },
       { type: 'number', key: 'contrast', label: 'Contrast Multiplier (1 = original)', min: 0, defaultValue: '1.5' }
@@ -654,7 +654,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'watermark-image': {
     icon: faShieldHalved, accept: 'image/*', multiple: false,
-    helper: 'Upload an image to add watermark.', description: 'Add a text watermark.', processLabel: 'Watermark Image', functionId: FUNCTION_IDS.imageManipulator,
+    helper: 'Upload an image to add watermark.', description: 'Add a text watermark.', processLabel: 'Watermark Image', functionId: FUNCTION_IDS.watermarkImage,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'watermark', hide: true },
       { type: 'text', key: 'text', label: 'Watermark Text', placeholder: 'Copyright Qofeno', defaultValue: 'Watermark' }
@@ -691,7 +691,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'mp4-converter': {
     icon: faVideo, accept: 'video/*', multiple: false,
-    helper: 'Convert your video to universally compatible MP4.', description: 'Convert to MP4.', processLabel: 'Convert to MP4', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Convert your video to universally compatible MP4.', description: 'Convert to MP4.', processLabel: 'Convert to MP4', functionId: FUNCTION_IDS.mp4Converter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'format', label: '', defaultValue: 'mp4', hide: true }
@@ -699,7 +699,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'mov-converter': {
     icon: faVideo, accept: 'video/*', multiple: false,
-    helper: 'Convert your video to QuickTime MOV.', description: 'Convert to MOV.', processLabel: 'Convert to MOV', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Convert your video to QuickTime MOV.', description: 'Convert to MOV.', processLabel: 'Convert to MOV', functionId: FUNCTION_IDS.movConverter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'format', label: '', defaultValue: 'mov', hide: true }
@@ -707,7 +707,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'avi-converter': {
     icon: faVideo, accept: 'video/*', multiple: false,
-    helper: 'Convert your video to Audio Video Interleave (AVI).', description: 'Convert to AVI.', processLabel: 'Convert to AVI', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Convert your video to Audio Video Interleave (AVI).', description: 'Convert to AVI.', processLabel: 'Convert to AVI', functionId: FUNCTION_IDS.aviConverter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'format', label: '', defaultValue: 'avi', hide: true }
@@ -715,7 +715,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'webm-converter': {
     icon: faVideo, accept: 'video/*', multiple: false,
-    helper: 'Convert your video to HTML5 WebM format.', description: 'Convert to WebM.', processLabel: 'Convert to WebM', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Convert your video to HTML5 WebM format.', description: 'Convert to WebM.', processLabel: 'Convert to WebM', functionId: FUNCTION_IDS.webmConverter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'format', label: '', defaultValue: 'webm', hide: true }
@@ -723,14 +723,14 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'merge-videos': {
     icon: faObjectUngroup, accept: 'video/*', multiple: true, maxFiles: 10,
-    helper: 'Select multiple videos to merge them into one continuous file. Note: All videos must have the same resolution and codecs for optimal joining.', description: 'Merge Videos.', processLabel: 'Merge Videos', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Select multiple videos to merge them into one continuous file. Note: All videos must have the same resolution and codecs for optimal joining.', description: 'Merge Videos.', processLabel: 'Merge Videos', functionId: FUNCTION_IDS.mergeVideos,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'merge', hide: true }
     ],
   },
   'rotate-video': {
     icon: faRotateRight, accept: 'video/*', multiple: false,
-    helper: 'Rotate the video orientation.', description: 'Rotate video.', processLabel: 'Rotate Video', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Rotate the video orientation.', description: 'Rotate video.', processLabel: 'Rotate Video', functionId: FUNCTION_IDS.rotateVideo,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'rotate', hide: true },
       { type: 'select', key: 'angle', label: 'Angle', options: ['90', '180', '270'], defaultValue: '90' }
@@ -746,21 +746,21 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'extract-audio': {
     icon: faMusic, accept: 'video/*', multiple: false,
-    helper: 'Extract the audio track from the video.', description: 'Extract Audio.', processLabel: 'Extract Audio', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Extract the audio track from the video.', description: 'Extract Audio.', processLabel: 'Extract Audio', functionId: FUNCTION_IDS.extractAudio,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'extract-audio', hide: true }
     ],
   },
   'remove-audio': {
     icon: faVolumeXmark, accept: 'video/*', multiple: false,
-    helper: 'Mute the video permanently by removing the audio track.', description: 'Remove Audio.', processLabel: 'Mute Video', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Mute the video permanently by removing the audio track.', description: 'Remove Audio.', processLabel: 'Mute Video', functionId: FUNCTION_IDS.removeAudio,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'remove-audio', hide: true }
     ],
   },
   'speed-changer-video': {
     icon: faTachometerAlt, accept: 'video/*', multiple: false,
-    helper: 'Change the playback speed (0.5x to 2.0x).', description: 'Change Video Speed.', processLabel: 'Apply Speed', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Change the playback speed (0.5x to 2.0x).', description: 'Change Video Speed.', processLabel: 'Apply Speed', functionId: FUNCTION_IDS.speedChangerVideo,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'speed', hide: true },
       { type: 'select', key: 'speed', label: 'Speed', options: ['0.5', '0.75', '1.25', '1.5', '2.0'], defaultValue: '1.5' }
@@ -783,7 +783,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'gif-maker-video': {
     icon: faFilm, accept: 'video/*', multiple: false,
-    helper: 'Convert the video to an animated GIF.', description: 'Video to GIF.', processLabel: 'Convert to GIF', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Convert the video to an animated GIF.', description: 'Video to GIF.', processLabel: 'Convert to GIF', functionId: FUNCTION_IDS.gifMakerVideo,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'gif', hide: true }
     ],
@@ -877,7 +877,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'mp3-converter': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Convert audio to MP3.', description: 'MP3 Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Convert audio to MP3.', description: 'MP3 Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.mp3Converter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'format', label: '', defaultValue: 'mp3', hide: true },
@@ -885,7 +885,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'wav-converter': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Convert audio to WAV.', description: 'WAV Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Convert audio to WAV.', description: 'WAV Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.wavConverter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'format', label: '', defaultValue: 'wav', hide: true },
@@ -893,7 +893,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'aac-converter': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Convert audio to AAC.', description: 'AAC Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Convert audio to AAC.', description: 'AAC Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.aacConverter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'format', label: '', defaultValue: 'aac', hide: true },
@@ -901,7 +901,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'ogg-converter': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Convert audio to OGG.', description: 'OGG Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Convert audio to OGG.', description: 'OGG Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.oggConverter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'format', label: '', defaultValue: 'ogg', hide: true },
@@ -909,7 +909,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'flac-converter': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Convert audio to FLAC.', description: 'FLAC Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Convert audio to FLAC.', description: 'FLAC Converter.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.flacConverter,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'convert', hide: true },
       { type: 'text', key: 'format', label: '', defaultValue: 'flac', hide: true },
@@ -917,7 +917,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'trim-audio': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Cut and trim audio files.', description: 'Trim Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Cut and trim audio files.', description: 'Trim Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.trimAudio,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'trim', hide: true },
       { type: 'text', key: 'start_time', label: 'Start Time (HH:MM:SS)', defaultValue: '00:00:00' },
@@ -926,21 +926,21 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'merge-audio': {
     icon: faMusic, accept: 'audio/*', multiple: true,
-    helper: 'Combine multiple audio files into one.', description: 'Merge Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Combine multiple audio files into one.', description: 'Merge Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.mergeAudio,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'merge', hide: true },
     ],
   },
   'audio-compressor': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Compress audio files to save space.', description: 'Audio Compressor.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Compress audio files to save space.', description: 'Audio Compressor.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioCompressor,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'compress', hide: true },
     ],
   },
   'volume-booster': {
     icon: faVolumeHigh, accept: 'audio/*', multiple: false,
-    helper: 'Increase the volume of your audio.', description: 'Volume Booster.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Increase the volume of your audio.', description: 'Volume Booster.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.volumeBooster,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'volume-boost', hide: true },
       { type: 'number', key: 'volume', label: 'Volume Multiplier', defaultValue: '2.0' },
@@ -948,7 +948,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'change-audio-speed': {
     icon: faTachometerAlt, accept: 'audio/*', multiple: false,
-    helper: 'Speed up or slow down audio.', description: 'Change Audio Speed.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Speed up or slow down audio.', description: 'Change Audio Speed.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.changeSpeed,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'speed', hide: true },
       { type: 'number', key: 'speed', label: 'Speed Multiplier (e.g., 1.5, 0.5)', defaultValue: '1.5' },
@@ -956,7 +956,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'change-audio-pitch': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Change the pitch of your audio.', description: 'Change Audio Pitch.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Change the pitch of your audio.', description: 'Change Audio Pitch.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.changePitch,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'pitch', hide: true },
       { type: 'number', key: 'pitch', label: 'Pitch Ratio (e.g., 1.2 for higher, 0.8 for lower)', defaultValue: '1.2' },
@@ -964,7 +964,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'fade-in-audio': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Add a fade in effect to audio.', description: 'Fade In Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Add a fade in effect to audio.', description: 'Fade In Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.fadeIn,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'fade-in', hide: true },
       { type: 'number', key: 'duration', label: 'Fade In Duration (seconds)', defaultValue: '3' },
@@ -972,7 +972,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'fade-out-audio': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Add a fade out effect to audio.', description: 'Fade Out Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Add a fade out effect to audio.', description: 'Fade Out Audio.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.fadeOut,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'fade-out', hide: true },
       { type: 'number', key: 'start_time', label: 'Start Time (seconds)', defaultValue: '10' },
@@ -981,28 +981,28 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'silence-remover': {
     icon: faVolumeXmark, accept: 'audio/*', multiple: false,
-    helper: 'Remove silent parts from audio.', description: 'Silence Remover.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Remove silent parts from audio.', description: 'Silence Remover.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.silenceRemover,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'silence-remove', hide: true },
     ],
   },
   'audio-reverser': {
     icon: faBackward, accept: 'audio/*', multiple: false,
-    helper: 'Play your audio backwards.', description: 'Audio Reverser.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Play your audio backwards.', description: 'Audio Reverser.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioReverser,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'reverse', hide: true },
     ],
   },
   'audio-metadata': {
     icon: faFileLines, accept: 'audio/*', multiple: false,
-    helper: 'Extract audio metadata to JSON.', description: 'Audio Metadata.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Extract audio metadata to JSON.', description: 'Audio Metadata.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioMetadataViewer,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'metadata', hide: true },
     ],
   },
   'ringtone-maker': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Create a ringtone from audio.', description: 'Ringtone Maker.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Create a ringtone from audio.', description: 'Ringtone Maker.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.ringtoneMaker,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'ringtone', hide: true },
       { type: 'text', key: 'start_time', label: 'Start Time (HH:MM:SS)', defaultValue: '00:00:00' },
@@ -1011,7 +1011,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'bass-booster': {
     icon: faMusic, accept: 'audio/*', multiple: false,
-    helper: 'Boost the bass in your audio.', description: 'Bass Booster.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Boost the bass in your audio.', description: 'Bass Booster.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.bassBooster,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'bass-boost', hide: true },
       { type: 'number', key: 'gain', label: 'Gain (dB)', defaultValue: '5' },
@@ -1019,7 +1019,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'background-noise-remover': {
     icon: faWandMagicSparkles, accept: 'audio/*', multiple: false,
-    helper: 'Clean up audio and remove noise.', description: 'Background Noise Remover.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.audioManipulator,
+    helper: 'Clean up audio and remove noise.', description: 'Background Noise Remover.', processLabel: 'Process Audio', functionId: FUNCTION_IDS.backgroundNoiseRemover,
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'noise-remove', hide: true },
     ],
@@ -1491,7 +1491,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       </motion.div>
 
       {/* Settings panel - only visible after file selected */}
-      {config.fields.length > 0 && (
+      {config.fields.some(f => !(f as any).hide) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1502,7 +1502,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
             <FontAwesomeIcon icon={faSliders}  className="w-4 h-4 text-purple-600" /> Settings
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {config.fields.map((field) => {
+            {config.fields.filter(f => !(f as any).hide).map((field) => {
               if (field.type === 'select') {
                 return (
                   <label key={field.key} className="space-y-1.5 text-sm font-semibold text-neutral-700">
