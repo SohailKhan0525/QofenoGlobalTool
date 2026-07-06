@@ -801,30 +801,6 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                               )}
                            </AnimatePresence>
                         </div>
-                        
-                        <AnimatePresence>
-                          {downloadState && (
-                             <motion.div 
-                               initial={{ opacity: 0 }}
-                               animate={{ opacity: 1 }}
-                               exit={{ opacity: 0 }}
-                               className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 z-10"
-                             >
-                                <div className="w-full max-w-xs space-y-4">
-                                  <div className="flex justify-between text-sm font-bold text-[#0F0A1E]">
-                                    <span>{downloadState.isBatch ? "Batch Downloading..." : "Downloading Stream..."}</span>
-                                    <span>{Math.round(downloadState.progress)}%</span>
-                                  </div>
-                                  <Progress value={downloadState.progress} className="h-3 bg-neutral-200 [&>div]:bg-purple-600" />
-                                  {downloadState.isBatch && (
-                                    <div className="text-xs text-neutral-500 text-center font-medium">
-                                      Processing File {downloadState.currentCount} of {downloadState.totalCount}
-                                    </div>
-                                  )}
-                                </div>
-                             </motion.div>
-                          )}
-                        </AnimatePresence>
                       </div>
                     </div>
                   )}
