@@ -700,7 +700,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
 
   'trim-video': {
     icon: faVideo, accept: 'video/*', multiple: false,
-    helper: 'Upload a video to trim by start time and duration.', description: 'Trim video clips.', processLabel: 'Trim Video', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Upload a video to trim by start time and duration.', description: 'Trim video clips.', processLabel: 'Trim Video', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'trim', hide: true },
       { type: 'text', key: 'start_time', label: 'Start Time (HH:MM:SS)', defaultValue: '00:00:00' },
@@ -709,7 +709,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'crop-video': {
     icon: faCrop, accept: 'video/*', multiple: false,
-    helper: 'Crop a video visually by dimensions.', description: 'Crop video frames.', processLabel: 'Crop Video', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Crop a video visually by dimensions.', description: 'Crop video frames.', processLabel: 'Crop Video', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'crop', hide: true },
       { type: 'number', key: 'width', label: 'Width', defaultValue: '640' },
@@ -720,7 +720,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'compress-video': {
     icon: faCompress, accept: 'video/*', multiple: false,
-    helper: 'Reduce your video file size by adjusting the CRF quality scale.', description: 'Compress video.', processLabel: 'Compress Video', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Reduce your video file size by adjusting the CRF quality scale.', description: 'Compress video.', processLabel: 'Compress Video', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'compress', hide: true },
       { type: 'range', key: 'crf', label: 'Compression Quality (Lower is better, 23=default, 28=high compression)', min: 18, max: 51, step: 1, defaultValue: '28' }
@@ -775,7 +775,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'flip-video': {
     icon: faArrowsLeftRight, accept: 'video/*', multiple: false,
-    helper: 'Flip video horizontally or vertically.', description: 'Flip video.', processLabel: 'Flip Video', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Flip video horizontally or vertically.', description: 'Flip video.', processLabel: 'Flip Video', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'flip', hide: true },
       { type: 'select', key: 'axis', label: 'Axis', options: [{ label: 'Horizontal', value: 'h' }, { label: 'Vertical', value: 'v' }], defaultValue: 'h' }
@@ -805,14 +805,14 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'reverse-video': {
     icon: faBackward, accept: 'video/*', multiple: false,
-    helper: 'Play video backward.', description: 'Reverse Video.', processLabel: 'Reverse Video', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Play video backward.', description: 'Reverse Video.', processLabel: 'Reverse Video', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'reverse', hide: true }
     ],
   },
   'loop-video': {
     icon: faRepeat, accept: 'video/*', multiple: false,
-    helper: 'Loop the video stream.', description: 'Loop Video.', processLabel: 'Loop Video', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Loop the video stream.', description: 'Loop Video.', processLabel: 'Loop Video', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'loop', hide: true },
       { type: 'number', key: 'loops', label: 'Number of Loops', defaultValue: '3' }
@@ -828,7 +828,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   'thumbnail-extractor': {
     icon: faImageIcon,
     accept: 'video/*', multiple: false,
-    helper: 'Extract a single frame thumbnail at a specific timestamp.', description: 'Extract Thumbnail.', processLabel: 'Extract Thumbnail', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Extract a single frame thumbnail at a specific timestamp.', description: 'Extract Thumbnail.', processLabel: 'Extract Thumbnail', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'thumbnail', hide: true },
       { type: 'text', key: 'timestamp', label: 'Timestamp (HH:MM:SS)', defaultValue: '00:00:01' }
@@ -836,7 +836,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'resolution-changer': {
     icon: faExpand, accept: 'video/*', multiple: false,
-    helper: 'Scale the video resolution.', description: 'Change Resolution.', processLabel: 'Change Resolution', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Scale the video resolution.', description: 'Change Resolution.', processLabel: 'Change Resolution', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'resolution', hide: true },
       { type: 'number', key: 'width', label: 'Width (-1 to keep ratio)', defaultValue: '1280' },
@@ -845,7 +845,7 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'fps-changer': {
     icon: faGaugeHigh, accept: 'video/*', multiple: false,
-    helper: 'Change the video framerate (FPS).', description: 'Change FPS.', processLabel: 'Change FPS', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Change the video framerate (FPS).', description: 'Change FPS.', processLabel: 'Change FPS', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'fps', hide: true },
       { type: 'number', key: 'fps', label: 'Frames Per Second (e.g. 24, 30, 60)', defaultValue: '30' }
@@ -853,14 +853,14 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'metadata-viewer-video': {
     icon: faMagnifyingGlass, accept: 'video/*', multiple: false,
-    helper: 'Extract deep metadata from your video file via ffprobe.', description: 'View Metadata.', processLabel: 'Extract Metadata', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Extract deep metadata from your video file via ffprobe.', description: 'View Metadata.', processLabel: 'Extract Metadata', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'metadata', hide: true }
     ],
   },
   'watermark-video': {
     icon: faShieldHalved, accept: 'video/*,image/*', multiple: true, maxFiles: 2,
-    helper: 'Upload exactly 2 files: first the Video, then the Image watermark.', description: 'Watermark Video.', processLabel: 'Apply Watermark', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Upload exactly 2 files: first the Video, then the Image watermark.', description: 'Watermark Video.', processLabel: 'Apply Watermark', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'watermark', hide: true },
       { type: 'number', key: 'x', label: 'X Coordinate (from left)', defaultValue: '10' },
@@ -869,14 +869,14 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'subtitle-creation': {
     icon: faClosedCaptioning, accept: 'video/*,.srt', multiple: true, maxFiles: 2,
-    helper: 'Upload exactly 2 files: first the Video, then the .srt Subtitle file.', description: 'Add Subtitles.', processLabel: 'Embed Subtitles', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Upload exactly 2 files: first the Video, then the .srt Subtitle file.', description: 'Add Subtitles.', processLabel: 'Embed Subtitles', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'subtitle', hide: true }
     ],
   },
   'chapter-creator': {
     icon: faListOl, accept: 'video/*', multiple: false,
-    helper: 'Chapter creation using metadata manipulation.', description: 'Chapter Creator.', processLabel: 'Create Chapters', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Chapter creation using metadata manipulation.', description: 'Chapter Creator.', processLabel: 'Create Chapters', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'chapter', hide: true },
       { type: 'text', key: 'chapters_data', label: 'Wait, this requires complex UI. Proceed with default pass.', hide: true, defaultValue: '[]' }
@@ -884,14 +884,14 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'stabilization-video': {
     icon: faWandMagicSparkles, accept: 'video/*', multiple: false,
-    helper: 'Apply deshake filter to stabilize shaky footage.', description: 'Stabilize Video.', processLabel: 'Stabilize Video', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Apply deshake filter to stabilize shaky footage.', description: 'Stabilize Video.', processLabel: 'Stabilize Video', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'stabilization', hide: true }
     ],
   },
   'aspect-ratio-converter': {
     icon: faTv, accept: 'video/*', multiple: false,
-    helper: 'Change display aspect ratio (e.g. 16:9, 4:3).', description: 'Aspect Ratio Converter.', processLabel: 'Change Aspect Ratio', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Change display aspect ratio (e.g. 16:9, 4:3).', description: 'Aspect Ratio Converter.', processLabel: 'Change Aspect Ratio', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'aspect-ratio', hide: true },
       { type: 'select', key: 'ratio', label: 'Aspect Ratio', options: ['16/9', '4/3', '1/1', '9/16'], defaultValue: '16/9' }
@@ -899,14 +899,14 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
   },
   'frame-extractor': {
     icon: faImages, accept: 'video/*', multiple: false,
-    helper: 'Extract frames at 1 FPS into a ZIP file.', description: 'Extract Frames.', processLabel: 'Extract Frames', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Extract frames at 1 FPS into a ZIP file.', description: 'Extract Frames.', processLabel: 'Extract Frames', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'frame-extract', hide: true }
     ],
   },
   'audio-sync': {
     icon: faSliders, accept: 'video/*', multiple: false,
-    helper: 'Shift audio forward or backward (in seconds) to fix sync issues.', description: 'Audio Sync.', processLabel: 'Sync Audio', functionId: FUNCTION_IDS.videoManipulator,
+    helper: 'Shift audio forward or backward (in seconds) to fix sync issues.', description: 'Audio Sync.', processLabel: 'Sync Audio', functionId: '',
     fields: [
       { type: 'text', key: 'action', label: '', defaultValue: 'audio-sync', hide: true },
       { type: 'number', key: 'delay', label: 'Audio Delay/Advance (seconds)', defaultValue: '1' }
