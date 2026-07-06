@@ -125,7 +125,15 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
   if (!functionId) {
     throw new Error('Function not configured yet. Please deploy the Appwrite function and add the ID to .env.');
   }
-  const execution = await functions.createExecution(functionId, JSON.stringify(payload), false);
+  
+  // Create an asynchronous execution so it never times out on the API Gateway level (30s limit)
+  let execution = await functions.createExecution(functionId, JSON.stringify(payload), true);
+  
+  // Poll until the execution is completed or failed
+  while (execution.status === 'waiting' || execution.status === 'processing') {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    execution = await functions.getExecution(functionId, execution.$id);
+  }
   
   if (execution.status === 'failed') {
     throw new Error(execution.errors || 'Appwrite function execution failed silently on the server.');
