@@ -126,6 +126,11 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
     throw new Error('Function not configured yet. Please deploy the Appwrite function and add the ID to .env.');
   }
   const execution = await functions.createExecution(functionId, JSON.stringify(payload), false);
+  
+  if (execution.status === 'failed') {
+    throw new Error(execution.errors || 'Appwrite function execution failed silently on the server.');
+  }
+
   const raw = execution.responseBody || '{}';
   if (typeof raw !== 'string') {
     return raw;
