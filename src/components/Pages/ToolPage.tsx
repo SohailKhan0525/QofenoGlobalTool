@@ -195,44 +195,19 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   const [statsObj, setStatsObj] = useState<any>({ words: 0, chars: 0, readingTime: 0 });
   const [actionMode, setActionMode] = useState<'encode' | 'decode'>('encode');
   
-  const [downloadState, setDownloadState] = useState<{ isBatch: boolean; currentCount: number; totalCount: number; progress: number } | null>(null);
-
   const handleDownload = () => {
-    const lines = outputText.trim().split('\n').length;
-    const isBatch = lines > 1;
-    const totalCount = isBatch ? lines : 1;
+    // Actual file download must be synchronous to avoid popup blockers
+    const blob = new Blob([outputText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `qofeno_result_${toolId}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
     
-    setDownloadState({ isBatch, currentCount: 0, totalCount, progress: 0 });
-    
-    // Simulate reading stream progress
-    const interval = setInterval(() => {
-      setDownloadState(prev => {
-        if (!prev) return prev;
-        let newProgress = prev.progress + (100 / totalCount / 10);
-        let newCount = Math.floor((newProgress / 100) * totalCount);
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            setDownloadState(null);
-            
-            // Actual file download
-            const blob = new Blob([outputText], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `qofeno_result_${toolId}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            toast.success("File downloaded!");
-          }, 400);
-          return { ...prev, progress: 100, currentCount: totalCount };
-        }
-        return { ...prev, progress: newProgress, currentCount: newCount };
-      });
-    }, 100);
+    toast.success("File downloaded!");
   };
 
   // Real-time processing

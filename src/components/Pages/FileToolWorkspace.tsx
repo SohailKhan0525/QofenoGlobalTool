@@ -1117,13 +1117,6 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     document.body.removeChild(a);
   };
 
-  // Auto-open download when done
-  useEffect(() => {
-    if (stage === 'done' && result?.download_url) {
-      forceDownload(result.download_url, result.output_filename || 'download');
-    }
-  }, [stage, result]);
-
   if (!config) return null;
 
   const acceptText = config.accept;
