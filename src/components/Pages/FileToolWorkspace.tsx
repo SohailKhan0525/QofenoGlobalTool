@@ -22,6 +22,9 @@ export const FILE_TOOL_SLUGS = new Set([
   'pdf-to-text',
   'pdf-word-count',
   'pdf-metadata-viewer',
+  'batch-compress-pdfs',
+  'batch-convert-pdfs',
+  'batch-merge-pdfs',
   // PRO PDF Tools
   'pdf-to-word',
   'pdf-watermark',
@@ -157,6 +160,40 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     fields: [
       { type: 'select', key: 'compression_level', label: 'Compression Level', options: ['Low', 'Medium', 'High', 'Maximum'], defaultValue: 'Medium' }
     ],
+  },
+  'batch-compress-pdfs': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: true,
+    helper: 'Select multiple PDFs to compress them in batch.',
+    description: 'Compress multiple PDFs simultaneously.',
+    processLabel: 'Compress Batch',
+    functionId: 'batch-compress-pdfs',
+    fields: [
+      { type: 'select', key: 'compression_level', label: 'Compression Level', options: ['Low', 'Medium', 'High', 'Maximum'], defaultValue: 'Medium' }
+    ],
+  },
+  'batch-convert-pdfs': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: true,
+    helper: 'Select multiple PDFs to convert them in batch.',
+    description: 'Convert multiple PDFs to another format simultaneously.',
+    processLabel: 'Convert Batch',
+    functionId: 'batch-convert-pdfs',
+    fields: [
+      { type: 'select', key: 'format', label: 'Output Format', options: ['jpg', 'png', 'word', 'text'], defaultValue: 'jpg' }
+    ],
+  },
+  'batch-merge-pdfs': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: true,
+    helper: 'Select multiple PDFs to merge them.',
+    description: 'Merge multiple PDFs into a single document.',
+    processLabel: 'Merge Batch',
+    functionId: 'batch-merge-pdfs',
+    fields: [],
   },
   'pdf-merger': {
     icon: faFileLines,
