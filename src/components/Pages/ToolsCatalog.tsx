@@ -419,15 +419,10 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              <AnimatePresence>
                   {filteredTools.map((tool) => {
                     const ToolIcon = tool.icon;
                     return (
                       <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
                         key={tool.id}
                         onClick={() => {
                           localStorage.setItem('selected_tool_id', tool.id);
@@ -490,15 +485,10 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                       </motion.div>
                     );
                   })}
-              </AnimatePresence>
             </div>
 
             {filteredTools.length === 0 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white border border-neutral-200/50 rounded-3xl p-16 text-center max-w-lg mx-auto mt-12"
-              >
+              <div className="bg-white border border-neutral-200/50 rounded-3xl p-16 text-center max-w-lg mx-auto mt-12">
                  {/* Honest Empty State SVG/Icon */}
                  <div className="w-16 h-16 rounded-3xl bg-neutral-100 flex items-center justify-center mx-auto mb-6 animate-[bounce_4s_ease-in-out_infinite]">
                    <FontAwesomeIcon icon={faMagnifyingGlass} className="w-6 h-6 text-neutral-400" />
@@ -526,7 +516,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                     Suggest this tool <FontAwesomeIcon icon={faChevronRight} className="w-4 h-4" />
                   </button>
                 </div>
-              </motion.div>
+              </div>
             )}
           </main>
 

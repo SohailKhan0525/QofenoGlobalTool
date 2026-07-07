@@ -1,6 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowRight, faShieldHalved, faUnlock, faRotate } from '@fortawesome/free-solid-svg-icons';
-import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 
@@ -60,10 +59,7 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
         </div>
 
         {/* MISSION STATEMENT LARGE DISPLAY PULL QUOTE */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+        <div 
           className="bg-[#FAFAFA] border border-neutral-100 rounded-3xl p-8 md:p-14 mb-24 relative shadow-xl shadow-purple-900/5 text-center"
         >
           <div className="absolute top-6 left-6 text-purple-200 font-bold opacity-30 select-none text-8xl font-serif leading-none">“</div>
@@ -73,7 +69,7 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
             <br />
             Qofeno is an attempt to fix that — one tool at a time.
           </p>
-        </motion.div>
+        </div>
 
         {/* THE BUILDER */}
         <div className="bg-gradient-to-br from-[#140F26] to-[#2B1B54] rounded-3xl overflow-hidden mb-24 shadow-2xl text-white">

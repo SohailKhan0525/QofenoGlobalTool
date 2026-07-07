@@ -77,7 +77,7 @@ export function parseRoute(pathname: string, search = ''): RouteState {
   if (normalizedPath === '/contact') return { page: 'contact', pathname, search };
   if (normalizedPath === '/login') return { page: 'login', pathname, search };
   if (normalizedPath === '/signup') return { page: 'signup', pathname, search };
-  if (normalizedPath === '/checkout/pro' || normalizedPath === '/payment') return { page: 'payment', pathname, search };
+  if (normalizedPath === '/checkout/pro' || normalizedPath === '/payment' || normalizedPath === '/upgrade') return { page: 'payment', pathname, search };
   
   if (normalizedPath === '/dashboard' || normalizedPath.startsWith('/dashboard/')) {
     if (normalizedPath === '/dashboard/billing') {

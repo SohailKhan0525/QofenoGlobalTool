@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRocket, faWrench, faBug, faBullhorn } from '@fortawesome/free-solid-svg-icons';
 import { cn } from '../../lib/utils';
@@ -117,12 +116,8 @@ export function BlogDocs() {
             entries.map((entry, index) => {
               const formattedDate = new Date(entry.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
               return (
-                <motion.div 
+                <div 
                   key={entry.$id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
-                  transition={{ duration: 0.5, delay: Math.min(index * 0.1, 0.3) }}
                   className="relative"
                 >
                   {/* TIMELINE DOT */}
@@ -149,7 +144,7 @@ export function BlogDocs() {
                       {entry.content}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })
           )}

@@ -265,6 +265,12 @@ export default function App() {
         setCurrentToolSlug(route.toolSlug);
         localStorage.setItem('selected_tool_id', route.toolSlug);
       }
+      // Redirect /upgrade → /checkout/pro
+      if (window.location.pathname === '/upgrade') {
+        window.history.replaceState({}, '', '/checkout/pro');
+        setActiveTabState('payment');
+        return;
+      }
       if (window.location.pathname.startsWith('/dashboard')) {
         let redirectUrl = '/profile';
         if (window.location.pathname === '/dashboard/billing') redirectUrl = '/settings?tab=billing';
@@ -325,7 +331,15 @@ export default function App() {
         ]);
         if (cancelled) return;
         const localReadStates = JSON.parse(localStorage.getItem('qofeno_read_notifications') || '{}');
-        setNotifications((resp.documents || []).map((doc: any) => {
+        // Dedup by title to prevent duplicate welcome notifications
+        const seenTitles = new Set<string>();
+        const dedupedDocs = (resp.documents || []).filter((doc: any) => {
+          const t = String(doc.title || '');
+          if (seenTitles.has(t)) return false;
+          seenTitles.add(t);
+          return true;
+        });
+        setNotifications(dedupedDocs.map((doc: any) => {
           const isReadLocal = localReadStates[doc.$id] === true;
           return {
             id: doc.$id,
@@ -1052,12 +1066,9 @@ export default function App() {
                   { label: 'What\'s New', id: 'whats-new' },
                   { label: 'About', id: 'about' },
                   { label: 'Contact', id: 'contact' },
-                ].map((item, idx) => (
-                  <motion.button
+                ].map((item) => (
+                  <button
                     key={item.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 + idx * 0.06 }}
                     onClick={() => { setIsMobileNavOpen(false); setActiveTab(item.id); }}
                     className={cn(
                       "text-left py-3.5 px-4 rounded-xl font-bold text-base transition-colors",
@@ -1065,7 +1076,7 @@ export default function App() {
                     )}
                   >
                     {item.label}
-                  </motion.button>
+                  </button>
                 ))}
               </div>
 

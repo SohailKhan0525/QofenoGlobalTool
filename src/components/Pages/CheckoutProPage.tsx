@@ -44,7 +44,7 @@ export function CheckoutProPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0F0A1E] via-[#1a0f3a] to-[#0F0A1E] pt-28 pb-24 px-4 select-none font-medium">
-      <SEO title={`Upgrade to ${titleText} — Qofeno`} description={`Unlock unlimited access to Qofeno ${titleText}. Convert, protect, watermark and more.` />
+      <SEO title={`Upgrade to ${titleText} — Qofeno`} description={`Unlock unlimited access to Qofeno ${titleText}. Convert, protect, watermark and more.`} />
 
       <div className="max-w-lg mx-auto">
         {/* Header */}
