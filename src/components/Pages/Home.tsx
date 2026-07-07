@@ -5,7 +5,7 @@ import {
   faArrowRight, faMagnifyingGlass, faChevronRight, faCircleCheck, 
   faBolt, faSliders, faMusic, faFileLines, faImage, faVideo, 
   faCode, faChartColumn, faGraduationCap, faWandMagicSparkles, 
-  faMicrochip, faHeart, faUsers, faStar
+  faMicrochip, faHeart, faUsers, faStar, faPenNib
 } from '@fortawesome/free-solid-svg-icons';
 import { useToolCatalog } from '../../lib/toolCatalog';
 import { cn } from '../../lib/utils';
@@ -22,6 +22,17 @@ const PERSONAS = [
   { id: 'professionals', label: '💼 Professionals', title: 'Work faster, not harder', desc: 'Merge PDF reports, compress heavy images, trim video presentations, and run files. Professional-grade utilities that do not require IT security clearance or subscription tiers.', bgClass: 'bg-gradient-to-br from-emerald-100 to-teal-100', icon: faChartColumn, iconColor: 'text-emerald-600', link: '/tools?category=PDF & Documents,Image Tools,Video Tools' },
   { id: 'everyone', label: '🌍 Everyone Else', title: 'Impossibly simple for all', desc: 'If you can click a button, you can use Qofeno. No complex learning curves. High contrast responsive panels tailored to process tools in seconds.', bgClass: 'bg-gradient-to-br from-amber-100 to-orange-100', icon: faWandMagicSparkles, iconColor: 'text-amber-600', link: '/tools?filter=free' }
 ];
+
+const CATEGORY_META: Record<string, { icon: any, color: string }> = {
+  'PDF & Documents': { icon: faFileLines, color: 'bg-red-50 text-red-650' },
+  'Image Tools': { icon: faImage, color: 'bg-emerald-50 text-emerald-650' },
+  'Video Tools': { icon: faVideo, color: 'bg-blue-50 text-blue-650' },
+  'Audio Tools': { icon: faMusic, color: 'bg-amber-50 text-amber-650' },
+  'Developer Tools': { icon: faCode, color: 'bg-purple-50 text-purple-650' },
+  'Data Tools': { icon: faChartColumn, color: 'bg-cyan-50 text-cyan-650' },
+  'Study Tools': { icon: faGraduationCap, color: 'bg-pink-50 text-pink-650' },
+  'Writing Tools': { icon: faPenNib, color: 'bg-violet-50 text-violet-650' },
+};
 
 // Interactive Typing demo subcomponent
 function SearchTypingDemo() {
@@ -227,7 +238,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
     return () => ctx.revert();
   }, [prefersReduced]);
 
-  const filteredCategories = categoryCards.slice(0, 4);
+  const filteredCategories = categoryCards.filter(c => c.name !== 'All Tools').slice(0, 4);
 
   return (
     <div className="bg-white min-h-screen text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white">
@@ -355,7 +366,9 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 font-medium">
             {filteredCategories.map((cat, idx) => {
-              const IconComp = cat.icon;
+              const meta = CATEGORY_META[cat.name] || { icon: faWandMagicSparkles, color: 'bg-purple-50 text-purple-650' };
+              const IconComp = meta.icon;
+              const catTools = tools.filter(t => t.category === cat.name).slice(0, 3);
               return (
                 <div
                   key={idx}
@@ -365,7 +378,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   }}
                   className="group relative bg-[#FAFAFA] border border-neutral-100 hover:border-purple-200/60 p-6 rounded-3xl cursor-pointer hover:bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-purple-500/5"
                 >
-                  <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300", cat.color)}>
+                  <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300", meta.color)}>
                     <FontAwesomeIcon icon={IconComp} className="w-7 h-7" />
                   </div>
                   <div className="absolute top-6 right-6">
@@ -379,9 +392,9 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   <div className="mt-4 flex flex-col gap-2">
                     <span className="text-xs text-neutral-400 uppercase font-black tracking-wider">Top Tools</span>
                     <div className="flex flex-wrap gap-1.5">
-                      {cat.tools.map((t, i) => (
+                      {catTools.map((t, i) => (
                         <span key={i} className="bg-white group-hover:bg-purple-50/50 text-neutral-600 group-hover:text-purple-900 border border-neutral-100 rounded-lg text-xs py-1 px-2 font-semibold">
-                          {t}
+                          {t.name}
                         </span>
                       ))}
                     </div>
