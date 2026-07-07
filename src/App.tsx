@@ -169,6 +169,7 @@ export default function App() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showPreferences, setShowPreferences] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
+  const [openFooterCol, setOpenFooterCol] = useState<string | null>(null);
 
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
@@ -264,6 +265,17 @@ export default function App() {
         setCurrentToolSlug(route.toolSlug);
         localStorage.setItem('selected_tool_id', route.toolSlug);
       }
+      if (window.location.pathname.startsWith('/dashboard')) {
+        let redirectUrl = '/profile';
+        if (window.location.pathname === '/dashboard/billing') redirectUrl = '/settings?tab=billing';
+        else if (window.location.pathname === '/dashboard/favorites') redirectUrl = '/profile#favorites';
+        else if (window.location.pathname === '/dashboard/history') redirectUrl = '/profile#history';
+        
+        window.history.replaceState({}, '', redirectUrl);
+        const nextRoute = parseRoute(redirectUrl, redirectUrl.includes('?') ? redirectUrl.substring(redirectUrl.indexOf('?')) : '');
+        setActiveTabState(nextRoute.page);
+        return;
+      }
       setActiveTabState(route.page);
     };
 
@@ -275,7 +287,7 @@ export default function App() {
   useEffect(() => {
     if (isAuthLoading) return;
     const route = parseRoute(window.location.pathname, window.location.search);
-    if (['dashboard', 'profile', 'settings', 'payment'].includes(route.page) && !isAuthenticated) {
+    if (['profile', 'settings', 'payment'].includes(route.page) && !isAuthenticated) {
       const redirect = `${window.location.pathname}${window.location.search}`;
       window.history.replaceState({}, '', `/login?redirect=${encodeURIComponent(redirect)}`);
       setActiveTabState('login');
@@ -312,14 +324,18 @@ export default function App() {
           Query.limit(20),
         ]);
         if (cancelled) return;
-        setNotifications((resp.documents || []).map((doc: any) => ({
-          id: doc.$id,
-          title: String(doc.title || 'Notification'),
-          message: String(doc.message || ''),
-          time: relativeTime(doc.created_at || doc.$createdAt),
-          read: Boolean(doc.read),
-          link: doc.link || undefined,
-        })));
+        const localReadStates = JSON.parse(localStorage.getItem('qofeno_read_notifications') || '{}');
+        setNotifications((resp.documents || []).map((doc: any) => {
+          const isReadLocal = localReadStates[doc.$id] === true;
+          return {
+            id: doc.$id,
+            title: String(doc.title || 'Notification'),
+            message: String(doc.message || ''),
+            time: relativeTime(doc.created_at || doc.$createdAt),
+            read: Boolean(doc.read) || isReadLocal,
+            link: doc.link || undefined,
+          };
+        }));
       } catch {
         if (!cancelled) setNotifications([]);
       }
@@ -347,6 +363,11 @@ export default function App() {
   const markNotificationRead = async (notificationId: string) => {
     setNotifications((prev) => prev.map((n) => n.id === notificationId ? { ...n, read: true } : n));
     try {
+      const localReadStates = JSON.parse(localStorage.getItem('qofeno_read_notifications') || '{}');
+      localReadStates[notificationId] = true;
+      localStorage.setItem('qofeno_read_notifications', JSON.stringify(localReadStates));
+    } catch {}
+    try {
       await databases.updateDocument(DATABASE_ID, 'notifications', notificationId, { read: true });
     } catch {}
   };
@@ -354,6 +375,13 @@ export default function App() {
   const markAllNotificationsRead = async () => {
     const unread = notifications.filter((n) => !n.read);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      const localReadStates = JSON.parse(localStorage.getItem('qofeno_read_notifications') || '{}');
+      for (const n of unread) {
+        localReadStates[n.id] = true;
+      }
+      localStorage.setItem('qofeno_read_notifications', JSON.stringify(localReadStates));
+    } catch {}
     for (const notif of unread) {
       try {
         await databases.updateDocument(DATABASE_ID, 'notifications', notif.id, { read: true });
@@ -939,10 +967,22 @@ export default function App() {
                       <p className="text-xs font-bold text-[#0F0A1E]">{user?.plan === 'pro' ? 'Pro Account' : 'Free Account'}</p>
                     </div>
                     <button 
+                      onClick={() => { setShowProfileMenu(false); setActiveTab('profile'); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer mb-1"
+                    >
+                      <FontAwesomeIcon icon={faUser} className="w-4 h-4" /> Profile
+                    </button>
+                    <button 
+                      onClick={() => { setShowProfileMenu(false); setActiveTab('settings'); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer mb-1"
+                    >
+                      <FontAwesomeIcon icon={faGear} className="w-4 h-4" /> Settings
+                    </button>
+                    <button 
                       onClick={() => { setShowProfileMenu(false); setShowPreferences(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer mb-1"
                     >
-                      <FontAwesomeIcon icon={faGear} className="w-4 h-4" /> Preferences
+                      <FontAwesomeIcon icon={faSliders} className="w-4 h-4" /> Preferences
                     </button>
                     <button 
                       onClick={() => {
@@ -1174,8 +1214,28 @@ export default function App() {
 
       {/* ULTRA PREMIUM DARK VIOLET GLOBAL FOOTER */}
       <footer className="bg-[#0A0614] border-t border-purple-950/40 text-white pt-20 pb-12 px-6 md:px-12 select-none relative z-20">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-12 font-sans mb-16">
-          <div className="col-span-2 md:col-span-3 lg:col-span-2">
+        
+        {/* Newsletter Subscription Row */}
+        <div className="max-w-7xl mx-auto border-b border-white/5 pb-12 mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div>
+            <h3 className="text-lg font-black text-white">Subscribe to our newsletter</h3>
+            <p className="text-xs text-purple-200/50 mt-1 font-semibold">Get weekly updates on new tools, product improvements, and fix timelines.</p>
+          </div>
+          <form onSubmit={(e) => { e.preventDefault(); toast.success("Subscribed successfully! Thank you."); }} className="flex gap-2 w-full lg:w-auto">
+            <input 
+              type="email" 
+              required 
+              placeholder="Enter your email" 
+              className="bg-white/5 border border-purple-950/50 focus:border-purple-500 focus:bg-white/10 outline-none rounded-xl text-xs font-bold text-white px-4 py-3 w-full lg:w-64 placeholder-neutral-500 transition-all"
+            />
+            <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs uppercase tracking-wider px-5 py-3 rounded-xl transition-all cursor-pointer whitespace-nowrap">
+              Subscribe
+            </button>
+          </form>
+        </div>
+
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-6 gap-8 lg:gap-12 font-sans mb-16">
+          <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={() => setActiveTab('home')}>
               <QofenoLogo size={32} showText={true} textClass="text-xl text-white" />
             </div>
@@ -1195,39 +1255,69 @@ export default function App() {
             </div>
           </div>
 
-          <div>
-            <h4 className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-6">Tools</h4>
-            <ul className="space-y-3.5 text-neutral-400 text-xs font-semibold">
-              <li><button onClick={() => setActiveTab('tools')} className="hover:text-white transition-colors cursor-pointer">Browse All Tools</button></li>
-              <li><button onClick={() => setActiveTab('tools')} className="hover:text-white transition-colors cursor-pointer">PDF Tools</button></li>
-              <li><button onClick={() => setActiveTab('tools')} className="hover:text-white transition-colors cursor-pointer">Image Tools</button></li>
-              <li><button onClick={() => setActiveTab('tools')} className="hover:text-white transition-colors cursor-pointer">AI Tools</button></li>
-              <li><button onClick={() => setActiveTab('tools')} className="hover:text-white transition-colors cursor-pointer">Developer Tools</button></li>
+          <div className="border-b border-white/5 lg:border-0 pb-4 lg:pb-0">
+            <h4 
+              onClick={() => setOpenFooterCol(openFooterCol === 'tools' ? null : 'tools')}
+              className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-0 lg:mb-6 flex justify-between items-center cursor-pointer select-none lg:pointer-events-none"
+            >
+              <span>Tools</span>
+              <span className="lg:hidden">{openFooterCol === 'tools' ? '−' : '+'}</span>
+            </h4>
+            <ul className={cn("space-y-3.5 text-neutral-400 text-xs font-semibold mt-4 lg:mt-0 transition-all", openFooterCol === 'tools' ? 'block' : 'hidden lg:block')}>
+              <li><button onClick={() => { setActiveTab('tools'); }} className="hover:text-white transition-colors cursor-pointer text-left">Browse All Tools</button></li>
+              <li><button onClick={() => { localStorage.setItem('selected_category_filter', 'PDF & Documents'); setActiveTab('tools'); }} className="hover:text-white transition-colors cursor-pointer text-left">PDF Tools</button></li>
+              <li><button onClick={() => { localStorage.setItem('selected_category_filter', 'Image Tools'); setActiveTab('tools'); }} className="hover:text-white transition-colors cursor-pointer text-left">Image Tools</button></li>
+              <li><button onClick={() => { localStorage.setItem('selected_category_filter', 'Video Tools'); setActiveTab('tools'); }} className="hover:text-white transition-colors cursor-pointer text-left">Video Tools</button></li>
+              <li><button onClick={() => { localStorage.setItem('selected_category_filter', 'Developer Tools'); setActiveTab('tools'); }} className="hover:text-white transition-colors cursor-pointer text-left">Developer Tools</button></li>
+              <li><button onClick={() => { localStorage.setItem('selected_category_filter', 'Writing Tools'); setActiveTab('tools'); }} className="hover:text-white transition-colors cursor-pointer text-left">Writing Tools</button></li>
             </ul>
           </div>
 
-          <div>
-            <h4 className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-6">Product</h4>
-            <ul className="space-y-3.5 text-neutral-400 text-xs font-semibold">
-              <li><button onClick={() => setActiveTab('pricing')} className="hover:text-white transition-colors cursor-pointer">Pricing</button></li>
-              <li><button onClick={() => setActiveTab('whats-new')} className="hover:text-white transition-colors cursor-pointer">What's New</button></li>
-              <li><button onClick={() => setActiveTab('coming-soon')} className="hover:text-white transition-colors cursor-pointer">Blog</button></li>
+          <div className="border-b border-white/5 lg:border-0 pb-4 lg:pb-0">
+            <h4 
+              onClick={() => setOpenFooterCol(openFooterCol === 'product' ? null : 'product')}
+              className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-0 lg:mb-6 flex justify-between items-center cursor-pointer select-none lg:pointer-events-none"
+            >
+              <span>Product</span>
+              <span className="lg:hidden">{openFooterCol === 'product' ? '−' : '+'}</span>
+            </h4>
+            <ul className={cn("space-y-3.5 text-neutral-400 text-xs font-semibold mt-4 lg:mt-0 transition-all", openFooterCol === 'product' ? 'block' : 'hidden lg:block')}>
+              <li><button onClick={() => setActiveTab('pricing')} className="hover:text-white transition-colors cursor-pointer text-left">Pricing</button></li>
+              <li><button onClick={() => setActiveTab('whats-new')} className="hover:text-white transition-colors cursor-pointer text-left">What's New</button></li>
+              <li><button onClick={() => setActiveTab('coming-soon')} className="hover:text-white transition-colors cursor-pointer text-left">Blog</button></li>
             </ul>
           </div>
 
-          <div>
-            <h4 className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-6">Company</h4>
-            <ul className="space-y-3.5 text-neutral-400 text-xs font-semibold">
-              <li><button onClick={() => setActiveTab('about')} className="hover:text-white transition-colors cursor-pointer">About</button></li>
-              <li><button onClick={() => setActiveTab('contact')} className="hover:text-white transition-colors cursor-pointer">Contact</button></li>
+          <div className="border-b border-white/5 lg:border-0 pb-4 lg:pb-0">
+            <h4 
+              onClick={() => setOpenFooterCol(openFooterCol === 'company' ? null : 'company')}
+              className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-0 lg:mb-6 flex justify-between items-center cursor-pointer select-none lg:pointer-events-none"
+            >
+              <span>Company</span>
+              <span className="lg:hidden">{openFooterCol === 'company' ? '−' : '+'}</span>
+            </h4>
+            <ul className={cn("space-y-3.5 text-neutral-400 text-xs font-semibold mt-4 lg:mt-0 transition-all", openFooterCol === 'company' ? 'block' : 'hidden lg:block')}>
+              <li><button onClick={() => setActiveTab('about')} className="hover:text-white transition-colors cursor-pointer text-left">About</button></li>
+              <li><button onClick={() => setActiveTab('contact')} className="hover:text-white transition-colors cursor-pointer text-left">Contact</button></li>
             </ul>
           </div>
           
-          <div>
-            <h4 className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-6">Account</h4>
-            <ul className="space-y-3.5 text-neutral-400 text-xs font-semibold">
-              {!isAuthenticated && <li><button onClick={() => setActiveTab('pricing')} className="hover:text-white transition-colors cursor-pointer">Get Pro</button></li>}
-              {isAuthenticated && <li><button className="text-purple-400 cursor-default">{user?.plan === 'pro' ? 'Pro Active' : 'Signed In'}</button></li>}
+          <div className="border-b border-white/5 lg:border-0 pb-4 lg:pb-0">
+            <h4 
+              onClick={() => setOpenFooterCol(openFooterCol === 'account' ? null : 'account')}
+              className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-0 lg:mb-6 flex justify-between items-center cursor-pointer select-none lg:pointer-events-none"
+            >
+              <span>Account</span>
+              <span className="lg:hidden">{openFooterCol === 'account' ? '−' : '+'}</span>
+            </h4>
+            <ul className={cn("space-y-3.5 text-neutral-400 text-xs font-semibold mt-4 lg:mt-0 transition-all", openFooterCol === 'account' ? 'block' : 'hidden lg:block')}>
+              {!isAuthenticated && <li><button onClick={() => setActiveTab('pricing')} className="hover:text-white transition-colors cursor-pointer text-left">Get Pro</button></li>}
+              {isAuthenticated && (
+                <>
+                  <li><button onClick={() => setActiveTab('profile')} className="hover:text-white transition-colors cursor-pointer text-left">My Profile</button></li>
+                  <li><button onClick={() => setActiveTab('settings')} className="hover:text-white transition-colors cursor-pointer text-left">Settings</button></li>
+                </>
+              )}
             </ul>
           </div>
         </div>

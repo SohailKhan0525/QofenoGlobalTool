@@ -2,24 +2,29 @@ import React, { useState } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { useAuth } from '../../context/AuthContext';
 import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
-import { ID } from 'appwrite';
+import { ID, Query } from 'appwrite';
 import { toast } from 'sonner';
 
 const PAYPAL_CLIENT_ID    = import.meta.env.VITE_PAYPAL_CLIENT_ID    || '';
 const PLAN_ID_MONTHLY     = import.meta.env.VITE_PAYPAL_PLAN_ID_MONTHLY || '';
 const PLAN_ID_YEARLY      = import.meta.env.VITE_PAYPAL_PLAN_ID_YEARLY  || '';
+const TEAMS_PLAN_ID_MONTHLY = import.meta.env.VITE_PAYPAL_TEAMS_PLAN_ID_MONTHLY || '';
+const TEAMS_PLAN_ID_YEARLY  = import.meta.env.VITE_PAYPAL_TEAMS_PLAN_ID_YEARLY  || '';
 const PAYPAL_MODE         = import.meta.env.VITE_PAYPAL_MODE           || 'live';
 
 type PayPalButtonProps = {
   isYearly?: boolean;
+  planType?: 'pro' | 'teams';
 };
 
-export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
+export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButtonProps) {
   const { user } = useAuth();
   const [success, setSuccess] = useState(false);
   const [processing, setProcessing] = useState(false);
 
-  const planId = isYearly ? PLAN_ID_YEARLY : PLAN_ID_MONTHLY;
+  const planId = planType === 'teams'
+    ? (isYearly ? TEAMS_PLAN_ID_YEARLY : TEAMS_PLAN_ID_MONTHLY)
+    : (isYearly ? PLAN_ID_YEARLY : PLAN_ID_MONTHLY);
 
   // ── Success state ────────────────────────────────────────────────────────────
   if (success) {
@@ -32,16 +37,16 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
         </div>
         <h3 className="text-xl font-black mb-2">Payment Successful! 🎉</h3>
         <p className="text-sm font-medium mb-4">
-          Your PRO account is now active. Welcome to Qofeno PRO!
+          Your {planType.toUpperCase()} account is now active. Welcome to Qofeno {planType.toUpperCase()}!
         </p>
         <button
           onClick={() => {
-            window.history.pushState({}, '', '/dashboard');
+            window.history.pushState({}, '', '/profile');
             window.dispatchEvent(new PopStateEvent('popstate'));
           }}
           className="w-full py-3 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-colors"
         >
-          Go to Dashboard →
+          Go to Profile →
         </button>
       </div>
     );
@@ -129,13 +134,15 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
               const now = new Date().toISOString();
 
               if (user) {
-                // 1. Update users_meta.plan = 'pro' (optimistic — webhook will confirm)
+                // 1. Update users_meta.plan = planType (optimistic — webhook will confirm)
                 try {
-                  const docs = await databases.listDocuments(DATABASE_ID, 'users_meta');
-                  const userMeta = docs.documents.find((d: any) => d.user_id === user.id);
+                  const docs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
+                    Query.equal('user_id', user.id)
+                  ]);
+                  const userMeta = docs.documents[0];
                   if (userMeta) {
                     await databases.updateDocument(DATABASE_ID, 'users_meta', userMeta.$id, {
-                      plan: 'pro',
+                      plan: planType,
                       payment_ref: data.subscriptionID || data.orderID || null,
                       updated_at: now,
                     });
@@ -146,11 +153,13 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
 
                 // 2. Create / update subscriptions record
                 try {
-                  const existingSubs = await databases.listDocuments(DATABASE_ID, 'subscriptions');
-                  const existing = existingSubs.documents.find((d: any) => d.user_id === user.id);
+                  const existingSubs = await databases.listDocuments(DATABASE_ID, 'subscriptions', [
+                    Query.equal('user_id', user.id)
+                  ]);
+                  const existing = existingSubs.documents[0];
                   const subPayload = {
                     user_id: user.id,
-                    plan: 'pro',
+                    plan: planType,
                     period: isYearly ? 'yearly' : 'monthly',
                     status: 'active',
                     subscription_id: data.subscriptionID || null,
@@ -171,7 +180,7 @@ export function PayPalButton({ isYearly = false }: PayPalButtonProps) {
                 }
               }
 
-              toast.success('🎉 Subscription activated! Welcome to Qofeno PRO!');
+              toast.success(`🎉 Subscription activated! Welcome to Qofeno ${planType.toUpperCase()}!`);
               setSuccess(true);
             } catch (err) {
               toast.error('Payment received but profile update failed. Contact support if your plan doesn\'t reflect PRO.');

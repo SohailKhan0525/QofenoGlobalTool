@@ -1,9 +1,10 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCircleExclamation, faCircleCheck, faCopy, faFileLines, faSpinner, faPlus, faTrashCan, faCloudArrowUp, faVideo, faImage as faImageIcon, faDownload, faWandMagicSparkles, faVolumeHigh, faSliders, faCrop, faCompress, faObjectUngroup, faRotateRight, faArrowsLeftRight, faMusic, faVolumeXmark, faTachometerAlt, faBackward, faRepeat, faFilm, faExpand, faGaugeHigh, faMagnifyingGlass, faShieldHalved, faClosedCaptioning, faListOl, faTv, faImages, faDroplet, faSun, faCircleHalfStroke } from '@fortawesome/free-solid-svg-icons';
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { faCircleExclamation, faCircleCheck, faCopy, faFileLines, faSpinner, faPlus, faTrashCan, faCloudArrowUp, faVideo, faImage as faImageIcon, faDownload, faWandMagicSparkles, faVolumeHigh, faSliders, faCrop, faCompress, faObjectUngroup, faRotateRight, faArrowsLeftRight, faMusic, faVolumeXmark, faTachometerAlt, faBackward, faRepeat, faFilm, faExpand, faGaugeHigh, faMagnifyingGlass, faShieldHalved, faClosedCaptioning, faListOl, faTv, faImages, faDroplet, faSun, faCircleHalfStroke, faCircleQuestion } from '@fortawesome/free-solid-svg-icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 import { executeJsonFunction, FUNCTION_IDS } from '../../lib/qofeno-appwrite';
@@ -1074,6 +1075,38 @@ function humanFileSize(bytes: number) {
 
 type Stage = 'idle' | 'file_selected' | 'processing' | 'done' | 'error';
 
+const FIELD_TOOLTIPS: Record<string, string> = {
+  'compression_level': 'Choose the amount of file size reduction. High or Maximum yields smaller file size but may slightly reduce image resolution.',
+  'split_mode': 'By page ranges: extract specific page numbers. Every N pages: split the file into chunks of N pages.',
+  'page_ranges': 'Enter ranges separated by commas. Example: 1-3, 5, 7-9.',
+  'rotation': 'Rotate pages clockwise by 90 or 185 degrees.',
+  'apply_to': 'Choose if you want to rotate all pages or select odd, even, or custom ranges.',
+  'specific_pages': 'Enter page numbers to rotate. Example: 1, 3, 5-7.',
+  'watermark_text': 'Text phrase to overlay transparently across selected PDF pages.',
+  'position': 'Where the watermark text block should be aligned relative to the page layout.',
+  'opacity': 'Opacity level for transparency. Lower means more transparent.',
+  'font_size': 'Text size in points.',
+  'owner_password': 'Permissions password required to modify, print, or edit PDF metadata.',
+  'user_password': 'Reader password required to open and view the PDF file.',
+  'language': 'Primary language of the scanned text. Improves detection accuracy.',
+  'output_type': 'Generate a text-searchable PDF file or dump everything to a plain text (.txt) file.',
+  'width': 'Target image width in pixels. Keep blank to maintain aspect ratio.',
+  'height': 'Target image height in pixels. Keep blank to maintain aspect ratio.',
+  'output_format': 'Image codec file format (.webp, .png, .jpg, .avif). WEBP is highly recommended for web optimization.',
+  'quality': 'Compression quality scale. Lower values reduce file size significantly but compress pixels more.',
+  'threshold': 'Background detection threshold. Adjust if foreground details are incorrectly erased.',
+  'crf': 'Constant Rate Factor (CRF). 18 is visually lossless, 23 is default, and 28 yields high file compression.',
+  'start_time': 'Playback offset to begin trimming in seconds (e.g. 10) or HH:MM:SS format (e.g. 00:00:15).',
+  'end_time': 'Time offset or duration to cut in seconds or HH:MM:SS format.',
+  'duration': 'Duration in seconds of the clipped video.',
+  'loops': 'Number of times to duplicate and loop the clip.',
+  'timestamp': 'Time offset to extract a single JPG screenshot frame.',
+  'volume': 'Boost multiplier. 2.0 doubles volume. Use with care to avoid audio clipping.',
+  'speed': 'Playback speed multiplier. Values greater than 1.0 speed up audio.',
+  'pitch': 'Audio frequency ratio. Values above 1.0 pitch-shift audio higher (chipmunk effect).',
+  'gain': 'Sub-bass boost amplification in decibels.',
+};
+
 export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: string | null }) {
   const config = FILE_TOOL_CONFIG[tool.slug as FileToolSlug];
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1525,10 +1558,26 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {config.fields.filter(f => !(f as any).hide).map((field) => {
+              const labelEl = (
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span>{field.label}</span>
+                  {FIELD_TOOLTIPS[field.key] && (
+                    <Tooltip>
+                      <TooltipTrigger type="button" className="text-neutral-400 hover:text-purple-650 transition-colors p-0.5 cursor-pointer">
+                        <FontAwesomeIcon icon={faCircleQuestion} className="w-3.5 h-3.5" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[240px] bg-neutral-950 text-white text-xs p-3 rounded-lg border-0 shadow-xl font-sans leading-relaxed">
+                        <p>{FIELD_TOOLTIPS[field.key]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              );
+
               if (field.type === 'select') {
                 return (
-                  <label key={field.key} className="space-y-1.5 text-sm font-semibold text-neutral-700">
-                    <span>{field.label}</span>
+                  <label key={field.key} className="space-y-1 text-sm font-semibold text-neutral-700">
+                    {labelEl}
                     <select
                       className="w-full rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm outline-none transition-colors focus:border-purple-500"
                       value={fields[field.key] ?? field.defaultValue ?? ''}
@@ -1546,10 +1595,10 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
               if (field.type === 'range') {
                 const val = fields[field.key] ?? field.defaultValue ?? String(field.max);
                 return (
-                  <label key={field.key} className="space-y-1.5 text-sm font-semibold text-neutral-700">
+                  <label key={field.key} className="space-y-1 text-sm font-semibold text-neutral-700">
                     <div className="flex items-center justify-between">
-                      <span>{field.label}</span>
-                      <span className="text-xs text-neutral-500">{val}</span>
+                      {labelEl}
+                      <span className="text-xs text-neutral-500 mb-1.5">{val}</span>
                     </div>
                     <input
                       type="range" min={field.min} max={field.max} step={field.step}
@@ -1564,7 +1613,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
                 const checked = Boolean(fields[field.key] ?? field.defaultValue ?? false);
                 return (
                   <label key={field.key} className="flex items-center justify-between text-sm font-semibold text-neutral-700 cursor-pointer py-1">
-                    <span>{field.label}</span>
+                    {labelEl}
                     <input
                       type="checkbox"
                       checked={checked}
@@ -1576,8 +1625,8 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
               }
               // text / number
               return (
-                <label key={field.key} className="space-y-1.5 text-sm font-semibold text-neutral-700">
-                  <span>{field.label}</span>
+                <label key={field.key} className="space-y-1 text-sm font-semibold text-neutral-700">
+                  {labelEl}
                   <input
                     type={field.type === 'number' ? 'number' : 'text'}
                     placeholder={(field as any).placeholder}

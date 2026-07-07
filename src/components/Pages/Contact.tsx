@@ -94,8 +94,8 @@ export function Contact() {
             Get in Touch
           </span>
           <h1 className="font-display text-4xl md:text-7xl font-black text-[#0F0A1E] mb-6 leading-none">Let's talk</h1>
-          <p className="text-lg text-neutral-500 max-w-md mb-12">
-            Have questions or need to request a new tool? Drop a note below.
+          <p className="text-lg text-neutral-500 max-w-md mb-12 font-medium">
+            Have questions or need to request a new tool? Drop a note below. Mohd Zaheer Uddin personally reviews and responds to every query.
           </p>
 
           <div className="space-y-6 w-full max-w-sm">
@@ -105,7 +105,7 @@ export function Contact() {
               </div>
               <div>
                 <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">Email Assistance</h4>
-                <p className="font-bold text-neutral-800 text-sm">support@qofeno.io</p>
+                <p className="font-bold text-neutral-800 text-sm">support@qofeno.dev</p>
               </div>
             </div>
           </div>
@@ -120,29 +120,29 @@ export function Contact() {
                 onSubmit={handleSubmit}
                 className={cn("space-y-6", errorShake ? "animate-shake" : "")}
               >
-                <div className="space-y-1">
+                <div className="space-y-1 font-medium">
                   <label className="text-xs font-black text-neutral-700 uppercase tracking-wider">Your Full Name</label>
                   <input 
                     type="text" 
-                    placeholder="Sohail Khan"
+                    placeholder="e.g. Sohail Khan"
                     className="w-full bg-white border border-neutral-200 focus:border-purple-600 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 font-medium">
                   <label className="text-xs font-black text-neutral-700 uppercase tracking-wider">Email Address</label>
                   <input 
                     type="email" 
-                    placeholder="you@domain.com"
+                    placeholder="e.g. you@domain.com"
                     className="w-full bg-white border border-neutral-200 focus:border-purple-600 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 font-medium">
                   <label className="text-xs font-black text-neutral-700 uppercase tracking-wider">Topic of Inquiry</label>
                   <select 
                     className="w-full bg-white border border-neutral-200 focus:border-purple-600 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all cursor-pointer"
@@ -156,11 +156,11 @@ export function Contact() {
                   </select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1 font-medium">
                   <label className="text-xs font-black text-neutral-700 uppercase tracking-wider">Your Detailed Message</label>
                   <textarea 
                     rows={4}
-                    placeholder="Tell us what you're converting or what enterprise tools you need..."
+                    placeholder="How can I help you? Please describe the tool idea or inquiry in detail..."
                     className="w-full bg-white border border-neutral-200 focus:border-purple-600 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all resize-none"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}

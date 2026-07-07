@@ -27,6 +27,48 @@ import { useAuth } from '../../context/AuthContext';
 import { PayPalButton } from '../PayPal/PayPalButton';
 import { Turnstile } from '@marsidev/react-turnstile';
 
+const getFAQsForCategory = (category: string, toolName: string) => {
+  const common = [
+    { q: "Is my data secure?", a: "Yes. All processing is either executed completely locally within your browser sandbox or securely transmitted and instantly deleted from our servers." },
+    { q: "Who can I contact if I face an issue?", a: "You can reach out to our support team via the Contact Page, and we'll be happy to assist you immediately." }
+  ];
+
+  if (category === 'PDF & Documents') {
+    return [
+      { q: `How do I use this ${toolName}?`, a: `Simply upload your PDF file, choose your compression or formatting options, and click process to download the result.` },
+      { q: "Will my PDF document lose quality during processing?", a: "Our optimized engines adjust layouts and compress embedded media intelligently to keep text razor sharp." },
+      { q: "What is the maximum PDF file size limit?", a: "Free users can upload PDFs up to 50MB. Pro users enjoy 500MB, and Teams accounts support files up to 1GB." },
+      ...common
+    ];
+  } else if (category === 'Image Tools') {
+    return [
+      { q: `How do I use this ${toolName}?`, a: "Drag and drop your image, specify the custom height/width or compression level, and click generate." },
+      { q: "Does browser-side image conversion run offline?", a: "Yes! Most of our image suite operations run entirely locally in your browser memory and work offline." },
+      { q: "What formats are supported?", a: "We support processing JPEG, PNG, WEBP, and SVG formats seamlessly." },
+      ...common
+    ];
+  } else if (category === 'Developer Tools' || category === 'Data Tools') {
+    return [
+      { q: `How do I format or parse text with ${toolName}?`, a: "Paste your raw or minified text block into the input box. The formatter automatically validates syntax structure and indents code cleanly." },
+      { q: "Is my data secure?", a: "Yes, developer utility operations run completely within your browser sandbox. Your data never leaves your device." },
+      { q: "Can I download the formatted code?", a: "Yes! Use the copy button to save to clipboard or click download to save as a local file." },
+      ...common
+    ];
+  } else if (category === 'Audio Tools' || category === 'Video Tools') {
+    return [
+      { q: `How does ${toolName} compress files?`, a: "It utilizes modern, highly optimized compression codecs (like H.264 or AAC) to reduce file sizes significantly while maintaining great quality." },
+      { q: "What is the file size limit for media uploads?", a: "Free tier supports uploads up to 50MB. Subscribing to Pro unlocks 500MB, and Teams seats support up to 1GB." },
+      ...common
+    ];
+  }
+
+  return [
+    { q: `How do I use this ${toolName}?`, a: "Simply paste your input text or upload the required raw file, configure any available options, and download the result." },
+    { q: "Is there a usage limit?", a: "You can use this tool repeatedly. However, for extremely large datasets or files, you might need a Pro plan to bypass standard limitations." },
+    ...common
+  ];
+};
+
 export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { tools } = useToolCatalog();
   const { user } = useAuth();
@@ -44,6 +86,8 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   const toolId = localStorage.getItem('selected_tool_id') || 'json-formatter';
   const tool = tools.find(t => t.id === toolId) || FALLBACK_TOOLS.find(t => t.id === toolId) || tools[0] || FALLBACK_TOOLS[0];
   const toolSlug = tool.slug || tool.id;
+
+  const FAQs = getFAQsForCategory(tool.category, tool.name);
 
   useEffect(() => {
     const syncUser = async () => {
@@ -310,14 +354,6 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
       ];
     }
   };
-
-  const FAQs = [
-    { q: `How do I use this ${tool.name}?`, a: "Simply paste your input text or upload the required raw file, configure any available mode options, and click to process. The result will instantly appear." },
-    { q: "Is my data secure?", a: "Yes. All processing is either executed completely locally within your browser sandbox or securely transmitted and instantly deleted from our servers." },
-    { q: `What formats does ${tool.name} support?`, a: "We support all standard formats required for this operation. The platform accepts valid input seamlessly." },
-    { q: "Is there a usage limit?", a: "You can use this tool repeatedly. However, for extremely large datasets or files, you might need a Pro plan to bypass standard limitations." },
-    { q: "Who can I contact if I face an issue?", a: "You can reach out to our support team via the Contact Page, and we'll be happy to assist you immediately." },
-  ];
 
   const isFileTool = FILE_TOOL_SLUGS.has(toolSlug);
   const isProLocked = tool.type === 'Pro' && user?.plan !== 'pro';

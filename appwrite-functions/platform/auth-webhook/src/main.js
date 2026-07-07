@@ -124,15 +124,25 @@ export default async ({ req, res, log, error }) => {
 
     // Create welcome notification
     try {
-      await db.createDocument(databaseId, 'notifications', ID.unique(), {
-        user_id: userId,
-        title: 'Welcome to Qofeno! 🎉',
-        message: 'Your account is ready. Start using free tools right now — no limits.',
-        type: 'success',
-        read: false,
-        link: '/tools',
-        created_at: now,
-      });
+      const existingNotifs = await db.listDocuments(databaseId, 'notifications', [
+        Query.equal('user_id', userId),
+        Query.equal('title', 'Welcome to Qofeno! 🎉'),
+        Query.limit(1)
+      ]);
+      if (existingNotifs.total === 0) {
+        await db.createDocument(databaseId, 'notifications', ID.unique(), {
+          user_id: userId,
+          title: 'Welcome to Qofeno! 🎉',
+          message: 'Your account is ready. Start using free tools right now — no limits.',
+          type: 'success',
+          read: false,
+          link: '/tools',
+          created_at: now,
+        });
+        log('Created welcome notification.');
+      } else {
+        log('Welcome notification already exists, skipping.');
+      }
     } catch (notifErr) {
       log('Notification creation failed (non-fatal): ' + notifErr.message);
     }

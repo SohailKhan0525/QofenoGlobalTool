@@ -10,14 +10,35 @@ const VALUES = [
   { icon: faRotate, title: "Always Growing", desc: "New tools are added every week. If something's missing, let me know and I'll build it." }
 ];
 
-const ROADMAP = [
-  { status: "done", title: "Core PDF & Image Tools", desc: "Compression, conversion, and editing for everyday files." },
-  { status: "done", title: "Developer Utilities", desc: "Code formatters, encoders, and regex testers." },
-  { status: "doing", title: "AI-Powered Text Assistants", desc: "On-the-fly summarization and content generation." },
-  { status: "next", title: "Bulk Processing API", desc: "Headless access for enterprise scale automations." }
-];
+import { useState, useEffect } from 'react';
+import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
+import { Query } from 'appwrite';
 
 export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
+  const [roadmap, setRoadmap] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRoadmap() {
+      try {
+        const res = await databases.listDocuments(DATABASE_ID, 'blog_posts', [
+          Query.equal('published', true),
+          Query.orderDesc('published_at'),
+          Query.limit(4)
+        ]);
+        if (!cancelled) {
+          setRoadmap(res.documents);
+        }
+      } catch (err) {
+        console.error("Failed to load roadmap", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void loadRoadmap();
+    return () => { cancelled = true; };
+  }, []);
   return (
     <div className="min-h-screen bg-white pt-32 pb-20 overflow-hidden relative select-none">
       <SEO title="About Us" description="Learn about the mission and vision of Qofeno." />
@@ -104,21 +125,47 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
             <p className="text-neutral-500">I ship improvements weekly. Follow the roadmap.</p>
           </div>
           
-          <div className="bg-[#FAFAFA] border border-neutral-100 rounded-3xl p-8 relative overflow-hidden">
+          <div className="bg-[#FAFAFA] border border-neutral-100 rounded-3xl p-8 relative overflow-hidden font-medium">
             <div className="space-y-8 relative z-10">
-              {ROADMAP.map((item, i) => (
-                <div key={i} className="flex gap-4">
-                  <div className="mt-1 shrink-0">
-                    {item.status === 'done' && <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-4 border-emerald-100"><FontAwesomeIcon icon={faShieldHalved} className="w-2.5 h-2.5 text-white" /></div>}
-                    {item.status === 'doing' && <div className="w-5 h-5 rounded-full bg-amber-500 animate-pulse border-4 border-amber-100" />}
-                    {item.status === 'next' && <div className="w-5 h-5 rounded-full border-[3px] border-neutral-300 bg-white" />}
+              {loading ? (
+                <div className="text-center py-6 text-neutral-400 font-bold">Loading roadmap...</div>
+              ) : roadmap.length > 0 ? (
+                roadmap.map((item, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className="mt-1 shrink-0">
+                      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-4 border-emerald-100">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg text-[#0F0A1E]">{item.title}</h4>
+                      <p className="text-xs text-neutral-500 mt-1 leading-relaxed line-clamp-2">{item.content}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className={cn("font-bold text-lg", item.status === 'done' ? "text-neutral-900" : "text-[#0F0A1E]")}>{item.title}</h4>
-                    <p className="text-sm text-neutral-500 mt-1">{item.desc}</p>
+                ))
+              ) : (
+                [
+                  { status: "done", title: "PDF Utilities", desc: "PDF compression, page rotation, formats convert." },
+                  { status: "done", title: "Developer Utilities", desc: "JSON formatting, Base64 encoding, text converters." },
+                  { status: "doing", title: "Video Tool Integrations", desc: "Adding browser-based video compression and trimming tools." }
+                ].map((item, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className="mt-1 shrink-0">
+                      {item.status === 'done' ? (
+                        <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-4 border-emerald-100">
+                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-amber-500 animate-pulse border-4 border-amber-100" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg text-[#0F0A1E]">{item.title}</h4>
+                      <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{item.desc}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             {/* Connection line */}
             <div className="absolute left-[39px] top-12 bottom-12 w-0.5 bg-neutral-200 z-0" />

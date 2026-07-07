@@ -25,7 +25,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
 
   const redirectTarget = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('redirect') || '/dashboard';
+    return params.get('redirect') || '/profile';
   }, []);
 
   const triggerError = (message: string) => {
@@ -60,7 +60,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
         onNavigate(redirectTarget);
       } else {
         await signup(name.trim(), email.trim(), password);
-        onNavigate('/dashboard');
+        onNavigate('/profile');
       }
     } catch (err) {
       triggerError(err instanceof Error ? err.message : 'Unable to complete authentication.');

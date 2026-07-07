@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await account.create(ID.unique(), email, password, name);
     await account.createEmailPasswordSession(email, password);
     window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
-    await account.createVerification(`${window.location.origin}/auth/callback?redirect=/dashboard`);
+    await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
     await refreshSession();
   };
 
@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await account.createRecovery(email, `${window.location.origin}/reset-password`);
   };
 
-  const createOAuthSession = async (provider: 'google' | 'github', redirect = '/dashboard') => {
+  const createOAuthSession = async (provider: 'google' | 'github', redirect = '/profile') => {
     const success = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
     const failure = `${window.location.origin}/login?error=oauth&redirect=${encodeURIComponent(redirect)}`;
     window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');

@@ -78,7 +78,20 @@ export function parseRoute(pathname: string, search = ''): RouteState {
   if (normalizedPath === '/login') return { page: 'login', pathname, search };
   if (normalizedPath === '/signup') return { page: 'signup', pathname, search };
   if (normalizedPath === '/checkout/pro' || normalizedPath === '/payment') return { page: 'payment', pathname, search };
-  if (normalizedPath === '/dashboard') return { page: 'dashboard', pathname, search };
+  
+  if (normalizedPath === '/dashboard' || normalizedPath.startsWith('/dashboard/')) {
+    if (normalizedPath === '/dashboard/billing') {
+      return { page: 'settings', pathname: '/settings', search: '?tab=billing' };
+    }
+    if (normalizedPath === '/dashboard/favorites') {
+      return { page: 'profile', pathname: '/profile', search: '#favorites' };
+    }
+    if (normalizedPath === '/dashboard/history') {
+      return { page: 'profile', pathname: '/profile', search: '#history' };
+    }
+    return { page: 'profile', pathname: '/profile', search };
+  }
+  
   if (normalizedPath === '/profile') return { page: 'profile', pathname, search };
   if (normalizedPath === '/settings') return { page: 'settings', pathname, search };
   if (normalizedPath === '/forgot-password') return { page: 'forgot-password', pathname, search };
@@ -93,5 +106,5 @@ export function parseRoute(pathname: string, search = ''): RouteState {
 
 export function getRedirectTarget(search: string) {
   const params = new URLSearchParams(search);
-  return params.get('redirect') || '/dashboard';
+  return params.get('redirect') || '/profile';
 }

@@ -475,7 +475,17 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                             </span>
                           </div>
                           <h3 className="text-lg font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors mb-2">{tool.name}</h3>
-                          <p className="text-sm text-neutral-500 leading-relaxed">{tool.desc}</p>
+                          <p className="text-sm text-neutral-500 leading-relaxed line-clamp-2 min-h-[40px]">{tool.desc}</p>
+                          
+                          <div className="flex items-center gap-3 text-xs text-neutral-400 font-bold mt-4 pt-4 border-t border-neutral-100">
+                            <span className="flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              {tool.runs} views
+                            </span>
+                          </div>
                         </div>
                       </motion.div>
                     );
