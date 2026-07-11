@@ -5,7 +5,7 @@ import {
   faArrowRight, faMagnifyingGlass, faChevronRight, faCircleCheck, 
   faBolt, faSliders, faMusic, faFileLines, faImage, faVideo, 
   faCode, faChartColumn, faGraduationCap, faWandMagicSparkles, 
-  faMicrochip, faHeart, faUsers, faStar, faPenNib
+  faMicrochip, faHeart, faUsers, faStar, faPenNib, faUpload, faDownload
 } from '@fortawesome/free-solid-svg-icons';
 import { useToolCatalog, FALLBACK_TOOLS } from '../../lib/toolCatalog';
 import { cn } from '../../lib/utils';
