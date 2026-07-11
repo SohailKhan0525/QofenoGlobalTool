@@ -47,6 +47,14 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
   const pricePro = isYearly ? 5.40 : 9.00;
   const priceTeams = isYearly ? 12.00 : 19.00;
 
+  const confettiParticles = useMemo(() => [...Array(60)].map((_, i) => {
+    const angle = (i * 360) / 60;
+    const radius = 250 + Math.random() * 100;
+    const x = Math.cos((angle * Math.PI) / 180) * radius;
+    const y = Math.sin((angle * Math.PI) / 180) * radius;
+    return { id: i, angle, x, y };
+  }), []);
+
   useEffect(() => {
     if (isYearly) {
       setShowConfetti(true);
@@ -68,37 +76,31 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
             exit={{ opacity: 0, transition: { duration: 0.3 } }}
             className="absolute inset-0 pointer-events-none z-0 flex justify-center items-center overflow-hidden"
           >
-            {useMemo(() => [...Array(60)].map((_, i) => {
-              const angle = (i * 360) / 60;
-              const radius = 250 + Math.random() * 100;
-              const x = Math.cos((angle * Math.PI) / 180) * radius;
-              const y = Math.sin((angle * Math.PI) / 180) * radius;
-              return (
-                <motion.div
-                  key={i}
-                  className="absolute w-1 h-8 rounded-full"
-                  style={{
-                    backgroundColor: ['#7C3AED', '#EC4899', '#06B6D4', '#FBBF24'][i % 4],
-                    boxShadow: '0 0 10px currentColor',
-                  }}
-                  initial={{ 
-                    x: 0, 
-                    y: 0, 
-                    scale: 0, 
-                    rotate: angle + 90 
-                  }}
-                  animate={{
-                    x,
-                    y,
-                    scale: [0, 1, 0],
-                  }}
-                  transition={{
-                    duration: 1 + Math.random() * 0.5,
-                    ease: "easeOut",
-                  }}
-                />
-              );
-            }), [])}
+            {confettiParticles.map((p) => (
+              <motion.div
+                key={p.id}
+                className="absolute w-1 h-8 rounded-full"
+                style={{
+                  backgroundColor: ['#7C3AED', '#EC4899', '#06B6D4', '#FBBF24'][p.id % 4],
+                  boxShadow: '0 0 10px currentColor',
+                }}
+                initial={{ 
+                  x: 0, 
+                  y: 0, 
+                  scale: 0, 
+                  rotate: p.angle + 90 
+                }}
+                animate={{
+                  x: p.x,
+                  y: p.y,
+                  scale: [0, 1, 0],
+                }}
+                transition={{
+                  duration: 1 + Math.random() * 0.5,
+                  ease: "easeOut",
+                }}
+              />
+            ))}
           </motion.div>
         )}
       </AnimatePresence>

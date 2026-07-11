@@ -42,7 +42,7 @@ jobs:
           POST_TYPE: ${{ github.event.inputs.post_type || 'improvement' }}
           POST_TITLE: ${{ github.event.inputs.title || '' }}
           POST_BODY: ${{ github.event.inputs.body || '' }}
-          COMMIT_MSG: ${{ github.event.head_commit.message }}
-          RELEASE_NAME: ${{ github.event.release.name }}
-          RELEASE_BODY: ${{ github.event.release.body }}
+          COMMIT_MSG: ${{ github.event.head_commit && github.event.head_commit.message || '' }}
+          RELEASE_NAME: ${{ github.event.release && github.event.release.name || '' }}
+          RELEASE_BODY: ${{ github.event.release && github.event.release.body || '' }}
         run: node scripts/auto-blog-post.js
