@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowRight, faShieldHalved, faUnlock, faRotate } from '@fortawesome/free-solid-svg-icons';
+import { faArrowRight, faShieldHalved, faUnlock, faRotate, faCircleCheck, faCircleHalfStroke, faCircle } from '@fortawesome/free-solid-svg-icons';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 
@@ -125,45 +125,75 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
               {loading ? (
                 <div className="text-center py-6 text-neutral-400 font-bold">Loading roadmap...</div>
               ) : roadmap.length > 0 ? (
-                roadmap.map((item, i) => {
-                  const status = String(item.status || 'planned').toLowerCase();
-                  const isShipped = status === 'shipped' || status === 'done';
-                  const isInProgress = status === 'in_progress' || status === 'doing';
-                  
+                (() => {
+                  const shipped = roadmap.filter(r => {
+                    const s = String(r.status || '').toLowerCase();
+                    return s === 'shipped' || s === 'done';
+                  });
+                  const inProgress = roadmap.filter(r => {
+                    const s = String(r.status || '').toLowerCase();
+                    return s === 'in_progress' || s === 'doing';
+                  });
+                  const planned = roadmap.filter(r => {
+                    const s = String(r.status || '').toLowerCase();
+                    return s === 'planned';
+                  });
+
                   return (
-                    <div key={item.$id || i} className="flex gap-4">
-                      <div className="mt-1 shrink-0 z-10">
-                        {isShipped ? (
-                          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-4 border-emerald-100" title="Shipped">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                    <div className="space-y-8">
+                      {/* Shipped Section */}
+                      {shipped.length > 0 && (
+                        <div>
+                          <h3 className="text-xs font-black uppercase tracking-wider text-emerald-600 mb-4 flex items-center gap-2">
+                            <FontAwesomeIcon icon={faCircleCheck} className="w-3.5 h-3.5" /> Shipped & Live
+                          </h3>
+                          <div className="space-y-4 pl-5 border-l-2 border-emerald-100">
+                            {shipped.map((item, idx) => (
+                              <div key={item.$id || idx} className="py-2">
+                                <h4 className="font-bold text-base text-[#0F0A1E]">{item.title}</h4>
+                                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{item.description || item.content || item.desc}</p>
+                              </div>
+                            ))}
                           </div>
-                        ) : isInProgress ? (
-                          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center border-4 border-blue-100 animate-pulse" title="In Progress">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-neutral-300 flex items-center justify-center border-4 border-neutral-100" title="Planned">
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="font-bold text-lg text-[#0F0A1E]">{item.title}</h4>
-                          <span className={cn(
-                            "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full",
-                            isShipped ? "bg-emerald-50 text-emerald-700" :
-                            isInProgress ? "bg-blue-50 text-blue-700" :
-                            "bg-neutral-100 text-neutral-600"
-                          )}>
-                            {status.replace('_', ' ')}
-                          </span>
                         </div>
-                        <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{item.description || item.content || item.desc}</p>
-                      </div>
+                      )}
+
+                      {/* In Progress Section */}
+                      {inProgress.length > 0 && (
+                        <div>
+                          <h3 className="text-xs font-black uppercase tracking-wider text-blue-600 mb-4 flex items-center gap-2">
+                            <FontAwesomeIcon icon={faCircleHalfStroke} className="w-3.5 h-3.5 animate-spin-slow" /> In Progress
+                          </h3>
+                          <div className="space-y-4 pl-5 border-l-2 border-blue-100">
+                            {inProgress.map((item, idx) => (
+                              <div key={item.$id || idx} className="py-2">
+                                <h4 className="font-bold text-base text-[#0F0A1E]">{item.title}</h4>
+                                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{item.description || item.content || item.desc}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Planned Section */}
+                      {planned.length > 0 && (
+                        <div>
+                          <h3 className="text-xs font-black uppercase tracking-wider text-neutral-500 mb-4 flex items-center gap-2">
+                            <FontAwesomeIcon icon={faCircle} className="w-3.5 h-3.5 text-neutral-400" /> Planned / Backlog
+                          </h3>
+                          <div className="space-y-4 pl-5 border-l-2 border-neutral-200">
+                            {planned.map((item, idx) => (
+                              <div key={item.$id || idx} className="py-2">
+                                <h4 className="font-bold text-base text-[#0F0A1E]">{item.title}</h4>
+                                <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{item.description || item.content || item.desc}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
-                })
+                })()
               ) : (
                 <div className="text-center py-8 space-y-4">
                   <p className="text-neutral-500 text-sm font-semibold">More tools being added regularly.</p>
@@ -176,10 +206,6 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
                 </div>
               )}
             </div>
-            {/* Connection line */}
-            {!loading && roadmap.length > 0 && (
-              <div className="absolute left-[39px] top-12 bottom-12 w-0.5 bg-neutral-200 z-0" />
-            )}
           </div>
         </div>
 

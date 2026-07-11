@@ -1,0 +1,48 @@
+name: Auto Publish Blog Post
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      post_type:
+        description: "Type of post (new_tool|improvement|fix|announcement)"
+        required: true
+        default: "improvement"
+      title:
+        description: "Blog post title"
+        required: true
+      body:
+        description: "Blog post content"
+        required: true
+
+jobs:
+  publish-blog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install node-appwrite
+
+      - name: Detect changes and publish blog post
+        env:
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+          DATABASE_ID: qofeno_db
+          POST_TYPE: ${{ github.event.inputs.post_type || 'improvement' }}
+          POST_TITLE: ${{ github.event.inputs.title || '' }}
+          POST_BODY: ${{ github.event.inputs.body || '' }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+        run: node scripts/auto-blog-post.js

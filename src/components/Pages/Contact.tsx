@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faSpinner, faPaperPlane, faCircleExclamation, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
+import { faGithub, faTwitter, faLinkedin } from '@fortawesome/free-brands-svg-icons';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 import { submitContactForm } from '../../lib/qofeno-appwrite';
@@ -102,16 +103,51 @@ export function Contact() {
             <span className="block text-xs font-bold text-neutral-550 not-italic mt-2">— Mohd Zaheer Uddin, Founder of Qofeno</span>
           </div>
 
-          <div className="space-y-6 w-full max-w-sm">
-            <div className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl">
-              <div className="p-3 bg-purple-100 text-purple-705 rounded-xl">
-                <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5 text-purple-600" />
+          <div className="space-y-4 w-full max-w-sm">
+            {import.meta.env.VITE_CONTACT_EMAIL && (
+              <div className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl">
+                <div className="p-3 bg-purple-100 text-purple-705 rounded-xl">
+                  <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">Email Assistance</h4>
+                  <p className="font-bold text-neutral-800 text-sm">{import.meta.env.VITE_CONTACT_EMAIL}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">Email Assistance</h4>
-                <p className="font-bold text-neutral-800 text-sm">support@qofeno.dev</p>
-              </div>
-            </div>
+            )}
+            {import.meta.env.VITE_GITHUB_URL && (
+              <a href={import.meta.env.VITE_GITHUB_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
+                <div className="p-3 bg-purple-100 text-purple-750 rounded-xl">
+                  <FontAwesomeIcon icon={faGithub} className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">GitHub Profile</h4>
+                  <p className="font-bold text-neutral-800 text-sm">{import.meta.env.VITE_GITHUB_URL.replace('https://', '')}</p>
+                </div>
+              </a>
+            )}
+            {import.meta.env.VITE_TWITTER_URL && (
+              <a href={import.meta.env.VITE_TWITTER_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
+                <div className="p-3 bg-purple-100 text-purple-750 rounded-xl">
+                  <FontAwesomeIcon icon={faTwitter} className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">Twitter / X</h4>
+                  <p className="font-bold text-neutral-800 text-sm">{import.meta.env.VITE_TWITTER_URL.replace('https://', '')}</p>
+                </div>
+              </a>
+            )}
+            {import.meta.env.VITE_LINKEDIN_URL && (
+              <a href={import.meta.env.VITE_LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
+                <div className="p-3 bg-purple-100 text-purple-750 rounded-xl">
+                  <FontAwesomeIcon icon={faLinkedin} className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">LinkedIn Connection</h4>
+                  <p className="font-bold text-neutral-800 text-sm">{import.meta.env.VITE_LINKEDIN_URL.replace('https://', '')}</p>
+                </div>
+              </a>
+            )}
           </div>
         </div>
 

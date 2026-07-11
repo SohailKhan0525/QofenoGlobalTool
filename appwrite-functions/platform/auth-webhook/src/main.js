@@ -124,19 +124,20 @@ export default async ({ req, res, log, error }) => {
 
     // Create welcome notification
     try {
+      const welcomeTitle = 'Welcome to Qofeno Pro!';
       const existingNotifs = await db.listDocuments(databaseId, 'notifications', [
         Query.equal('user_id', userId),
-        Query.equal('title', 'Welcome to Qofeno! 🎉'),
+        Query.equal('title', welcomeTitle),
         Query.limit(1)
       ]);
       if (existingNotifs.total === 0) {
         await db.createDocument(databaseId, 'notifications', ID.unique(), {
           user_id: userId,
-          title: 'Welcome to Qofeno! 🎉',
-          message: 'Your account is ready. Start using free tools right now — no limits.',
-          type: 'success',
+          title: welcomeTitle,
+          message: "Welcome to Mohd Zaheer Uddin's online tools platform. Upgrade to Pro/Teams for higher usage limits.",
+          type: 'info',
           read: false,
-          link: '/tools',
+          link: '/pricing',
           created_at: now,
         });
         log('Created welcome notification.');

@@ -5,11 +5,11 @@ import {
   faCircleCheck, faTriangleExclamation, faSpinner, faKey, faStar,
   faSliders
 } from '@fortawesome/free-solid-svg-icons';
-import { account, databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
+import { account, databases, DATABASE_ID, storage } from '../../lib/qofeno-appwrite';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
-import { Query } from 'appwrite';
+import { ID, Query } from 'appwrite';
 
 export function Profile() {
   const { user, logout, refreshSession } = useAuth();
@@ -19,6 +19,8 @@ export function Profile() {
   const [loadingUserMeta, setLoadingUserMeta] = useState(true);
   const [userMetaId, setUserMetaId] = useState('');
   const [usageStats, setUsageStats] = useState({ toolsUsed: 0, filesProcessed: 0 });
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   
   // Form states
   const [fullName, setFullName] = useState('');
@@ -66,6 +68,16 @@ export function Profile() {
         }
       } catch (err) {
         console.error("Failed to load auth metadata", err);
+      }
+
+      try {
+        const prefs = await account.getPrefs();
+        if (!cancelled) {
+          if (prefs.avatar_url) setAvatarUrl(prefs.avatar_url);
+          if (prefs.display_name) setDisplayName(prefs.display_name);
+        }
+      } catch (err) {
+        console.error("Failed to load account preferences", err);
       }
 
       try {
@@ -136,12 +148,11 @@ export function Profile() {
     try {
       await account.updateName(fullName.trim());
       
-      // Also update users_meta if we loaded it
-      if (userMetaId) {
-        await databases.updateDocument(DATABASE_ID, 'users_meta', userMetaId, {
-          display_name: displayName.trim() || fullName.trim()
-        });
-      }
+      const currentPrefs = await account.getPrefs().catch(() => ({}));
+      await account.updatePrefs({
+        ...currentPrefs,
+        display_name: displayName.trim() || fullName.trim()
+      });
       
       await refreshSession();
       toast.success("Name updated successfully!");
@@ -151,6 +162,37 @@ export function Profile() {
       toast.error(err.message || "Failed to update name.");
     } finally {
       setIsUpdatingName(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Profile picture must be less than 5MB.");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const bucketId = 'tool_inputs';
+      const uploadedFile = await storage.createFile(bucketId, ID.unique(), file);
+      const fileUrl = storage.getFileView(bucketId, uploadedFile.$id).toString();
+      
+      const currentPrefs = await account.getPrefs().catch(() => ({}));
+      await account.updatePrefs({
+        ...currentPrefs,
+        avatar_url: fileUrl
+      });
+      
+      setAvatarUrl(fileUrl);
+      toast.success("Profile picture updated successfully!");
+    } catch (err: any) {
+      console.error("Failed to upload profile picture", err);
+      toast.error(err.message || "Failed to upload profile picture.");
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
@@ -287,8 +329,31 @@ export function Profile() {
         {/* PROFILE HEADER */}
         <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-center gap-6 justify-between">
           <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
-            <div className={`w-20 h-20 rounded-full ${avatarColor} text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-purple-900/10`}>
-              {getInitials(user.name)}
+            <div className="relative group cursor-pointer select-none">
+              <input 
+                type="file" 
+                id="avatar-input" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={handleAvatarUpload} 
+                disabled={isUploadingAvatar}
+              />
+              <label htmlFor="avatar-input" className="cursor-pointer block relative">
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt={user.name} 
+                    className="w-20 h-20 rounded-full object-cover shadow-lg shadow-purple-900/10 border-2 border-purple-100"
+                  />
+                ) : (
+                  <div className={`w-20 h-20 rounded-full ${avatarColor} text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-purple-900/10`}>
+                    {getInitials(user.name)}
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[9px] font-black uppercase tracking-wider">
+                  {isUploadingAvatar ? '...' : 'Upload'}
+                </div>
+              </label>
             </div>
             <div>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">

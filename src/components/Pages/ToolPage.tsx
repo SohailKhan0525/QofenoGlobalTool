@@ -180,16 +180,24 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   useEffect(() => {
     const channel = `databases.${DATABASE_ID}.collections.tool_views.documents`;
     let subscription: any = null;
-    void realtime.subscribe(channel, (event: any) => {
-      const doc = event?.payload;
-      if (!doc || doc.tool_slug !== toolSlug) return;
-      setViews(Number(doc.count || 0));
-      setLikes(Number(doc.likes || 0));
-    }).then((sub: any) => {
-      subscription = sub;
-    }).catch(() => {});
+    try {
+      subscription = realtime.subscribe(channel, (event: any) => {
+        const doc = event?.payload;
+        if (!doc || doc.tool_slug !== toolSlug) return;
+        setViews(Number(doc.count || 0));
+        setLikes(Number(doc.likes || 0));
+      });
+    } catch (err) {
+      console.error("Realtime views subscription failed", err);
+    }
     return () => {
-      try { subscription?.close?.(); } catch {}
+      try {
+        if (typeof subscription === 'function') {
+          subscription();
+        } else if (subscription && typeof subscription.close === 'function') {
+          subscription.close();
+        }
+      } catch {}
     };
   }, [toolSlug]);
 

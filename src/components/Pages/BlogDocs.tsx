@@ -13,8 +13,8 @@ interface TimelineEntry {
   $id: string;
   type: EntryType;
   title: string;
-  published_at: string;
-  content: string;
+  created_at: string;
+  body: string;
   author: string;
 }
 
@@ -23,17 +23,17 @@ export function BlogDocs() {
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch Blog Posts from Appwrite
+  // Fetch What's New posts from Appwrite
   useEffect(() => {
     async function fetchPosts() {
       try {
-        const res = await databases.listDocuments(DATABASE_ID, 'blog_posts', [
+        const res = await databases.listDocuments(DATABASE_ID, 'whats_new', [
           Query.equal('published', true),
-          Query.orderDesc('published_at')
+          Query.orderDesc('created_at')
         ]);
         setEntries(res.documents as unknown as TimelineEntry[]);
       } catch (err) {
-        console.error("Failed to load blog posts:", err);
+        console.error("Failed to load changelog updates:", err);
       } finally {
         setLoading(false);
       }
@@ -114,7 +114,7 @@ export function BlogDocs() {
             </div>
           ) : (
             entries.map((entry, index) => {
-              const formattedDate = new Date(entry.published_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+              const formattedDate = new Date(entry.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
               return (
                 <div 
                   key={entry.$id}
@@ -141,7 +141,7 @@ export function BlogDocs() {
                     </div>
                     
                     <div className="text-neutral-600 text-[15px] leading-relaxed whitespace-pre-wrap">
-                      {entry.content}
+                      {entry.body}
                     </div>
                   </div>
                 </div>

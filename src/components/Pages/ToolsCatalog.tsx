@@ -57,6 +57,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   const [selectedCategory, setSelectedCategory] = useState('All Tools');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
   const [activeFilterTag, setActiveFilterTag] = useState('All'); // All, Favorites, Free, Pro, New, Popular
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [expandedCats, setExpandedCats] = useState<Record<string, boolean>>({});
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
@@ -203,13 +204,34 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   // Tag list for quick header filters
   const filterTags = ['All', 'Favorites', 'Free', 'Pro', 'New', 'Popular'];
 
+  // Unique popular tags computation
+  const popularTags = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const sourceTools = tools.length > 0 ? tools : FALLBACK_TOOLS;
+    sourceTools.forEach(tool => {
+      if (Array.isArray(tool.tags)) {
+        tool.tags.forEach(tag => {
+          const t = tag.toLowerCase().trim();
+          if (t && t.length > 1) {
+            counts[t] = (counts[t] || 0) + 1;
+          }
+        });
+      }
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(entry => entry[0])
+      .slice(0, 16);
+  }, [tools]);
+
   // Filtering Logic
   const filteredTools = useMemo(() => {
     const sourceTools = tools.length > 0 ? tools : FALLBACK_TOOLS;
     return sourceTools.filter(tool => {
-      // Search query check
+      // Search query check (matches name, description or tags)
       const matchesSearch = tool.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
-                tool.desc.toLowerCase().includes(debouncedSearch.toLowerCase());
+                tool.desc.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+                (tool.tags && tool.tags.some(tag => tag.toLowerCase().includes(debouncedSearch.toLowerCase())));
       
       // Category check
       let matchesCategory = true;
@@ -240,9 +262,15 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
         matchesTag = tool.isPopular;
       }
 
-      return matchesSearch && matchesCategory && matchesSub && matchesTag;
+      // Selected popular tag check
+      let matchesSelectedTag = true;
+      if (selectedTag) {
+        matchesSelectedTag = !!(tool.tags && tool.tags.some(tag => tag.toLowerCase() === selectedTag.toLowerCase()));
+      }
+
+      return matchesSearch && matchesCategory && matchesSub && matchesTag && matchesSelectedTag;
     });
-  }, [debouncedSearch, selectedCategory, selectedSubCategory, activeFilterTag, favorites, tools]);
+  }, [debouncedSearch, selectedCategory, selectedSubCategory, activeFilterTag, selectedTag, favorites, tools]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-24 md:pt-40 md:pb-32 px-6 md:px-12">
@@ -321,6 +349,28 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                 </button>
               ))}
             </div>
+            {popularTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4 items-center overflow-x-auto pb-1">
+                <span className="text-[10px] font-black uppercase text-neutral-400 tracking-wider shrink-0 mr-1">Popular Tags:</span>
+                {popularTags.map(tag => {
+                  const isSelected = selectedTag === tag;
+                  return (
+                    <button
+                      key={tag}
+                      onClick={() => setSelectedTag(isSelected ? null : tag)}
+                      className={cn(
+                        "shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer border",
+                        isSelected 
+                          ? "bg-purple-100 text-purple-700 border-purple-200" 
+                          : "bg-white hover:bg-neutral-50 text-neutral-600 border-neutral-200"
+                      )}
+                    >
+                      #{tag}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -446,6 +496,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                   setSelectedCategory('All Tools');
                   setSelectedSubCategory(null);
                   setActiveFilterTag('All');
+                  setSelectedTag(null);
                 }}
                 className="text-xs text-purple-600 hover:text-purple-800 font-bold transition-colors cursor-pointer"
               >

@@ -90,7 +90,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
 
   // ── Main PayPal button ────────────────────────────────────────────────────────
   return (
-    <div className="w-full">
+    <div className="w-full" key={`${planType}-${isYearly ? 'yearly' : 'monthly'}`}>
       {processing && (
         <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm text-center flex items-center justify-center gap-2">
           <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

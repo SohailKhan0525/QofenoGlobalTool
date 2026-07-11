@@ -1,0 +1,45 @@
+name: Publish Blog Post (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      post_type:
+        description: "Type of post (new_tool|improvement|fix|product_update)"
+        type: choice
+        options:
+          - new_tool
+          - improvement
+          - fix
+          - product_update
+        required: true
+        default: "product_update"
+      title:
+        description: "Blog post title"
+        required: true
+      body:
+        description: "Blog post content (markdown supported)"
+        required: true
+
+jobs:
+  publish-blog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install node-appwrite
+
+      - name: Publish blog post
+        env:
+          APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+          DATABASE_ID: qofeno_db
+          POST_TYPE: ${{ github.event.inputs.post_type }}
+          POST_TITLE: ${{ github.event.inputs.title }}
+          POST_BODY: ${{ github.event.inputs.body }}
+        run: node scripts/auto-blog-post.js

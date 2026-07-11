@@ -372,18 +372,26 @@ export default function App() {
 
     if (user?.id) {
       const channel = `databases.${DATABASE_ID}.collections.notifications.documents`;
-      void realtime.subscribe(channel, (event: any) => {
-        const doc = event?.payload;
-        if (!doc || doc.user_id !== user.id) return;
-        void loadNotifications();
-      }).then((sub: any) => {
-        subscription = sub;
-      }).catch(() => {});
+      try {
+        subscription = realtime.subscribe(channel, (event: any) => {
+          const doc = event?.payload;
+          if (!doc || doc.user_id !== user.id) return;
+          void loadNotifications();
+        });
+      } catch (err) {
+        console.error("Realtime subscription failed", err);
+      }
     }
 
     return () => {
       cancelled = true;
-      try { subscription?.close?.(); } catch {}
+      try {
+        if (typeof subscription === 'function') {
+          subscription();
+        } else if (subscription && typeof subscription.close === 'function') {
+          subscription.close();
+        }
+      } catch {}
     };
   }, [user?.id]);
 
@@ -1364,6 +1372,7 @@ export default function App() {
         </div>
       </footer>
 
+      <CookieConsentBanner onNavigate={(page) => setActiveTab(page)} />
     </Layout>
     </TooltipProvider>
   );
