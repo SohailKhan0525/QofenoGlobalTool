@@ -177,6 +177,18 @@ const COLLECTIONS = {
       { key: 'created_at_desc', type: 'key', attributes: ['created_at'], orders: ['DESC'] },
     ],
   },
+  roadmap: {
+    permissions: [Permission.read(Role.any())],
+    attributes: [
+      { key: 'title', type: 'string', size: 256, required: true },
+      { key: 'description', type: 'string', size: 1024, required: true },
+      { key: 'status', type: 'string', size: 64, required: true },
+      { key: 'order', type: 'integer', required: false, default: 0 },
+    ],
+    indexes: [
+      { key: 'order_idx', type: 'key', attributes: ['order'] },
+    ],
+  },
 };
 
 const BUCKETS = {

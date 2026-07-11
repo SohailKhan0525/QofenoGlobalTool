@@ -13,6 +13,7 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
   
   const [isYearly, setIsYearly] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
+  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const monthlyPrice = planType === 'teams' ? 19 : 9;
   const yearlyPrice = planType === 'teams' ? 12 : 5.40;
@@ -29,14 +30,14 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
       </div>
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={prefersReduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        transition={prefersReduced ? { duration: 0 } : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className="max-w-lg mx-auto p-8 bg-white border border-neutral-200 rounded-3xl shadow-sm relative z-10"
       >
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FontAwesomeIcon icon={faShieldHalved} className="w-8 h-8 text-purple-600" />
+            <FontAwesomeIcon icon={faShieldHalved} className="w-8 h-8 text-purple-650" />
           </div>
           <h1 className="text-3xl font-black text-[#0F0A1E]">Upgrade to {planType === 'teams' ? 'Teams' : 'Pro'}</h1>
           <p className="text-neutral-500 mt-2">Unlock the full potential of Qofeno.</p>
@@ -92,15 +93,15 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
 
         {/* PayPal button */}
         <div className="mb-4">
-          {(!import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY || turnstileToken) ? (
+          {(!import.meta.env.VITE_TURNSTILE_SITE_KEY || turnstileToken) ? (
             <PayPalButton isYearly={isYearly} planType={planType} />
           ) : (
             <div className="flex flex-col items-center">
               <p className="text-sm font-bold text-neutral-500 mb-3 text-center">Please complete the captcha to checkout securely.</p>
               <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-100">
-                {import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY && (
+                {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
                   <Turnstile
-                    siteKey={import.meta.env.VITE_CLOUDFLARE_TURNSTILE_SITE_KEY}
+                    siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
                     onSuccess={(token) => setTurnstileToken(token)}
                   />
                 )}

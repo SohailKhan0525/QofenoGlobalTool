@@ -60,7 +60,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
         onNavigate(redirectTarget);
       } else {
         await signup(name.trim(), email.trim(), password);
-        onNavigate('/profile');
+        onNavigate(redirectTarget);
       }
     } catch (err) {
       triggerError(err instanceof Error ? err.message : 'Unable to complete authentication.');

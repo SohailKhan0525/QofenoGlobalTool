@@ -2207,11 +2207,17 @@ function toCard(doc: any, viewsBySlug: Record<string, number> = {}): ToolCard {
     imageUrl: doc.icon && /^https?:\/\//i.test(String(doc.icon)) ? String(doc.icon) : null,
     schemaMarkup: JSON.stringify({
       '@context': 'https://schema.org',
-      '@type': 'SoftwareApplication',
+      '@type': 'WebApplication',
       name,
       applicationCategory: category.replace(/ Tools$/i, 'Application'),
-      operatingSystem: 'Web',
+      operatingSystem: 'All',
+      browserRequirements: 'Requires JavaScript. Requires HTML5.',
       description,
+      offers: {
+        '@type': 'Offer',
+        price: '0.00',
+        priceCurrency: 'USD'
+      }
     }),
     functionId: doc.function_id || fallback?.functionId,
     tags: Array.isArray(doc.tags) ? doc.tags.map((tag: unknown) => String(tag)) : [],

@@ -21,10 +21,9 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
     let cancelled = false;
     async function loadRoadmap() {
       try {
-        const res = await databases.listDocuments(DATABASE_ID, 'blog_posts', [
-          Query.equal('published', true),
-          Query.orderDesc('published_at'),
-          Query.limit(4)
+        const res = await databases.listDocuments(DATABASE_ID, 'roadmap', [
+          Query.orderAsc('order'),
+          Query.limit(50)
         ]);
         if (!cancelled) {
           setRoadmap(res.documents);
@@ -51,7 +50,7 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
       <div className="max-w-4xl mx-auto px-6">
         
         {/* HERO SECTION */}
-        <div className="text-center mb-20 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="text-center mb-20">
           <h1 className="font-display text-4xl md:text-7xl font-black text-[#0F0A1E] mb-6 leading-tight">Built by one person,<br/>for everyone</h1>
           <p className="text-lg md:text-xl text-neutral-500 max-w-2xl mx-auto">
             Qofeno is being built with honesty and care to bring together hundreds of useful tools in one place.
@@ -126,45 +125,61 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
               {loading ? (
                 <div className="text-center py-6 text-neutral-400 font-bold">Loading roadmap...</div>
               ) : roadmap.length > 0 ? (
-                roadmap.map((item, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="mt-1 shrink-0">
-                      <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-4 border-emerald-100">
-                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                roadmap.map((item, i) => {
+                  const status = String(item.status || 'planned').toLowerCase();
+                  const isShipped = status === 'shipped' || status === 'done';
+                  const isInProgress = status === 'in_progress' || status === 'doing';
+                  
+                  return (
+                    <div key={item.$id || i} className="flex gap-4">
+                      <div className="mt-1 shrink-0 z-10">
+                        {isShipped ? (
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-4 border-emerald-100" title="Shipped">
+                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                          </div>
+                        ) : isInProgress ? (
+                          <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center border-4 border-blue-100 animate-pulse" title="In Progress">
+                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-neutral-300 flex items-center justify-center border-4 border-neutral-100" title="Planned">
+                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-bold text-lg text-[#0F0A1E]">{item.title}</h4>
+                          <span className={cn(
+                            "text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full",
+                            isShipped ? "bg-emerald-50 text-emerald-700" :
+                            isInProgress ? "bg-blue-50 text-blue-700" :
+                            "bg-neutral-100 text-neutral-600"
+                          )}>
+                            {status.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{item.description || item.content || item.desc}</p>
                       </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-lg text-[#0F0A1E]">{item.title}</h4>
-                      <p className="text-xs text-neutral-500 mt-1 leading-relaxed line-clamp-2">{item.content}</p>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
-                [
-                  { status: "done", title: "PDF Utilities", desc: "PDF compression, page rotation, formats convert." },
-                  { status: "done", title: "Developer Utilities", desc: "JSON formatting, Base64 encoding, text converters." },
-                  { status: "doing", title: "Video Tool Integrations", desc: "Adding browser-based video compression and trimming tools." }
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="mt-1 shrink-0">
-                      {item.status === 'done' ? (
-                        <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center border-4 border-emerald-100">
-                          <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                        </div>
-                      ) : (
-                        <div className="w-5 h-5 rounded-full bg-amber-500 animate-pulse border-4 border-amber-100" />
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-lg text-[#0F0A1E]">{item.title}</h4>
-                      <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                ))
+                <div className="text-center py-8 space-y-4">
+                  <p className="text-neutral-500 text-sm font-semibold">More tools being added regularly.</p>
+                  <button 
+                    onClick={() => onNavigate && onNavigate('whats-new')}
+                    className="text-xs text-purple-600 hover:text-purple-800 font-bold underline cursor-pointer"
+                  >
+                    Check What's New for updates
+                  </button>
+                </div>
               )}
             </div>
             {/* Connection line */}
-            <div className="absolute left-[39px] top-12 bottom-12 w-0.5 bg-neutral-200 z-0" />
+            {!loading && roadmap.length > 0 && (
+              <div className="absolute left-[39px] top-12 bottom-12 w-0.5 bg-neutral-200 z-0" />
+            )}
           </div>
         </div>
 

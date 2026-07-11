@@ -17,6 +17,8 @@ export type AppPage =
   | 'auth-callback'
   | 'terms'
   | 'policy'
+  | 'cookies'
+  | 'blog'
   | 'coming-soon'
   | 'not-found';
 
@@ -45,6 +47,8 @@ const PAGE_TO_PATH: Record<Exclude<AppPage, 'tool' | 'not-found'>, string> = {
   'auth-callback': '/auth/callback',
   terms: '/terms',
   policy: '/policy',
+  cookies: '/cookies',
+  blog: '/blog',
   'coming-soon': '/coming-soon',
 };
 
@@ -99,6 +103,8 @@ export function parseRoute(pathname: string, search = ''): RouteState {
   if (normalizedPath === '/auth/callback') return { page: 'auth-callback', pathname, search };
   if (normalizedPath === '/terms') return { page: 'terms', pathname, search };
   if (normalizedPath === '/policy') return { page: 'policy', pathname, search };
+  if (normalizedPath === '/cookies') return { page: 'cookies', pathname, search };
+  if (normalizedPath === '/blog') return { page: 'blog', pathname, search };
   if (normalizedPath === '/coming-soon') return { page: 'coming-soon', pathname, search };
 
   return { page: 'not-found', pathname, search };

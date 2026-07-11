@@ -8,6 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
 import { account, databases, DATABASE_ID, trackEvent } from '../../lib/qofeno-appwrite';
 import { Query } from 'appwrite';
+import { useAuth } from '../../context/AuthContext';
+
+const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export const ALL_TOOLS = FALLBACK_TOOLS;
 
@@ -48,6 +51,7 @@ interface ToolsCatalogProps {
 
 export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   const { tools, categoryCards } = useToolCatalog();
+  const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Tools');
@@ -57,6 +61,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const getOrCreateAnonId = () => {
     try {
@@ -209,7 +214,8 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
       // Category check
       let matchesCategory = true;
       if (selectedCategory !== 'All Tools') {
-        matchesCategory = tool.category === selectedCategory;
+        const allowedCats = selectedCategory.split(',');
+        matchesCategory = allowedCats.includes(tool.category);
       }
 
       // Subcategory check
@@ -227,7 +233,9 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
       } else if (activeFilterTag === 'Pro') {
         matchesTag = tool.type === 'Pro';
       } else if (activeFilterTag === 'New') {
-        matchesTag = (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew);
+        const isNew = (tool.is_new_until && new Date(tool.is_new_until) > new Date()) || 
+                      (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew);
+        matchesTag = !!isNew;
       } else if (activeFilterTag === 'Popular') {
         matchesTag = tool.isPopular;
       }
@@ -249,25 +257,44 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
           <h1 className="font-display text-4xl md:text-5xl font-black text-[#0F0A1E] mb-8 tracking-tight">Search all tools</h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-            {/* Massive Search input */}
-            <div className="lg:col-span-2 relative sticky top-[72px] md:top-auto z-20 bg-[#FAFAFA] py-2 md:py-0">
-              <input 
-                type="text" 
-                placeholder="Find tools..." 
-                className="w-full bg-white border border-neutral-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 rounded-2xl py-4.5 pl-14 pr-12 outline-none text-neutral-800 text-lg shadow-sm transition-all placeholder-neutral-400"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <FontAwesomeIcon icon={faMagnifyingGlass} className="w-6 h-6 text-neutral-400 absolute left-5 top-1/2 -translate-y-1/2" />
-              {searchQuery ? (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-500 flex items-center justify-center"
-                  aria-label="Clear search"
-                >
-                  ×
-                </button>
-              ) : null}
+            {/* Massive Search input and inline action buttons */}
+            <div className="lg:col-span-2 sticky top-[72px] md:top-auto z-20 bg-[#FAFAFA] py-2 md:py-0 flex items-center gap-3">
+              <div className="relative flex-1">
+                <input 
+                  type="text" 
+                  placeholder="Find tools..." 
+                  className="w-full bg-white border border-neutral-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 rounded-2xl py-4.5 pl-14 pr-12 outline-none text-neutral-800 text-lg shadow-sm transition-all placeholder-neutral-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <FontAwesomeIcon icon={faMagnifyingGlass} className="w-6 h-6 text-neutral-400 absolute left-5 top-1/2 -translate-y-1/2" />
+                {searchQuery ? (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-500 flex items-center justify-center cursor-pointer"
+                    aria-label="Clear search"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </div>
+
+              {/* Desktop Categories Toggle Button */}
+              <button
+                onClick={() => setShowSidebar(!showSidebar)}
+                className="hidden lg:flex items-center gap-2 bg-white border border-neutral-200 hover:border-purple-200 text-neutral-700 hover:text-purple-650 px-5 py-4.5 rounded-2xl font-bold transition-all cursor-pointer shadow-sm shrink-0"
+              >
+                <FontAwesomeIcon icon={faSliders} className="w-5 h-5" />
+                <span>Categories</span>
+              </button>
+
+              {/* Mobile Filters Trigger Button */}
+              <button
+                onClick={() => setIsMobileFilterOpen(true)}
+                className="lg:hidden flex items-center justify-center w-[58px] h-[58px] bg-white border border-neutral-200 text-neutral-700 rounded-2xl font-bold transition-all cursor-pointer shadow-sm shrink-0"
+              >
+                <FontAwesomeIcon icon={faSliders} className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Quick action chips for filtering in header */}
@@ -275,7 +302,13 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
               {filterTags.map((tag) => (
                 <button
                   key={tag}
-                  onClick={() => setActiveFilterTag(tag)}
+                  onClick={() => {
+                    if (tag === 'Favorites' && !isAuthenticated) {
+                      onNavigate('login');
+                      return;
+                    }
+                    setActiveFilterTag(tag);
+                  }}
                   className={cn(
                     "shrink-0 snap-start px-4 py-2.5 rounded-full text-sm font-bold transition-all duration-200 cursor-pointer border",
                     activeFilterTag === tag
@@ -329,8 +362,9 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
         {/* SIDEBAR & MAIN AREA COLLABORATIVE PATTERN */}
         <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* LEFT SIDEBAR: CATEGORY filtering (Hidden on Mobile) */}
-          <aside className="hidden lg:flex w-full lg:w-72 shrink-0 bg-white border border-neutral-200/60 rounded-3xl p-6 self-start flex-col sticky top-[100px] h-fit max-h-[calc(100vh-120px)] overflow-y-auto">
+          {/* LEFT SIDEBAR: CATEGORY filtering (Hidden on Mobile, toggleable on Desktop) */}
+          {showSidebar && (
+            <aside className="hidden lg:flex w-full lg:w-72 shrink-0 bg-white border border-neutral-200/60 rounded-3xl p-6 self-start flex-col sticky top-[100px] h-fit max-h-[calc(100vh-120px)] overflow-y-auto animate-none">
             <h3 className="text-sm uppercase font-bold text-neutral-400 tracking-wider mb-6 flex items-center gap-2">
               <FontAwesomeIcon icon={faSliders} className="w-4 h-4 text-purple-600" /> Filter Categories
             </h3>
@@ -398,6 +432,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
               })}
             </nav>
           </aside>
+          )}
 
           {/* MAIN COLUMN: CARDS GRID REFLOWS */}
           <main className="flex-1">
@@ -428,7 +463,11 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                           localStorage.setItem('selected_tool_id', tool.id);
                           onNavigate('tool');
                         }}
-                        whileHover={{ scale: 1.02, y: -2 }}
+                        initial={{ opacity: 1, scale: 1, y: 0 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0 }}
+                        whileHover={prefersReduced ? {} : { scale: 1.02, y: -2 }}
                         className="group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer flex flex-col transition-all duration-300 relative"
                       >
                         <div className="absolute top-6 right-6 flex items-center gap-1.5 z-10">
@@ -441,7 +480,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                           >
                             <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", favorites.includes(tool.id) && "fill-current")} />
                           </button>
-                          {(tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew) && (
+                          {((tool.is_new_until && new Date(tool.is_new_until) > new Date()) || (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew)) && (
                             <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
                               <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
                               NEW
@@ -469,8 +508,8 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                               <FontAwesomeIcon icon={faGear} className="w-3 h-3" /> Server-processed
                             </span>
                           </div>
-                          <h3 className="text-lg font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors mb-2">{tool.name}</h3>
-                          <p className="text-sm text-neutral-500 leading-relaxed line-clamp-2 min-h-[40px]">{tool.desc}</p>
+                          <h3 className="text-lg font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors mb-2 truncate max-w-full tool-card-title">{tool.name}</h3>
+                          <p className="text-sm text-neutral-500 leading-relaxed line-clamp-2 min-h-[40px] overflow-hidden text-ellipsis tool-card-desc">{tool.desc}</p>
                           
                           <div className="flex items-center gap-3 text-xs text-neutral-400 font-bold mt-4 pt-4 border-t border-neutral-100">
                             <span className="flex items-center gap-1">
@@ -534,17 +573,18 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
       <AnimatePresence>
         {isMobileFilterOpen && (
           <motion.div 
-            initial={{ opacity: 0 }}
+            initial={prefersReduced ? { opacity: 1 } : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={prefersReduced ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: prefersReduced ? 0 : 0.2 }}
             className="lg:hidden fixed inset-0 z-50 bg-[#0F0A1E]/40 backdrop-blur-sm pointer-events-auto flex items-end justify-center"
             onClick={() => setIsMobileFilterOpen(false)}
           >
             <motion.div 
-              initial={{ y: "100%" }}
+              initial={prefersReduced ? { y: 0 } : { y: "100%" }}
               animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 400, damping: 28 }}
+              exit={prefersReduced ? { y: 0 } : { y: "100%" }}
+              transition={prefersReduced ? { duration: 0 } : { type: "spring", stiffness: 400, damping: 28 }}
               className="w-full bg-white rounded-t-[24px] rounded-b-none p-6 pt-2 pb-8 max-h-[85vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >

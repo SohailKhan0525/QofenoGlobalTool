@@ -40,6 +40,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
   const [isYearly, setIsYearly] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const priceFree = 0;
   const pricePro = isYearly ? 5.40 : 9.00;
@@ -149,7 +150,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
           
           {/* FREE PLAN */}
           <motion.div 
-            whileHover={{ y: -6 }}
+            whileHover={prefersReduced ? {} : { y: -6 }}
             className="border border-neutral-200 bg-white text-neutral-900 rounded-3xl p-8 flex flex-col justify-between transition-all"
           >
             <div>
@@ -178,7 +179,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
 
           {/* PRO PLAN */}
           <motion.div 
-            whileHover={{ y: -8 }}
+            whileHover={prefersReduced ? {} : { y: -8 }}
             className="border-2 border-purple-600 bg-gradient-to-b from-purple-950 to-[#1A0F33] text-white rounded-3xl p-8 flex flex-col justify-between shadow-2xl relative"
           >
             <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[11px] font-black uppercase px-4 py-1.5 rounded-b-xl flex items-center gap-1.5">
@@ -220,7 +221,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
 
           {/* TEAMS PLAN */}
           <motion.div 
-            whileHover={{ y: -6 }}
+            whileHover={prefersReduced ? {} : { y: -6 }}
             className="border border-neutral-200 bg-[#0F0A1E] text-white rounded-3xl p-8 flex flex-col justify-between transition-all"
           >
             <div>
@@ -303,10 +304,10 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
                   <AnimatePresence initial={false}>
                     {isOpen && (
                       <motion.div
-                        initial={{ height: 0, opacity: 0 }}
+                        initial={prefersReduced ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
+                        exit={prefersReduced ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+                        transition={{ duration: prefersReduced ? 0 : 0.3 }}
                       >
                         <div className="p-6 pt-0 text-sm text-neutral-500 leading-relaxed border-t border-neutral-200/50 bg-white">
                           {faq.a}

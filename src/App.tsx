@@ -20,7 +20,6 @@ import { Policy } from './components/Pages/Policy';
 import { ForgotPassword } from './components/Pages/ForgotPassword';
 import { ResetPassword } from './components/Pages/ResetPassword';
 import { AuthCallback } from './components/Pages/AuthCallback';
-import { Dashboard } from './components/Pages/Dashboard';
 import { Profile } from './components/Pages/Profile';
 import { Settings as SettingsPage } from './components/Pages/Settings';
 import { NotFound } from './components/Pages/NotFound';
@@ -93,6 +92,8 @@ function QofenoLogo({ size = 36, showText = true, textClass = '' }: { size?: num
   );
 }
 
+const prefersReduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 // Page Transitions config as specified:
 // Exit: opacity: 1→0, translateY: 0→-20, scale: 1→0.98, duration: 350ms
 // Enter: opacity: 0→1, translateY: 20→0, scale: 0.98→1, duration: 550ms, delay: 50ms
@@ -124,6 +125,18 @@ const PAGE_VARIANTS: any = {
       ease: [0.4, 0, 1, 1]
     }
   }
+};
+
+const getPageVariants = (page: string) => {
+  const noAnimationPages = ['tools', 'profile', 'settings', 'whats-new', 'blog', 'dashboard'];
+  if (prefersReduced || noAnimationPages.includes(page)) {
+    return {
+      initial: { opacity: 1, y: 0, scale: 1, filter: 'none' },
+      animate: { opacity: 1, y: 0, scale: 1, filter: 'none', transition: { duration: 0 } },
+      exit: { opacity: 1, y: 0, scale: 1, filter: 'none', transition: { duration: 0 } }
+    };
+  }
+  return PAGE_VARIANTS;
 };
 
 type AppNotification = {
@@ -182,7 +195,8 @@ export default function App() {
 
   const setActiveTab = (page: string) => {
     if (page.startsWith('/')) {
-      const route = parseRoute(page, '');
+      const urlObj = new URL(page, window.location.origin);
+      const route = parseRoute(urlObj.pathname, urlObj.search);
       if (route.page === 'tool') {
         const slug = route.toolSlug || currentToolSlug || 'json-formatter';
         setCurrentToolSlug(slug);
@@ -329,8 +343,7 @@ export default function App() {
           Query.orderDesc('created_at'),
           Query.limit(20),
         ]);
-        if (cancelled) return;
-        const localReadStates = JSON.parse(localStorage.getItem('qofeno_read_notifications') || '{}');
+        const localReadNotifs = JSON.parse(localStorage.getItem('qofeno_read_notifs') || '[]');
         // Dedup by title to prevent duplicate welcome notifications
         const seenTitles = new Set<string>();
         const dedupedDocs = (resp.documents || []).filter((doc: any) => {
@@ -340,7 +353,7 @@ export default function App() {
           return true;
         });
         setNotifications(dedupedDocs.map((doc: any) => {
-          const isReadLocal = localReadStates[doc.$id] === true;
+          const isReadLocal = localReadNotifs.includes(doc.$id);
           return {
             id: doc.$id,
             title: String(doc.title || 'Notification'),
@@ -377,9 +390,11 @@ export default function App() {
   const markNotificationRead = async (notificationId: string) => {
     setNotifications((prev) => prev.map((n) => n.id === notificationId ? { ...n, read: true } : n));
     try {
-      const localReadStates = JSON.parse(localStorage.getItem('qofeno_read_notifications') || '{}');
-      localReadStates[notificationId] = true;
-      localStorage.setItem('qofeno_read_notifications', JSON.stringify(localReadStates));
+      const arr = JSON.parse(localStorage.getItem('qofeno_read_notifs') || '[]');
+      if (!arr.includes(notificationId)) {
+        arr.push(notificationId);
+        localStorage.setItem('qofeno_read_notifs', JSON.stringify(arr));
+      }
     } catch {}
     try {
       await databases.updateDocument(DATABASE_ID, 'notifications', notificationId, { read: true });
@@ -390,11 +405,13 @@ export default function App() {
     const unread = notifications.filter((n) => !n.read);
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
-      const localReadStates = JSON.parse(localStorage.getItem('qofeno_read_notifications') || '{}');
+      const arr = JSON.parse(localStorage.getItem('qofeno_read_notifs') || '[]');
       for (const n of unread) {
-        localReadStates[n.id] = true;
+        if (!arr.includes(n.id)) {
+          arr.push(n.id);
+        }
       }
-      localStorage.setItem('qofeno_read_notifications', JSON.stringify(localReadStates));
+      localStorage.setItem('qofeno_read_notifs', JSON.stringify(arr));
     } catch {}
     for (const notif of unread) {
       try {
@@ -1029,17 +1046,18 @@ export default function App() {
       <AnimatePresence>
         {isMobileNavOpen && (
           <motion.div 
-            initial={{ opacity: 0 }}
+            initial={prefersReduced ? { opacity: 1 } : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={prefersReduced ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: prefersReduced ? 0 : 0.2 }}
             className="lg:hidden fixed inset-0 z-[100] bg-[#0F0A1E]/40 backdrop-blur-sm"
             onClick={() => setIsMobileNavOpen(false)}
           >
             <motion.div 
-              initial={{ x: '100%' }}
+              initial={prefersReduced ? { x: 0 } : { x: '100%' }}
               animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: "spring", stiffness: 350, damping: 35 }}
+              exit={prefersReduced ? { x: 0 } : { x: '100%' }}
+              transition={prefersReduced ? { duration: 0 } : { type: "spring", stiffness: 350, damping: 35 }}
               onClick={(e) => e.stopPropagation()}
               className="absolute top-0 right-0 bottom-0 w-full max-w-[320px] bg-white shadow-2xl flex flex-col p-6"
             >
@@ -1100,7 +1118,7 @@ export default function App() {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              variants={PAGE_VARIANTS}
+              variants={getPageVariants(activeTab)}
               initial="initial"
               animate="animate"
               exit="exit"
@@ -1131,6 +1149,8 @@ export default function App() {
               {activeTab === 'coming-soon' && <ComingSoon onBack={() => setActiveTab('home')} />}
               {activeTab === 'terms' && <Terms />}
               {activeTab === 'policy' && <Policy />}
+              {activeTab === 'cookies' && <Cookies />}
+              {activeTab === 'blog' && <BlogDocs />}
               {activeTab === 'not-found' && <NotFound onNavigate={(page) => setActiveTab(page)} />}
             </motion.div>
           </AnimatePresence>
@@ -1266,6 +1286,7 @@ export default function App() {
             </div>
           </div>
 
+          {/* Tools Column */}
           <div className="border-b border-white/5 lg:border-0 pb-4 lg:pb-0">
             <h4 
               onClick={() => setOpenFooterCol(openFooterCol === 'tools' ? null : 'tools')}
@@ -1284,6 +1305,7 @@ export default function App() {
             </ul>
           </div>
 
+          {/* Product Column */}
           <div className="border-b border-white/5 lg:border-0 pb-4 lg:pb-0">
             <h4 
               onClick={() => setOpenFooterCol(openFooterCol === 'product' ? null : 'product')}
@@ -1295,10 +1317,12 @@ export default function App() {
             <ul className={cn("space-y-3.5 text-neutral-400 text-xs font-semibold mt-4 lg:mt-0 transition-all", openFooterCol === 'product' ? 'block' : 'hidden lg:block')}>
               <li><button onClick={() => setActiveTab('pricing')} className="hover:text-white transition-colors cursor-pointer text-left">Pricing</button></li>
               <li><button onClick={() => setActiveTab('whats-new')} className="hover:text-white transition-colors cursor-pointer text-left">What's New</button></li>
-              <li><button onClick={() => setActiveTab('coming-soon')} className="hover:text-white transition-colors cursor-pointer text-left">Blog</button></li>
+              <li><button onClick={() => setActiveTab('blog')} className="hover:text-white transition-colors cursor-pointer text-left">Blog</button></li>
+              <li><button onClick={() => goToProCheckout()} className="hover:text-white transition-colors cursor-pointer text-left">Upgrade to Pro</button></li>
             </ul>
           </div>
 
+          {/* Company Column */}
           <div className="border-b border-white/5 lg:border-0 pb-4 lg:pb-0">
             <h4 
               onClick={() => setOpenFooterCol(openFooterCol === 'company' ? null : 'company')}
@@ -1308,27 +1332,24 @@ export default function App() {
               <span className="lg:hidden">{openFooterCol === 'company' ? '−' : '+'}</span>
             </h4>
             <ul className={cn("space-y-3.5 text-neutral-400 text-xs font-semibold mt-4 lg:mt-0 transition-all", openFooterCol === 'company' ? 'block' : 'hidden lg:block')}>
-              <li><button onClick={() => setActiveTab('about')} className="hover:text-white transition-colors cursor-pointer text-left">About</button></li>
-              <li><button onClick={() => setActiveTab('contact')} className="hover:text-white transition-colors cursor-pointer text-left">Contact</button></li>
+              <li><button onClick={() => setActiveTab('about')} className="hover:text-white transition-colors cursor-pointer text-left">About Qofeno</button></li>
+              <li><button onClick={() => setActiveTab('contact')} className="hover:text-white transition-colors cursor-pointer text-left">Contact Support</button></li>
             </ul>
           </div>
           
+          {/* Legal Column */}
           <div className="border-b border-white/5 lg:border-0 pb-4 lg:pb-0">
             <h4 
-              onClick={() => setOpenFooterCol(openFooterCol === 'account' ? null : 'account')}
+              onClick={() => setOpenFooterCol(openFooterCol === 'legal' ? null : 'legal')}
               className="font-bold text-sm text-purple-200 uppercase tracking-widest mb-0 lg:mb-6 flex justify-between items-center cursor-pointer select-none lg:pointer-events-none"
             >
-              <span>Account</span>
-              <span className="lg:hidden">{openFooterCol === 'account' ? '−' : '+'}</span>
+              <span>Legal</span>
+              <span className="lg:hidden">{openFooterCol === 'legal' ? '−' : '+'}</span>
             </h4>
-            <ul className={cn("space-y-3.5 text-neutral-400 text-xs font-semibold mt-4 lg:mt-0 transition-all", openFooterCol === 'account' ? 'block' : 'hidden lg:block')}>
-              {!isAuthenticated && <li><button onClick={() => setActiveTab('pricing')} className="hover:text-white transition-colors cursor-pointer text-left">Get Pro</button></li>}
-              {isAuthenticated && (
-                <>
-                  <li><button onClick={() => setActiveTab('profile')} className="hover:text-white transition-colors cursor-pointer text-left">My Profile</button></li>
-                  <li><button onClick={() => setActiveTab('settings')} className="hover:text-white transition-colors cursor-pointer text-left">Settings</button></li>
-                </>
-              )}
+            <ul className={cn("space-y-3.5 text-neutral-400 text-xs font-semibold mt-4 lg:mt-0 transition-all", openFooterCol === 'legal' ? 'block' : 'hidden lg:block')}>
+              <li><button onClick={() => setActiveTab('policy')} className="hover:text-white transition-colors cursor-pointer text-left">Privacy Policy</button></li>
+              <li><button onClick={() => setActiveTab('terms')} className="hover:text-white transition-colors cursor-pointer text-left">Terms of Service</button></li>
+              <li><button onClick={() => setActiveTab('cookies')} className="hover:text-white transition-colors cursor-pointer text-left">Cookie Policy</button></li>
             </ul>
           </div>
         </div>
@@ -1341,11 +1362,6 @@ export default function App() {
                 <FontAwesomeIcon icon={faGithub} className="text-base" />
               </a>
             </div>
-          </div>
-          <div className="flex gap-6">
-            <button onClick={() => setActiveTab('policy')} className="hover:text-neutral-300 transition-colors cursor-pointer">Privacy Policy</button>
-            <button onClick={() => setActiveTab('terms')} className="hover:text-neutral-300 transition-colors cursor-pointer">Terms of Service</button>
-            <button onClick={() => setActiveTab('coming-soon')} className="hover:text-neutral-300 transition-colors cursor-pointer">Cookie Policy</button>
           </div>
         </div>
       </footer>

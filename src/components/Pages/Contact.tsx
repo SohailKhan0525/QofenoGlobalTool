@@ -9,7 +9,7 @@ import { submitContactForm } from '../../lib/qofeno-appwrite';
 export function Contact() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [topic, setTopic] = useState('Enterprise API Inquiry');
+  const [topic, setTopic] = useState("What's this about?");
   const [message, setMessage] = useState('');
 
   // Status handlers
@@ -94,9 +94,13 @@ export function Contact() {
             Get in Touch
           </span>
           <h1 className="font-display text-4xl md:text-7xl font-black text-[#0F0A1E] mb-6 leading-none">Let's talk</h1>
-          <p className="text-lg text-neutral-500 max-w-md mb-12 font-medium">
-            Have questions or need to request a new tool? Drop a note below. Mohd Zaheer Uddin personally reviews and responds to every query.
+          <p className="text-lg text-neutral-500 max-w-md mb-8 font-medium">
+            Have questions or need to request a new tool? Drop a note below.
           </p>
+          <div className="border-l-4 border-purple-600 pl-4 py-2 italic text-neutral-600 font-semibold text-sm max-w-md mb-12">
+            "I read and reply to every message personally. If you have tool requests, bug reports, or partnership ideas, get in touch."
+            <span className="block text-xs font-bold text-neutral-550 not-italic mt-2">— Mohd Zaheer Uddin, Founder of Qofeno</span>
+          </div>
 
           <div className="space-y-6 w-full max-w-sm">
             <div className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl">
@@ -124,8 +128,8 @@ export function Contact() {
                   <label className="text-xs font-black text-neutral-700 uppercase tracking-wider">Your Full Name</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Sohail Khan"
-                    className="w-full bg-white border border-neutral-200 focus:border-purple-600 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all"
+                    placeholder="Your name"
+                    className="w-full bg-white border border-neutral-200 focus:border-purple-650 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                   />
@@ -135,8 +139,8 @@ export function Contact() {
                   <label className="text-xs font-black text-neutral-700 uppercase tracking-wider">Email Address</label>
                   <input 
                     type="email" 
-                    placeholder="e.g. you@domain.com"
-                    className="w-full bg-white border border-neutral-200 focus:border-purple-600 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all"
+                    placeholder="your@email.com"
+                    className="w-full bg-white border border-neutral-200 focus:border-purple-650 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -145,10 +149,11 @@ export function Contact() {
                 <div className="space-y-1 font-medium">
                   <label className="text-xs font-black text-neutral-700 uppercase tracking-wider">Topic of Inquiry</label>
                   <select 
-                    className="w-full bg-white border border-neutral-200 focus:border-purple-600 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all cursor-pointer"
+                    className="w-full bg-white border border-neutral-200 focus:border-purple-650 focus:ring-4 focus:ring-purple-100 rounded-xl p-3.5 outline-none text-neutral-800 text-sm transition-all cursor-pointer"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                   >
+                    <option>What's this about?</option>
                     <option>Enterprise API Inquiry</option>
                     <option>Sponsorship & Affiliation</option>
                     <option>Academic Study Claim</option>

@@ -7,7 +7,7 @@ import {
   faCode, faChartColumn, faGraduationCap, faWandMagicSparkles, 
   faMicrochip, faHeart, faUsers, faStar, faPenNib
 } from '@fortawesome/free-solid-svg-icons';
-import { useToolCatalog } from '../../lib/toolCatalog';
+import { useToolCatalog, FALLBACK_TOOLS } from '../../lib/toolCatalog';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -38,46 +38,94 @@ const CATEGORY_META: Record<string, { icon: any, color: string }> = {
 function SearchTypingDemo() {
   const [text, setText] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   
   useEffect(() => {
-    let index = 0;
-    const phrase = 'compress pdf';
-    setText('');
-    setShowResults(false);
-    
-    const typingInterval = setInterval(() => {
-      if (index < phrase.length) {
-        setText(prev => prev + phrase[index]);
-        index++;
-      } else {
-        clearInterval(typingInterval);
-        setTimeout(() => setShowResults(true), 500);
-      }
-    }, 150);
-    
-    return () => clearInterval(typingInterval);
-  }, []);
+    if (prefersReduced) {
+      setText('compress pdf');
+      setShowResults(true);
+      return;
+    }
+
+    let active = true;
+    const runTypingCycle = () => {
+      if (!active) return;
+      setText('');
+      setShowResults(false);
+      
+      let index = 0;
+      const phrase = 'compress pdf';
+      
+      const typingInterval = setInterval(() => {
+        if (!active) {
+          clearInterval(typingInterval);
+          return;
+        }
+        if (index < phrase.length) {
+          setText(phrase.substring(0, index + 1));
+          index++;
+        } else {
+          clearInterval(typingInterval);
+          setTimeout(() => {
+            if (active) setShowResults(true);
+          }, 400);
+        }
+      }, 100);
+    };
+
+    runTypingCycle();
+    const mainInterval = setInterval(runTypingCycle, 8000);
+
+    return () => {
+      active = false;
+      clearInterval(mainInterval);
+    };
+  }, [prefersReduced]);
+
+  const results = [
+    { id: 1, name: 'Compress PDF', desc: 'Reduce file size without quality loss' },
+    { id: 2, name: 'PDF to Word', desc: 'Convert PDF to editable DOCX document' },
+    { id: 3, name: 'Word to PDF', desc: 'Convert DOCX document to high-quality PDF' }
+  ];
 
   return (
-    <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 flex flex-col gap-4 min-h-[180px] justify-center">
-      <div className="flex items-center gap-3 bg-neutral-50 px-4 py-3 rounded-xl border border-neutral-100">
+    <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 flex flex-col gap-4 min-h-[250px] justify-center font-sans">
+      <div className="flex items-center gap-3 bg-neutral-50 px-4 py-3 rounded-xl border border-neutral-150">
         <FontAwesomeIcon icon={faMagnifyingGlass} className="text-neutral-400 w-4 h-4" />
-        <span className="text-sm font-semibold text-neutral-800">{text}</span>
-        <span className="w-0.5 h-4 bg-purple-600 animate-[pulse_1s_infinite]" />
+        <span className="text-sm font-semibold text-neutral-800 flex-1">{text}</span>
+        <span className="w-0.5 h-4 bg-purple-650 animate-[pulse_1s_infinite]" />
       </div>
-      {showResults && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="bg-purple-50/50 border border-purple-100 rounded-xl p-3 flex items-center justify-between"
-        >
-          <div>
-            <h4 className="font-bold text-xs text-purple-900">PDF Compressor</h4>
-            <p className="text-[10px] text-purple-600/70 mt-0.5">Reduce file size without quality loss</p>
-          </div>
-          <span className="bg-purple-600 text-white text-[9px] font-bold px-3 py-1.5 rounded-lg">Open</span>
-        </motion.div>
-      )}
+      <div className="flex flex-col gap-2 flex-1 justify-center">
+        {showResults ? (
+          results.map((r, idx) => (
+            <motion.div 
+              key={r.id}
+              initial={prefersReduced ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 12, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={prefersReduced ? { duration: 0 } : { delay: idx * 0.15, ease: [0.22, 1, 0.36, 1], duration: 0.35 }}
+              className={cn(
+                "border rounded-xl p-3 flex items-center justify-between transition-all",
+                r.id === 1 
+                  ? "bg-purple-50/50 border-purple-500 shadow-md shadow-purple-500/5 ring-2 ring-purple-100" 
+                  : "bg-white border-neutral-150"
+              )}
+            >
+              <div>
+                <h4 className={cn("font-bold text-xs", r.id === 1 ? "text-purple-900" : "text-neutral-700")}>{r.name}</h4>
+                <p className="text-[9px] text-neutral-400 mt-0.5">{r.desc}</p>
+              </div>
+              <span className={cn(
+                "text-[9px] font-bold px-3 py-1.5 rounded-lg",
+                r.id === 1 ? "bg-purple-600 text-white" : "bg-neutral-100 text-neutral-500"
+              )}>
+                {r.id === 1 ? 'Selected' : 'Open'}
+              </span>
+            </motion.div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-xs font-semibold text-neutral-400">Searching...</div>
+        )}
+      </div>
     </div>
   );
 }
@@ -85,33 +133,83 @@ function SearchTypingDemo() {
 // Upload progress simulation subcomponent
 function UploadProgressDemo() {
   const [progress, setProgress] = useState(0);
-  
+  const [stage, setStage] = useState<'uploading' | 'processing'>('uploading');
+  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   useEffect(() => {
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress(p => {
-        if (p >= 100) return 0;
-        return p + 5;
-      });
-    }, 150);
-    return () => clearInterval(interval);
-  }, []);
+    if (prefersReduced) {
+      setProgress(100);
+      setStage('processing');
+      return;
+    }
+
+    let active = true;
+    const runCycle = () => {
+      if (!active) return;
+      setProgress(0);
+      setStage('uploading');
+
+      const interval = setInterval(() => {
+        if (!active) {
+          clearInterval(interval);
+          return;
+        }
+        setProgress(p => {
+          if (p >= 100) {
+            clearInterval(interval);
+            setStage('processing');
+            setTimeout(() => {
+              if (active) runCycle();
+            }, 3000);
+            return 100;
+          }
+          return p + 10;
+        });
+      }, 150);
+    };
+
+    runCycle();
+    return () => {
+      active = false;
+    };
+  }, [prefersReduced]);
 
   return (
-    <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 flex flex-col justify-center items-center gap-4 min-h-[180px] relative">
-      <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 border border-purple-100 animate-bounce">
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-        </svg>
-      </div>
-      <div className="w-full">
-        <div className="flex justify-between text-[10px] font-bold text-neutral-500 mb-1 px-1">
-          <span>draft_proposal.pdf</span>
-          <span>{progress}%</span>
-        </div>
-        <div className="w-full bg-neutral-150 rounded-full h-2 overflow-hidden">
-          <div className="bg-purple-600 h-full transition-all duration-150" style={{ width: `${progress}%` }} />
-        </div>
+    <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 flex flex-col justify-center items-center gap-4 min-h-[250px] font-sans">
+      <div className="w-full border-2 border-dashed border-neutral-200 rounded-xl p-6 flex flex-col items-center justify-center relative bg-neutral-50/50">
+        {stage === 'uploading' ? (
+          <>
+            {/* Floating File Icon */}
+            <motion.div
+              initial={prefersReduced ? { y: 0, opacity: 1 } : { y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={prefersReduced ? { duration: 0 } : { repeat: Infinity, duration: 1.5, repeatType: "reverse", ease: "easeInOut" }}
+              className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-650 border border-purple-100 mb-4 shadow-sm"
+            >
+              <FontAwesomeIcon icon={faFileLines} className="w-5 h-5" />
+            </motion.div>
+            
+            <div className="w-full">
+              <div className="flex justify-between text-[10px] font-bold text-neutral-500 mb-1.5 px-1">
+                <span>annual_report.pdf</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="w-full bg-neutral-200 rounded-full h-2 overflow-hidden">
+                <div className="bg-purple-600 h-full transition-all duration-200" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center py-4 text-center">
+            {/* Spinning Gears */}
+            <div className="relative w-12 h-12 mb-4 flex items-center justify-center">
+              <FontAwesomeIcon icon={faGear} className={cn("text-purple-650 w-10 h-10", prefersReduced ? "" : "animate-spin")} />
+              <FontAwesomeIcon icon={faGear} className={cn("text-pink-500 w-5 h-5 absolute -bottom-1 -right-1", prefersReduced ? "" : "animate-[spin_2s_linear_infinite_reverse]")} />
+            </div>
+            <h4 className="font-extrabold text-neutral-800 text-sm">Processing file...</h4>
+            <p className="text-[9px] text-neutral-500 mt-1">Executing PDF compression filters on our servers</p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -120,43 +218,49 @@ function UploadProgressDemo() {
 // Success Check & Confetti simulation subcomponent
 function DownloadSuccessDemo() {
   const [particles, setParticles] = useState<any[]>([]);
+  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
-    const list = Array.from({ length: 15 }).map((_, i) => ({
+    if (prefersReduced) return;
+    const list = Array.from({ length: 20 }).map((_, i) => ({
       id: i,
-      x: Math.random() * 80 - 40,
-      y: Math.random() * 80 - 40,
-      color: ['bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-yellow-500'][i % 4],
+      x: Math.random() * 120 - 60,
+      y: Math.random() * 120 - 60,
+      color: ['bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-yellow-500', 'bg-green-500'][i % 5],
       delay: Math.random() * 0.4
     }));
     setParticles(list);
-  }, []);
+  }, [prefersReduced]);
 
   return (
-    <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 flex flex-col justify-center items-center gap-4 min-h-[180px] relative overflow-hidden">
-      {particles.map(p => (
+    <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 flex flex-col justify-center items-center gap-4 min-h-[250px] relative overflow-hidden font-sans">
+      {!prefersReduced && particles.map(p => (
         <motion.div
           key={p.id}
           initial={{ opacity: 1, scale: 0, x: 0, y: 0 }}
-          animate={{ opacity: 0, scale: 1.1, x: p.x * 1.5, y: p.y * 1.5 }}
-          transition={{ duration: 1.2, delay: p.delay, repeat: Infinity, repeatDelay: 1 }}
-          className={`absolute w-2 h-2 rounded-full ${p.color}`}
+          animate={{ opacity: 0, scale: 1.2, x: p.x * 1.5, y: p.y * 1.5 }}
+          transition={{ duration: 1.5, delay: p.delay, repeat: Infinity, repeatDelay: 0.5 }}
+          className={`absolute w-1.5 h-1.5 rounded-full ${p.color} z-0`}
         />
       ))}
       
-      <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 border border-green-100">
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <div className={cn("w-14 h-14 bg-green-50 rounded-full flex items-center justify-center text-green-500 border border-green-150 shadow-md shadow-green-100 z-10", prefersReduced ? "" : "animate-[pulse_2s_infinite]")}>
+        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       </div>
       
-      <div className="text-center w-full">
-        <h4 className="font-bold text-neutral-800 text-xs">Success!</h4>
-        <p className="text-[9px] font-semibold text-green-600 mt-0.5">Original: 18.4MB → Compressed: 2.3MB</p>
+      <div className="text-center w-full z-10 space-y-1">
+        <h4 className="font-black text-neutral-800 text-base">File Compressed!</h4>
+        <div className="flex items-center justify-center gap-4 text-xs font-bold mt-2">
+          <span className="text-neutral-400 line-through">2.4 MB</span>
+          <span className="text-neutral-400">→</span>
+          <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded">0.8 MB (66% smaller)</span>
+        </div>
       </div>
 
-      <button className="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-[10px] rounded-lg shadow-lg shadow-green-500/10 transition-all cursor-pointer">
-        Download Ready
+      <button className={cn("w-full py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black text-xs rounded-xl shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all cursor-pointer z-10 flex items-center justify-center gap-2", prefersReduced ? "" : "animate-[pulse_1.5s_infinite]")}>
+        <FontAwesomeIcon icon={faDownload} className={cn("w-4 h-4", prefersReduced ? "" : "animate-bounce")} /> Download Compressed PDF
       </button>
     </div>
   );
@@ -164,6 +268,8 @@ function DownloadSuccessDemo() {
 
 export function Home({ onNavigate, onRequestTool }: HomeProps) {
   const { tools, featuredTools, categoryCards } = useToolCatalog();
+  const freeCount = tools.filter(t => t.type === 'Free').length || FALLBACK_TOOLS.filter(t => t.type === 'Free').length;
+  const totalCount = tools.length || FALLBACK_TOOLS.length;
   const [activePersona, setActivePersona] = useState('students');
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
   const [isHovered, setIsHovered] = useState(false);
@@ -430,20 +536,35 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
 
             <div className="relative border-l-2 border-neutral-200 pl-6 flex flex-col gap-6">
               {[
-                { step: 1 as const, title: "1. Find your tool", desc: "Search by keyword or select structured categories. No login credentials required to start." },
-                { step: 2 as const, title: "2. Upload your file", desc: "Drag and drop payloads securely. The execution is processed on dedicated server-side engines." },
-                { step: 3 as const, title: "3. Download your result", desc: "Download the converted package instantly. Inputs are systematically purged from cache databases." }
+                { step: 1 as const, icon: faMagnifyingGlass, title: "Find your tool", desc: "Search by name or browse by category" },
+                { step: 2 as const, icon: faUpload, title: "Upload your file", desc: "Drop your file — processed on our servers" },
+                { step: 3 as const, icon: faDownload, title: "Download your result", desc: "Ready in seconds. File deleted after download." }
               ].map(item => (
                 <div 
                   key={item.step}
                   onClick={() => { setActiveStep(item.step); setIsHovered(true); }}
                   className={cn(
-                    "relative pl-6 py-4 rounded-2xl cursor-pointer transition-all duration-300",
+                    "relative pl-6 py-4 rounded-2xl cursor-pointer transition-all duration-300 flex items-start gap-4",
                     activeStep === item.step ? "bg-white border-l-4 border-purple-650 shadow-sm" : "bg-transparent border-l-4 border-transparent hover:bg-neutral-100/50"
                   )}
                 >
-                  <h3 className="font-black text-lg text-[#0F0A1E] mb-1">{item.title}</h3>
-                  <p className="text-neutral-500 text-xs font-semibold leading-relaxed max-w-md">{item.desc}</p>
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border transition-all",
+                    activeStep === item.step 
+                      ? "bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200" 
+                      : "bg-white text-neutral-400 border-neutral-200"
+                  )}>
+                    <FontAwesomeIcon icon={item.icon} className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className={cn(
+                      "text-lg mb-1 transition-all",
+                      activeStep === item.step ? "font-black text-[#0F0A1E]" : "font-semibold text-neutral-600"
+                    )}>
+                      {item.title}
+                    </h3>
+                    <p className="text-neutral-500 text-xs font-semibold leading-relaxed max-w-md">{item.desc}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -590,8 +711,8 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                             <div 
                               key={i} 
                               onClick={() => {
-                                localStorage.setItem('selected_tool_id', t.slug);
-                                onNavigate('tool');
+                                localStorage.setItem('selected_tool_id', t.id);
+                                onNavigate(`tool`);
                               }}
                               className="px-3.5 py-2 bg-neutral-50 hover:bg-purple-50/30 hover:border-purple-200 border border-neutral-200 rounded-xl text-xs font-bold text-neutral-700 cursor-pointer transition-all"
                             >
@@ -606,8 +727,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
 
                     <button 
                       onClick={() => {
-                        window.history.pushState({}, '', p.link);
-                        window.dispatchEvent(new PopStateEvent('popstate'));
+                        onNavigate(p.link);
                       }}
                       className="px-6 py-3.5 bg-neutral-900 hover:bg-black text-white text-xs font-black uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
                     >
@@ -649,7 +769,6 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch select-none font-medium">
-            
             {/* FREE PLAN */}
             <div className="border border-neutral-250 bg-white p-8 rounded-3xl flex flex-col justify-between shadow-sm">
               <div>
@@ -657,7 +776,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                 <p className="text-xs text-neutral-400 mb-6 font-semibold">Always free for basic converting processes.</p>
                 <div className="text-4xl font-black text-[#0F0A1E] mb-6">$0<span className="text-xs text-neutral-400 font-black uppercase tracking-wider ml-1">/ forever</span></div>
                 <ul className="space-y-4 mb-8 text-sm text-neutral-600">
-                  <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600 bg-purple-50 p-0.5 rounded" /> Access to {tools.filter(t => t.type === 'Free').length || 18} Free tools</li>
+                  <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600 bg-purple-50 p-0.5 rounded" /> Access to {freeCount} Free tools</li>
                   <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600 bg-purple-50 p-0.5 rounded" /> File uploads up to 50MB</li>
                   <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600 bg-purple-50 p-0.5 rounded" /> Secure cache processing</li>
                 </ul>
@@ -680,7 +799,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   <div className="text-4xl font-black text-[#0F0A1E] mb-6">${pricingYearly ? "5.40" : "9.00"}<span className="text-xs text-neutral-450 font-black uppercase tracking-wider ml-1">/ mo</span></div>
                   <ul className="space-y-4 mb-8 text-sm text-[#0F0A1E]">
                     <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> Everything in Free</li>
-                    <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> All tools unlocked ({tools.length} tools)</li>
+                    <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> All tools unlocked ({totalCount} tools)</li>
                     <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> Files up to 500MB + priority</li>
                   </ul>
                 </div>
@@ -704,8 +823,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
               </div>
               <button 
                 onClick={() => {
-                  window.history.pushState({}, '', `/checkout/pro?plan=teams`);
-                  window.dispatchEvent(new PopStateEvent('popstate'));
+                  onNavigate('/checkout/pro?plan=teams');
                 }} 
                 className="w-full py-3.5 rounded-xl bg-white text-[#0F0A1E] font-extrabold text-xs uppercase tracking-wider hover:bg-neutral-100 transition-colors cursor-pointer"
               >
