@@ -199,10 +199,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
               </div>
 
               <button 
-                onClick={() => {
-                  if (onGetPro) onGetPro();
-                  else if (onNavigate) onNavigate(isAuthenticated ? `/checkout/pro?plan=pro` : 'login');
-                }} 
+                onClick={() => onNavigate && onNavigate(isAuthenticated ? '/checkout/pro?plan=pro' : '/login?redirect=/checkout/pro?plan=pro')} 
                 className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity cursor-pointer"
               >
                 Get Pro
@@ -236,7 +233,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
               </div>
 
               <button 
-                onClick={() => onNavigate && onNavigate(isAuthenticated ? `/checkout/pro?plan=teams` : 'login')} 
+                onClick={() => onNavigate && onNavigate(isAuthenticated ? '/checkout/pro?plan=teams' : '/login?redirect=/checkout/pro?plan=teams')} 
                 className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-white text-[#0F0A1E] hover:bg-neutral-250 transition-colors cursor-pointer"
               >
                 Start Teams Plan

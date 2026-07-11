@@ -23,7 +23,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
   const [processing, setProcessing] = useState(false);
 
   const planId = planType === 'teams'
-    ? (isYearly ? TEAMS_PLAN_ID_YEARLY : TEAMS_PLAN_ID_MONTHLY)
+    ? (isYearly ? (TEAMS_PLAN_ID_YEARLY || PLAN_ID_YEARLY) : (TEAMS_PLAN_ID_MONTHLY || PLAN_ID_MONTHLY))
     : (isYearly ? PLAN_ID_YEARLY : PLAN_ID_MONTHLY);
 
   // ── Success state ────────────────────────────────────────────────────────────
