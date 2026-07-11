@@ -1150,7 +1150,6 @@ export default function App() {
               {activeTab === 'terms' && <Terms />}
               {activeTab === 'policy' && <Policy />}
               {activeTab === 'cookies' && <Cookies />}
-              {activeTab === 'blog' && <BlogDocs />}
               {activeTab === 'not-found' && <NotFound onNavigate={(page) => setActiveTab(page)} />}
             </motion.div>
           </AnimatePresence>
@@ -1317,7 +1316,6 @@ export default function App() {
             <ul className={cn("space-y-3.5 text-neutral-400 text-xs font-semibold mt-4 lg:mt-0 transition-all", openFooterCol === 'product' ? 'block' : 'hidden lg:block')}>
               <li><button onClick={() => setActiveTab('pricing')} className="hover:text-white transition-colors cursor-pointer text-left">Pricing</button></li>
               <li><button onClick={() => setActiveTab('whats-new')} className="hover:text-white transition-colors cursor-pointer text-left">What's New</button></li>
-              <li><button onClick={() => setActiveTab('blog')} className="hover:text-white transition-colors cursor-pointer text-left">Blog</button></li>
               <li><button onClick={() => goToProCheckout()} className="hover:text-white transition-colors cursor-pointer text-left">Upgrade to Pro</button></li>
             </ul>
           </div>

@@ -104,7 +104,7 @@ export function parseRoute(pathname: string, search = ''): RouteState {
   if (normalizedPath === '/terms') return { page: 'terms', pathname, search };
   if (normalizedPath === '/policy') return { page: 'policy', pathname, search };
   if (normalizedPath === '/cookies') return { page: 'cookies', pathname, search };
-  if (normalizedPath === '/blog') return { page: 'blog', pathname, search };
+  if (normalizedPath === '/blog') return { page: 'whats-new', pathname: '/whats-new', search };
   if (normalizedPath === '/coming-soon') return { page: 'coming-soon', pathname, search };
 
   return { page: 'not-found', pathname, search };
