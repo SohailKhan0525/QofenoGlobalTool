@@ -4,6 +4,7 @@ import { faShieldHalved, faCircleCheck, faBolt, faHardDrive, faClock, faCloudArr
 import { PayPalButton } from '../PayPal/PayPalButton';
 import { SEO } from '../SEO';
 import { Turnstile } from '@marsidev/react-turnstile';
+import { PlanToggle } from '../PlanToggle';
 
 const PRO_FEATURES = [
   { icon: faBolt, text: 'Access to all PRO PDF & Document Tools' },
@@ -57,22 +58,8 @@ export function CheckoutProPage() {
         </div>
 
         {/* Plan Toggle */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-1 flex mb-8 relative">
-          <button
-            onClick={() => setIsYearly(false)}
-            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${!isYearly ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/30' : 'text-neutral-400 hover:text-white'}`}
-          >
-            Monthly · ${monthlyPrice}/mo
-          </button>
-          <button
-            onClick={() => setIsYearly(true)}
-            className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${isYearly ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/30' : 'text-neutral-400 hover:text-white'}`}
-          >
-            Yearly · ${yearlyMonthlyPrice}/mo
-            <span className="ml-2 text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-0.5 rounded-full">
-              Save {savings}%
-            </span>
-          </button>
+        <div className="flex justify-center mb-8 bg-white/5 border border-white/10 rounded-full p-1.5 inline-flex mx-auto w-full max-w-[280px]">
+          <PlanToggle isYearly={isYearly} onChange={setIsYearly} />
         </div>
 
         {/* Price Display */}

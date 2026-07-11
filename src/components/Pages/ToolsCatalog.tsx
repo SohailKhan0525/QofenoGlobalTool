@@ -63,6 +63,8 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   const [recentlyViewed, setRecentlyViewed] = useState<string[]>([]);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
+  const [popularToolSlugs, setPopularToolSlugs] = useState<string[]>([]);
+  const [toolViewCounts, setToolViewCounts] = useState<Record<string, number>>({});
 
   const getOrCreateAnonId = () => {
     try {
@@ -139,6 +141,21 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
     // use outer getOrCreateAnonId
 
     const loadRemote = async () => {
+      try {
+        const viewsRes = await databases.listDocuments(DATABASE_ID, 'tool_views', [Query.orderDesc('count'), Query.limit(100)]);
+        const popularSlugs = (viewsRes.documents || []).map((d: any) => String(d.tool_slug));
+        const countsMap: Record<string, number> = {};
+        (viewsRes.documents || []).forEach((d: any) => {
+          countsMap[d.tool_slug] = Number(d.count || 0);
+        });
+        if (!cancelled) {
+          setPopularToolSlugs(popularSlugs);
+          setToolViewCounts(countsMap);
+        }
+      } catch (err) {
+        console.error("Failed to load popular tool views", err);
+      }
+
       try {
         const user = await account.get();
         const userId = user?.$id;
@@ -224,10 +241,9 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
       .slice(0, 16);
   }, [tools]);
 
-  // Filtering Logic
   const filteredTools = useMemo(() => {
     const sourceTools = tools.length > 0 ? tools : FALLBACK_TOOLS;
-    return sourceTools.filter(tool => {
+    let list = sourceTools.filter(tool => {
       // Search query check (matches name, description or tags)
       const matchesSearch = tool.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
                 tool.desc.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -259,7 +275,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                       (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew);
         matchesTag = !!isNew;
       } else if (activeFilterTag === 'Popular') {
-        matchesTag = tool.isPopular;
+        matchesTag = tool.isPopular || popularToolSlugs.includes(tool.slug) || ((toolViewCounts[tool.slug] || 0) > 0);
       }
 
       // Selected popular tag check
@@ -270,7 +286,17 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
       return matchesSearch && matchesCategory && matchesSub && matchesTag && matchesSelectedTag;
     });
-  }, [debouncedSearch, selectedCategory, selectedSubCategory, activeFilterTag, selectedTag, favorites, tools]);
+
+    if (activeFilterTag === 'Popular') {
+      list = [...list].sort((a, b) => {
+        const countA = toolViewCounts[a.slug] || (a.isPopular ? 10 : 0);
+        const countB = toolViewCounts[b.slug] || (b.isPopular ? 10 : 0);
+        return countB - countA;
+      });
+    }
+
+    return list;
+  }, [debouncedSearch, selectedCategory, selectedSubCategory, activeFilterTag, selectedTag, favorites, popularToolSlugs, toolViewCounts, tools]);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-24 md:pt-40 md:pb-32 px-6 md:px-12">

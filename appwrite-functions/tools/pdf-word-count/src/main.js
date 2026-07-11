@@ -1,6 +1,5 @@
 import { Client, Databases, Query, ID, Permission, Role, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
-import { PDFDocument } from 'pdf-lib';
 import pdfParse from 'pdf-parse';
 
 function parseBody(req) {
@@ -103,9 +102,9 @@ export default async ({ req, res, error }) => {
       const data = await pdfParse(source.buffer);
       const text = data.text || '';
       
-      const words = text.trim().split(/\\s+/).filter(w => w.length > 0).length;
+      const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
       const chars = text.length;
-      const charsNoSpaces = text.replace(/\\s/g, '').length;
+      const charsNoSpaces = text.replace(/\s/g, '').length;
       const pages = data.numpages;
 
       const resultObj = {
@@ -116,7 +115,7 @@ export default async ({ req, res, error }) => {
       };
       
       const outputBuffer = Buffer.from(JSON.stringify(resultObj, null, 2), 'utf8');
-      const outputName = inputName.replace(/\\.[^/.]+$/, "") + '-word-count.json';
+      const outputName = inputName.replace(/\.[^/.]+$/, "") + '-word-count.json';
       
       return { outputBuffer, outputName };
     });

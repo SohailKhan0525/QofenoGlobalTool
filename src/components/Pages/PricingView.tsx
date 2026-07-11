@@ -5,6 +5,7 @@ import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { SEO } from '../../components/SEO';
+import { PlanToggle } from '../PlanToggle';
 
 const FAQ_ITEMS = [
   { q: "Is Qofeno free?", a: "Yes! We offer a wide range of essential converting, editing, and formatting tools completely free of charge. You can use them without signup." },
@@ -114,35 +115,8 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
         </div>
 
         {/* TOGGLE INDICATOR */}
-        <div className="flex items-center gap-4 bg-purple-50 rounded-full p-1.5 border border-purple-100 mb-16 relative">
-          <button 
-            type="button"
-            onClick={() => setIsYearly(false)}
-            className={cn("px-6 py-2.5 rounded-full text-sm font-extrabold transition-all cursor-pointer z-10", !isYearly ? "bg-purple-600 text-white shadow-lg shadow-purple-600/15" : "text-neutral-600 hover:text-neutral-900")}
-          >
-            Monthly
-          </button>
-          <div className="relative">
-            <button 
-              type="button"
-              onClick={() => setIsYearly(true)}
-              className={cn("px-6 py-2.5 rounded-full text-sm font-extrabold transition-all cursor-pointer flex items-center gap-1.5 z-10 relative", isYearly ? "bg-purple-600 text-white shadow-lg shadow-purple-600/15" : "text-neutral-600 hover:text-neutral-900")}
-            >
-              Yearly
-            </button>
-            <AnimatePresence>
-              {isYearly && (
-                <motion.span 
-                  initial={{ scale: 0.8, opacity: 0, y: 10 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.8, opacity: 0, y: 10 }}
-                  className="absolute -top-10 left-1/2 -translate-x-1/2 bg-pink-100 text-pink-700 text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm border border-pink-200 whitespace-nowrap z-20 pointer-events-none"
-                >
-                  <FontAwesomeIcon icon={faWandMagicSparkles} className="w-3 h-3 animate-spin" /> Save 40%
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </div>
+        <div className="flex justify-center mb-16">
+          <PlanToggle isYearly={isYearly} onChange={setIsYearly} />
         </div>
 
         {/* PLAN CARDS GRID */}

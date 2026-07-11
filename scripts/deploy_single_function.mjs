@@ -24,9 +24,17 @@ async function run() {
 
   const functionsApi = new Functions(client);
 
-  const baseName = 'auth-webhook';
-  const targetDir = path.resolve(process.cwd(), 'appwrite-functions', 'platform', baseName);
-  const functionId = process.env.VITE_APPWRITE_FUNCTION_AUTH_WEBHOOK_ID || baseName;
+  const baseName = process.argv[2] || 'auth-webhook';
+  let targetDir = path.resolve(process.cwd(), 'appwrite-functions', 'platform', baseName);
+  if (!fs.existsSync(targetDir)) {
+    targetDir = path.resolve(process.cwd(), 'appwrite-functions', 'tools', baseName);
+  }
+  if (!fs.existsSync(targetDir)) {
+    targetDir = path.resolve(process.cwd(), 'appwrite-functions', baseName);
+  }
+  
+  const envKeyName = baseName.toUpperCase().replace(/-/g, '_');
+  const functionId = process.env[`VITE_APPWRITE_FUNCTION_${envKeyName}_ID`] || baseName;
 
   console.log(`Checking function ${functionId}...`);
   let functionExists = false;
@@ -46,12 +54,17 @@ async function run() {
 
   // Update events and configurations
   console.log(`Updating function triggers and configuration...`);
+  let triggers = [];
+  if (baseName === 'auth-webhook') triggers = ['users.*.create'];
+  else if (baseName === 'new-tool-notifier') triggers = ['databases.*.collections.tools.documents.*.create'];
+  else if (baseName === 'whats-new-notifier') triggers = ['databases.*.collections.whats_new.documents.*.create'];
+
   await functionsApi.update(
     functionId,
     baseName,
     'node-18.0',
     ['any'],
-    ['users.*.create'],
+    triggers,
     undefined,
     undefined,
     undefined,
@@ -98,14 +111,22 @@ async function run() {
         console.log(`Variable ${key} is already up to date.`);
       }
     } else {
-      console.log(`Creating variable ${key}...`);
-      const safeVarId = key.toLowerCase().replace(/[^a-z0-9]/g, '-');
-      await functionsApi.createVariable({
-        functionId,
-        variableId: safeVarId,
-        key,
-        value: valStr
-      });
+      try {
+        console.log(`Creating variable ${key}...`);
+        const safeVarId = key.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        await functionsApi.createVariable({
+          functionId,
+          variableId: safeVarId,
+          key,
+          value: valStr
+        });
+      } catch (varErr) {
+        if (varErr.code === 409 || String(varErr.message).includes('already exists')) {
+          console.log(`Variable ${key} already exists, skipping.`);
+        } else {
+          throw varErr;
+        }
+      }
     }
   }
 

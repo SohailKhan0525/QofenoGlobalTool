@@ -5,6 +5,7 @@ import { PayPalButton } from '../PayPal/PayPalButton';
 import { SEO } from '../../components/SEO';
 import { motion } from 'framer-motion';
 import { Turnstile } from '@marsidev/react-turnstile';
+import { PlanToggle } from '../PlanToggle';
 
 export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) {
   const params = new URLSearchParams(window.location.search);
@@ -44,16 +45,8 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
         </div>
 
         {/* Plan toggle */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          <span className={"text-sm font-bold " + (!isYearly ? "text-[#0F0A1E]" : "text-neutral-400")}>Monthly (${monthlyPrice})</span>
-          <button 
-            type="button"
-            onClick={() => setIsYearly(!isYearly)}
-            className="w-12 h-6 rounded-full bg-purple-600 relative transition-colors duration-300 cursor-pointer"
-          >
-            <div className={"w-4 h-4 bg-white rounded-full absolute top-1 transition-transform duration-300 " + (isYearly ? "translate-x-7" : "translate-x-1")} />
-          </button>
-          <span className={"text-sm font-bold " + (isYearly ? "text-[#0F0A1E]" : "text-neutral-400")}>Yearly (${yearlyPrice}/mo)</span>
+        <div className="flex justify-center mb-8">
+          <PlanToggle isYearly={isYearly} onChange={setIsYearly} />
         </div>
 
         {/* What you get */}
