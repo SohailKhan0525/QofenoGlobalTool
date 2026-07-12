@@ -19,7 +19,7 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm install node-appwrite dotenv
+        run: npm install node-appwrite
 
       - name: Run Weekly Blog Summary
         env:

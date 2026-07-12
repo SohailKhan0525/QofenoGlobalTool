@@ -1,13 +1,28 @@
 import { Client, Databases, ID, Query } from "node-appwrite"
 import { readdirSync, existsSync } from "fs"
-import { join } from "path"
-import dotenv from "dotenv"
+import { join, resolve } from "path"
 
-// Load .env
-dotenv.config()
+// Load .env only when running locally (not in CI where secrets are injected)
+if (!process.env.APPWRITE_API_KEY) {
+  try {
+    const { default: dotenv } = await import('dotenv');
+    const envPath = resolve(process.cwd(), '.env');
+    if (existsSync(envPath)) {
+      dotenv.config({ path: envPath });
+      console.log('Loaded .env file.');
+    }
+  } catch {
+    // dotenv might not be installed; not critical in CI
+  }
+}
+
+if (!process.env.APPWRITE_PROJECT_ID || !process.env.APPWRITE_API_KEY) {
+  console.error("❌ APPWRITE_PROJECT_ID and APPWRITE_API_KEY environment variables are required.");
+  process.exit(1);
+}
 
 const client = new Client()
-  .setEndpoint(process.env.APPWRITE_ENDPOINT)
+  .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
   .setProject(process.env.APPWRITE_PROJECT_ID)
   .setKey(process.env.APPWRITE_API_KEY)
 
