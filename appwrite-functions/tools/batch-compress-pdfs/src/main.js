@@ -123,7 +123,7 @@ export default async ({ req, res, log, error }) => {
       if (!existsSync(outPath)) throw new Error(`Failed to compress ${inputName}`);
       const outBuffer = readFileSync(outPath);
       
-      const outName = inputName.replace(/\\.pdf$/i, '') + '-compressed.pdf';
+      const outName = inputName.replace(/\.pdf$/i, '') + '-compressed.pdf';
       zip.file(outName, outBuffer);
     }
 

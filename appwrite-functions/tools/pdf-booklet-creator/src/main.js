@@ -138,7 +138,7 @@ export default async ({ req, res, log, error }) => {
     }
 
     const outBuf = Buffer.from(await newPdf.save({ useObjectStreams: true }));
-    const outName = inputName.replace(/\\.pdf$/i, '') + '-booklet.pdf';
+    const outName = inputName.replace(/\.pdf$/i, '') + '-booklet.pdf';
 
     const uploaded = await uploadOutput(storage, outName, outBuf);
     await createExecutionRecord(db, {

@@ -136,7 +136,7 @@ export default async ({ req, res, error }) => {
       });
 
       const outputBuffer = Buffer.from(await inputPdf.save());
-      const outputName = inputName.replace(/\\.[^/.]+$/, "") + '-numbered.pdf';
+      const outputName = inputName.replace(/\.[^/.]+$/, "") + '-numbered.pdf';
       
       // Validation
       if (outputName.endsWith('.pdf')) {

@@ -5,6 +5,7 @@
  * Run: node scripts/test_all_tools.mjs
  */
 import { Client, Functions } from 'node-appwrite';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -22,14 +23,26 @@ function loadEnv() {
   }
 }
 
-// Minimal real PDF (generated to avoid file system dependency)
-const MINIMAL_PDF_BASE64 = 'JVBERi0xLjAKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iagozIDAgb2JqPDwvVHlwZS9QYWdlL01lZGlhQm94WzAgMCAzIDNdPj5lbmRvYmoKeHJlZgowIDQKMDAwMDAwMDAwMCA2NTUzNSBmCjAwMDAwMDAwMDkgMDAwMDAgbgowMDAwMDAwMDU4IDAwMDAwIG4KMDAwMDAwMDExNSAwMDAwMCBuCnRyYWlsZXI8PC9TaXplIDQvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgoxOTAKJSVFT0Y=';
-
 // Small minimal DOCX (base64 encoded real minimal docx)
 const MINIMAL_DOCX_BASE64 = 'UEsDBBQACAgIAAAAIQAAAAAAAAAAAAAAAAALAAAAX3JlbHMvLnJlbHONzrsKwkAQRuF9nzKkT3ezKIIU2Uop0mdYs8mC2Q3ZjaDPrqKQKoX/hcP5GKa2r6YSHaQ2sByg6BuoRFFLbVkGx93m8gOBpEKrOqdBXdGQl4vs+QmU5Xh/KmNFGWSSJCCEiQCmB4CMtEpxQoSjQKWTgVFKZhqQnBiLJLmgVyFwgSAvDICUSh2lAyYJkL7xyxjJi1PQIAXjv5p2jLbYHTKR8AAAD//wMAUEsDBBQACAgIAAAAIQDVBCxmMQEAAH4CAAATAAAAd29yZC9kb2N1bWVudC54bWyFkV1LwzAUhu/9FSH3bpOuY5SmFxUvZOhF8eeSpOuyLU3CSTpX/91k3Qr7IAnk43meg3m8fh8GMYNtlcESBSmCRBtp61GjbadNbqVGjsASpbVAKJoJ+K1TBGGLkGGHnBGBhkh4TW8TpqDaEnqGAOHUMfuCwS4OBqWUWODlMDXuYkLhCMt7vARjLgFUYGMPRoAdoBBU+aOb0EiAHHhFGRaUNFNpqUiGOA6OaYJPaJFxZKJIgjhFJAnWZ5yx9CL5uyaAjfqm1CixRJlTaJWqkl4wjFXUluGnEiTgvlWE1gQ8eKWJXaSI3EJGTaqaIlX5neMTVsn6RmXN/R/BFPwAAAP//AwBQSwMEFAAICAgAAAAhAAAAAAAAAAAAAAAAAAoAAAB3b3JkL2ZvbnQveG1sAAAAUEsFBgAAAAADAAMAxwAAAMgAAAAA';
 
+let MINIMAL_PDF_BASE64 = '';
+
 async function runTests() {
   loadEnv();
+
+  // Dynamically generate a valid PDF with content for conversion/extracting tools to test cleanly
+  try {
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const page = doc.addPage([595, 842]);
+    page.drawText('Qofeno Test PDF Document', { x: 50, y: 780, size: 20, font, color: rgb(0, 0, 0) });
+    page.drawText('This is a real valid test document with some content for word count and conversion testing.', { x: 50, y: 745, size: 12, font, color: rgb(0.2, 0.2, 0.2) });
+    const bytes = await doc.save();
+    MINIMAL_PDF_BASE64 = Buffer.from(bytes).toString('base64');
+  } catch (err) {
+    console.error('Failed to pre-generate valid PDF:', err.message);
+  }
 
   const client = new Client()
     .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')

@@ -114,7 +114,7 @@ export default async ({ req, res, error }) => {
       };
       
       const outputBuffer = Buffer.from(JSON.stringify(metadata, null, 2), 'utf8');
-      const outputName = inputName.replace(/\\.[^/.]+$/, "") + '-metadata.json';
+      const outputName = inputName.replace(/\.[^/.]+$/, "") + '-metadata.json';
       
       return { outputBuffer, outputName };
     });

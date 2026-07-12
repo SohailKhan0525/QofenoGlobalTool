@@ -127,7 +127,7 @@ export default async ({ req, res, log, error }) => {
     if (!existsSync(outPath)) throw new Error('Color conversion failed');
     const outBuf = readFileSync(outPath);
 
-    const outName = inputName.replace(/\\.pdf$/i, '') + `-${colorProfile}.pdf`;
+    const outName = inputName.replace(/\.pdf$/i, '') + `-${colorProfile}.pdf`;
 
     const uploaded = await uploadOutput(storage, outName, outBuf);
     await createExecutionRecord(db, {
