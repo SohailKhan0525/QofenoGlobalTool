@@ -32,6 +32,7 @@ export interface ToolCard {
   schemaMarkup: string;
   functionId?: string;
   tags?: string[];
+  is_new_until?: string;
 }
 
 export interface CategoryCard {

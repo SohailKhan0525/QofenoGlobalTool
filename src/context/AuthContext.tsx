@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { ID, OAuthProvider, Query } from 'appwrite';
 import { account, DATABASE_ID, databases } from '../lib/qofeno-appwrite';
 
-export type AuthPlan = 'free' | 'pro';
+export type AuthPlan = 'free' | 'pro' | 'teams';
 
 export type AuthUser = {
   id: string;
@@ -31,7 +31,9 @@ async function loadPlan(userId: string): Promise<AuthPlan> {
   try {
     const docs = await databases.listDocuments(DATABASE_ID, 'users_meta', [Query.equal('user_id', userId), Query.limit(1)]);
     const plan = String(docs.documents?.[0]?.plan || 'free').toLowerCase();
-    return plan === 'pro' ? 'pro' : 'free';
+    if (plan === 'pro') return 'pro';
+    if (plan === 'teams') return 'teams';
+    return 'free';
   } catch {
     return 'free';
   }

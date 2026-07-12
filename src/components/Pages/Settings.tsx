@@ -468,9 +468,9 @@ export function Settings() {
                         <span className="text-[10px] font-black uppercase text-purple-600 tracking-wider block mb-1">Your Active Plan</span>
                         <div className="flex items-center gap-2.5">
                           <h3 className="text-xl font-black text-[#0F0A1E]">
-                            {user?.plan === 'pro' ? 'Qofeno PRO' : user?.plan === 'teams' ? 'Qofeno TEAMS' : 'Qofeno Free'}
+                            {(user?.plan as string) === 'pro' ? 'Qofeno PRO' : (user?.plan as string) === 'teams' ? 'Qofeno TEAMS' : 'Qofeno Free'}
                           </h3>
-                          {user?.plan !== 'free' && (
+                          {(user?.plan as string) !== 'free' && (
                             <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-purple-700 flex items-center gap-0.5">
                               Active <FontAwesomeIcon icon={faStar} className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
                             </span>

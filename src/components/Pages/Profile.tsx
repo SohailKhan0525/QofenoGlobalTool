@@ -361,7 +361,7 @@ export function Profile() {
                 <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-purple-700 flex items-center gap-1 shadow-sm">
                   {user.plan === 'pro' ? (
                     <>Pro <FontAwesomeIcon icon={faStar} className="w-3 h-3 text-amber-500 fill-amber-500" /></>
-                  ) : user.plan === 'teams' ? (
+                  ) : (user.plan as string) === 'teams' ? (
                     <>Teams <FontAwesomeIcon icon={faStar} className="w-3 h-3 text-cyan-500 fill-cyan-500" /></>
                   ) : (
                     'Free'
