@@ -1,5 +1,7 @@
 import { Client, Databases, ID, Query } from "node-appwrite"
 
+import fs from "fs"
+
 const client = new Client()
   .setEndpoint(process.env.APPWRITE_ENDPOINT)
   .setProject(process.env.APPWRITE_PROJECT_ID)
@@ -9,12 +11,21 @@ const db = new Databases(client)
 const databaseId = process.env.DATABASE_ID || 'qofeno_db';
 
 async function run() {
-  const commitMsg = process.env.COMMIT_MSG || ""
-  const releaseName = process.env.RELEASE_NAME || ""
-  const releaseBody = process.env.RELEASE_BODY || ""
-  const postType = process.env.POST_TYPE || "improvement"
-  const manualTitle = process.env.POST_TITLE || ""
-  const manualBody = process.env.POST_BODY || ""
+  let eventData = {}
+  if (process.env.GITHUB_EVENT_PATH && fs.existsSync(process.env.GITHUB_EVENT_PATH)) {
+    try {
+      eventData = JSON.parse(fs.readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"))
+    } catch (err) {
+      console.error("Failed to parse event payload:", err.message)
+    }
+  }
+
+  const commitMsg = eventData.head_commit?.message || process.env.COMMIT_MSG || ""
+  const releaseName = eventData.release?.name || process.env.RELEASE_NAME || ""
+  const releaseBody = eventData.release?.body || process.env.RELEASE_BODY || ""
+  const postType = eventData.inputs?.post_type || process.env.POST_TYPE || "improvement"
+  const manualTitle = eventData.inputs?.title || process.env.POST_TITLE || ""
+  const manualBody = eventData.inputs?.body || process.env.POST_BODY || ""
 
   let title, body, type
 

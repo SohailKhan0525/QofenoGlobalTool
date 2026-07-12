@@ -39,10 +39,4 @@ jobs:
           APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
           APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
           DATABASE_ID: qofeno_db
-          POST_TYPE: ${{ github.event.inputs.post_type || 'improvement' }}
-          POST_TITLE: ${{ github.event.inputs.title || '' }}
-          POST_BODY: ${{ github.event.inputs.body || '' }}
-          COMMIT_MSG: ${{ (github.event_name == 'push' && github.event.head_commit != null) && github.event.head_commit.message || '' }}
-          RELEASE_NAME: ${{ (github.event_name == 'release' && github.event.release != null) && github.event.release.name || '' }}
-          RELEASE_BODY: ${{ (github.event_name == 'release' && github.event.release != null) && github.event.release.body || '' }}
         run: node scripts/auto-blog-post.js
