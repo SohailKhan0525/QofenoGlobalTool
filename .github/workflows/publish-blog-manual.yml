@@ -4,13 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       post_type:
-        description: "Type of post (new_tool|improvement|fix|product_update)"
+        description: "Type of post"
         type: choice
         options:
           - new_tool
           - improvement
           - fix
           - product_update
+          - announcement
         required: true
         default: "product_update"
       title:
@@ -42,4 +43,7 @@ jobs:
           POST_TYPE: ${{ github.event.inputs.post_type }}
           POST_TITLE: ${{ github.event.inputs.title }}
           POST_BODY: ${{ github.event.inputs.body }}
+          COMMIT_MSG: ""
+          RELEASE_NAME: ""
+          RELEASE_BODY: ""
         run: node scripts/auto-blog-post.js

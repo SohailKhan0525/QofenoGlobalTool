@@ -40,9 +40,11 @@ async function runTests() {
   const results = [];
 
   async function test(toolId, payload, validate) {
-    process.stdout.write(`Testing ${toolId}... `);
+    const envKey = `VITE_APPWRITE_FUNCTION_${toolId.toUpperCase().replace(/-/g, '_')}_ID`;
+    const resolvedId = process.env[envKey] || toolId;
+    process.stdout.write(`Testing ${toolId} (ID: ${resolvedId})... `);
     try {
-      const exec = await fnClient.createExecution(toolId, JSON.stringify(payload), false);
+      const exec = await fnClient.createExecution(resolvedId, JSON.stringify(payload), false);
       const resp = exec.responseBody ? JSON.parse(exec.responseBody) : {};
       const passed = validate(resp);
       if (passed) {
@@ -62,9 +64,9 @@ async function runTests() {
 
   // Text/JSON tools
   await test('json-formatter', { json: '{"a":1,"b":2}', action: 'format' }, r => r.success && r.result);
-  await test('word-counter', { text: 'Hello world test sentence here.' }, r => r.success && r.result?.words === 6);
+  await test('word-counter', { text: 'Hello world test sentence here.' }, r => r.success && r.words === 5);
   await test('base64-encoder', { text: 'qofeno', action: 'encode' }, r => r.success && r.result === 'cW9mZW5v');
-  await test('text-case-converter', { text: 'hello world', action: 'uppercase' }, r => r.success && r.result?.includes('HELLO'));
+  await test('text-case-converter', { text: 'hello world', target_case: 'upper' }, r => r.success && r.result?.includes('HELLO'));
 
   // PDF Tools (using minimal valid PDF)
   const pdfPayload = { file_base64: MINIMAL_PDF_BASE64, input_filename: 'test.pdf' };

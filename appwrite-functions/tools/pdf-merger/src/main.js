@@ -111,7 +111,7 @@ export default async ({ req, res, error }) => {
         pages.forEach((page) => merged.addPage(page));
       }
 
-      const outBuf = await merged.save({ useObjectStreams: true });
+      const outBuf = Buffer.from(await merged.save({ useObjectStreams: true }));
       const outName = String(body.output_filename || 'merged.pdf');
       
       if (outBuf.toString('utf8', 0, 5) !== '%PDF-') {

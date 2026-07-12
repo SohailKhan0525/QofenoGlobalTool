@@ -144,7 +144,7 @@ export default async ({ req, res, error }) => {
         }
       });
 
-      const outputBuffer = await inputPdf.save();
+      const outputBuffer = Buffer.from(await inputPdf.save());
       const outputName = inputName.replace(/\\.[^/.]+$/, "") + '-rotated.pdf';
       
       // Validation

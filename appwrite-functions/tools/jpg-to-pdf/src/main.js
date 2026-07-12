@@ -163,7 +163,7 @@ export default async ({ req, res, error }) => {
         });
       }
 
-      const outBuf = await merged.save({ useObjectStreams: true });
+      const outBuf = Buffer.from(await merged.save({ useObjectStreams: true }));
       const outName = String(body.output_filename || 'images-to-pdf.pdf');
       
       if (outBuf.toString('utf8', 0, 5) !== '%PDF-') {

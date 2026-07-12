@@ -3,7 +3,7 @@
  * Extracts text from both PDFs, runs line-by-line diff, generates highlighted PDF report.
  * Returns: PDF report with diff summary + text diff as additional output.
  */
-import { Client, Databases, Query, Storage } from 'node-appwrite';
+import { Client, Databases, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 import { ID, Permission, Role } from 'node-appwrite';
 import { PDFDocument, StandardFonts, rgb, PageSizes } from 'pdf-lib';
@@ -56,61 +56,21 @@ async function uploadOutput(storage, filename, buffer) {
 
 async function createExecutionRecord(db, payload) {
   try {
-
-    // RATE LIMITING
-    const clientIp = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown_ip';
-    const hourKey = `${clientIp}_${Math.floor(Date.now() / 3600000)}`;
-    
-    let isProUser = false;
-    if (body.user_id) {
-      try {
-        const userMeta = await db.getDocument(process.env.DATABASE_ID, 'users_meta', body.user_id);
-        if (userMeta && (userMeta.plan === 'pro' || userMeta.plan === 'enterprise')) {
-          isProUser = true;
-        }
-      } catch (err) { /* ignore */ }
-    }
-    
-    const limit = isProUser ? 100 : 20;
-    
-    try {
-      const existing = await db.listDocuments(process.env.DATABASE_ID, 'rate_limits', [
-        Query.equal('key', hourKey)
-      ]);
-      
-      if (existing.total > 0) {
-        if (existing.documents[0].count >= limit) {
-          return res.json({
-            success: false,
-            error: "Rate limit exceeded. Please wait or upgrade to PRO."
-          }, 429);
-        } else {
-          await db.updateDocument(process.env.DATABASE_ID, 'rate_limits', existing.documents[0].$id, {
-            count: existing.documents[0].count + 1,
-            updated_at: new Date().toISOString()
-          });
-        }
-      } else {
-        await db.createDocument(process.env.DATABASE_ID, 'rate_limits', ID.unique(), {
-          key: hourKey,
-          ip: clientIp,
-          count: 1,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
-      }
-    } catch (err) {
-      log('Rate limit check failed, skipping: ' + err.message);
-    }
-    // END RATE LIMITING
-
     return await db.createDocument(process.env.DATABASE_ID, 'tool_executions', ID.unique(), {
-      user_id: payload.user_id || null, tool_slug: payload.tool_slug, tool_name: payload.tool_name,
-      category: payload.category || 'PDF & Documents', status: payload.status,
-      input_filename: payload.input_filename || null, input_size: payload.input_size || null,
-      output_filename: payload.output_filename || null, output_size: payload.output_size || null,
-      download_url: payload.download_url || null, error_message: payload.error_message || null,
-      duration_ms: payload.duration_ms || null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      user_id: payload.user_id || null,
+      tool_slug: payload.tool_slug,
+      tool_name: payload.tool_name,
+      category: payload.category || 'PDF & Documents',
+      status: payload.status,
+      input_filename: payload.input_filename || null,
+      input_size: payload.input_size || null,
+      output_filename: payload.output_filename || null,
+      output_size: payload.output_size || null,
+      download_url: payload.download_url || null,
+      error_message: payload.error_message || null,
+      duration_ms: payload.duration_ms || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     });
   } catch (_) {}
 }

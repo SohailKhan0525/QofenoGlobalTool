@@ -121,7 +121,7 @@ export default async ({ req, res, error }) => {
         const target = await PDFDocument.create();
         const copied = await target.copyPages(pdf, Array.from({ length: endPage - startPage + 1 }, (_, index) => startPage - 1 + index));
         copied.forEach((page) => target.addPage(page));
-        const outputBuffer = await target.save({ useObjectStreams: true });
+        const outputBuffer = Buffer.from(await target.save({ useObjectStreams: true }));
         const outputName = `${inputName.replace(/\.pdf$/i, '')}-pages-${startPage}-${endPage}.pdf`;
         
         if (outputBuffer.toString('utf8', 0, 5) !== '%PDF-') {

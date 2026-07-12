@@ -7,19 +7,26 @@ on:
       - 'src/components/Pages/ToolPage.tsx'
       - 'appwrite-functions/**'
       - 'scripts/seed_tools.mjs'
+      - 'scripts/clear_and_seed_tools.mjs'
+  workflow_dispatch: {}
 
 jobs:
   sync-roadmap:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - run: npm install node-appwrite
-      - run: node scripts/sync-roadmap.js
+
+      - name: Install dependencies
+        run: npm install node-appwrite dotenv
+
+      - name: Sync Roadmap
         env:
           APPWRITE_ENDPOINT: ${{ secrets.APPWRITE_ENDPOINT }}
           APPWRITE_PROJECT_ID: ${{ secrets.APPWRITE_PROJECT_ID }}
           APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
           DATABASE_ID: qofeno_db
+        run: node scripts/sync-roadmap.js

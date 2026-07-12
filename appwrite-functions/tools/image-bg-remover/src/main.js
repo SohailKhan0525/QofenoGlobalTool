@@ -32,7 +32,6 @@ export default async ({ req, res, log, error }) => {
 
   function decodeBase64Input(value) {
     if (!value || typeof value !== 'string') return value;
-    // Strip data URL prefix: "data:image/jpeg;base64,/9j/..." => "/9j/..."
     const match = value.match(/^data:[^;]+;base64,(.+)$/i);
     return match ? match[1] : value;
   }
@@ -69,25 +68,86 @@ export default async ({ req, res, log, error }) => {
   try {
     const source = await readInputBuffer(body);
     const inputName = String(body.input_filename || body.filename || 'input');
-    
-    
-      // Real basic thresholding for white background removal
-      const threshold = parseInt(body.threshold) || 30;
-      const outputBuffer = await sharp(source.buffer)
-        .ensureAlpha()
-        // We'll use flatten to white then extract
-        .toFormat('png')
-        .toBuffer();
-      const outputName = inputName.replace(/\.[^/.]+$/, '') + '-nobg.png';
-    
+
+    // Real background removal using color-distance thresholding with sharp.
+    // Converts to raw RGBA, samples the background color (corner pixel),
+    // then makes pixels within tolerance transparent.
+    const threshold = Math.max(5, Math.min(100, parseInt(body.threshold) || 30));
+    const bgSide = String(body.bg_side || 'top-left'); // top-left corner used for background sampling
+
+    const { data: rawData, info } = await sharp(source.buffer)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const { width, height, channels } = info;
+
+    // Sample background color from corner
+    let sampleX = 0, sampleY = 0;
+    if (bgSide === 'bottom-right') { sampleX = width - 1; sampleY = height - 1; }
+    else if (bgSide === 'bottom-left') { sampleX = 0; sampleY = height - 1; }
+    else if (bgSide === 'top-right') { sampleX = width - 1; sampleY = 0; }
+
+    const sampleIdx = (sampleY * width + sampleX) * 4;
+    const bgR = rawData[sampleIdx];
+    const bgG = rawData[sampleIdx + 1];
+    const bgB = rawData[sampleIdx + 2];
+
+    log(`Background color sampled from ${bgSide}: rgb(${bgR},${bgG},${bgB}), threshold=${threshold}`);
+
+    // Flood-fill from corner to make background pixels transparent
+    const processed = Buffer.from(rawData);
+    const visited = new Uint8Array(width * height);
+    const queue = [];
+    const startPixel = sampleY * width + sampleX;
+    queue.push(startPixel);
+    visited[startPixel] = 1;
+
+    const threshSq = threshold * threshold * 3;
+
+    const neighbors = [-1, 1, -width, width];
+
+    while (queue.length > 0) {
+      const pixIdx = queue.shift();
+      const rawIdx = pixIdx * 4;
+      const r = processed[rawIdx];
+      const g = processed[rawIdx + 1];
+      const b = processed[rawIdx + 2];
+
+      const dr = r - bgR, dg = g - bgG, db = b - bgB;
+      const distSq = dr * dr + dg * dg + db * db;
+
+      if (distSq > threshSq) continue;
+
+      // Make transparent
+      processed[rawIdx + 3] = 0;
+
+      for (const n of neighbors) {
+        const np = pixIdx + n;
+        if (np >= 0 && np < width * height && !visited[np]) {
+          const nx = np % width;
+          const px = pixIdx % width;
+          if (Math.abs(nx - px) <= 1) {
+            visited[np] = 1;
+            queue.push(np);
+          }
+        }
+      }
+    }
+
+    const outputBuffer = await sharp(processed, { raw: { width, height, channels: 4 } })
+      .png()
+      .toBuffer();
+
+    const outputName = inputName.replace(/\.[^/.]+$/, '') + '-nobg.png';
 
     const uploaded = await uploadOutput(storage, outputName, outputBuffer);
 
     await createExecution(db, {
       user_id: body.user_id || null,
       tool_slug: 'image-bg-remover',
-      tool_name: 'image-bg-remover',
-      category: 'Media Tools',
+      tool_name: 'Image Background Remover',
+      category: 'Image Tools',
       status: 'completed',
       input_filename: inputName,
       input_size: source.buffer.length,
@@ -111,8 +171,8 @@ export default async ({ req, res, log, error }) => {
       await createExecution(db, {
         user_id: body.user_id || null,
         tool_slug: 'image-bg-remover',
-        tool_name: 'image-bg-remover',
-        category: 'Media Tools',
+        tool_name: 'Image Background Remover',
+        category: 'Image Tools',
         status: 'error',
         input_filename: body.input_filename || body.filename || null,
         error_message: err.message,
