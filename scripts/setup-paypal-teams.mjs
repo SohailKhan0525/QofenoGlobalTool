@@ -126,7 +126,7 @@ async function main() {
   const yearlyTeamsPlanId = await createPlan(
     token, PRODUCT_ID,
     'Qofeno Teams Yearly',
-    'YEAR', '144.00',
+    'YEAR', '136.80',
     `qofeno-plan-teams-yearly-${Date.now()}`
   );
 

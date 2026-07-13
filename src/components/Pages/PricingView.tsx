@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { SEO } from '../../components/SEO';
 import { PlanToggle } from '../PlanToggle';
+import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
+import { Query } from 'appwrite';
 
 const FAQ_ITEMS = [
   { q: "Is Qofeno free?", a: "Yes! We offer a wide range of essential converting, editing, and formatting tools completely free of charge. You can use them without signup." },
@@ -43,9 +45,38 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
   const [showConfetti, setShowConfetti] = useState(false);
   const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  const [counts, setCounts] = useState({ free: 0, total: 0 });
+
+  useEffect(() => {
+    async function fetchCounts() {
+      try {
+        const [freeRes, totalRes] = await Promise.all([
+          databases.listDocuments(DATABASE_ID, 'tools', [
+            Query.equal('is_free', true),
+            Query.equal('is_active', true),
+            Query.equal('is_coming_soon', false),
+            Query.limit(1)
+          ]),
+          databases.listDocuments(DATABASE_ID, 'tools', [
+            Query.equal('is_active', true),
+            Query.equal('is_coming_soon', false),
+            Query.limit(1)
+          ])
+        ]);
+        setCounts({
+          free: freeRes.total,
+          total: totalRes.total
+        });
+      } catch (err) {
+        console.error("Failed to fetch tool counts", err);
+      }
+    }
+    fetchCounts();
+  }, []);
+
   const priceFree = 0;
-  const pricePro = isYearly ? 5.40 : 9.00;
-  const priceTeams = isYearly ? 12.00 : 19.00;
+  const pricePro = isYearly ? 6.60 : 11.00;
+  const priceTeams = isYearly ? 11.40 : 19.00;
 
   const confettiParticles = useMemo(() => [...Array(60)].map((_, i) => {
     const angle = (i * 360) / 60;
@@ -143,7 +174,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
               </button>
 
               <ul className="space-y-4">
-                {['Hundreds of free tools', 'No login required', 'Server-processed instantly', 'Files deleted after processing'].map((f, i) => (
+                {[`${counts.free || '100'}+ free tools`, 'No login required', 'Server-processed instantly', 'Files deleted after processing'].map((f, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-neutral-600 font-medium">
                     <FontAwesomeIcon icon={faCheck} className="w-4.5 h-4.5 text-purple-600 bg-purple-50 rounded p-0.5" />
                     {f}
@@ -182,7 +213,7 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
               </button>
 
               <ul className="space-y-4">
-                {['Everything in Free', 'All tools — no restrictions', 'Large file support (up to 500MB)', 'Priority server processing', 'Saved processing history', 'No ads'].map((f, i) => (
+                {['Everything in Free', `All ${counts.total || '200'}+ tools unlocked`, 'Large file support (up to 500MB)', 'Priority server processing', 'Saved processing history', 'No ads'].map((f, i) => (
                   <li key={i} className="flex items-center gap-2.5 text-sm text-purple-100 font-medium">
                     <FontAwesomeIcon icon={faCheck} className="w-4.5 h-4.5 text-purple-350 bg-purple-900/50 rounded p-0.5" />
                     {f}

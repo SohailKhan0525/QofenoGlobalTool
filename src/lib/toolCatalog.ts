@@ -33,6 +33,7 @@ export interface ToolCard {
   functionId?: string;
   tags?: string[];
   is_new_until?: string;
+  is_coming_soon?: boolean;
 }
 
 export interface CategoryCard {
@@ -2222,6 +2223,7 @@ function toCard(doc: any, viewsBySlug: Record<string, number> = {}): ToolCard {
     }),
     functionId: doc.function_id || fallback?.functionId,
     tags: Array.isArray(doc.tags) ? doc.tags.map((tag: unknown) => String(tag)) : [],
+    is_coming_soon: Boolean(doc.is_coming_soon),
   };
 }
 
@@ -2274,8 +2276,8 @@ export function useToolCatalog(): ToolCatalogState {
 
       try {
         const [toolDocs, viewDocs] = await Promise.all([
-          databases.listDocuments(DATABASE_ID, 'tools', [Query.orderAsc('name'), Query.limit(500)]),
-          databases.listDocuments(DATABASE_ID, 'tool_views', [Query.limit(500)]),
+          databases.listDocuments(DATABASE_ID, 'tools', [Query.orderAsc('name'), Query.limit(1000)]),
+          databases.listDocuments(DATABASE_ID, 'tool_views', [Query.limit(1000)]),
         ]);
 
         const viewsBySlug = Object.fromEntries(

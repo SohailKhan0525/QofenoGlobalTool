@@ -6,7 +6,7 @@ import {
   faCloudArrowUp, faCircleCheck, faArrowLeft, faShieldHalved, faDownload,
   faHeart, faEye, faCirclePlay, faCircleQuestion, faXmark, faChevronDown,
   faShareNodes, faSpinner, faChevronRight, faExpand, faFileLines,
-  faCopy, faMagnifyingGlass,
+  faCopy, faMagnifyingGlass, faRocket,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter, faFacebook as faFbBrand, faLinkedin } from '@fortawesome/free-brands-svg-icons';
 import { cn } from '../../lib/utils';
@@ -372,6 +372,44 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
 
   const isFileTool = FILE_TOOL_SLUGS.has(toolSlug);
   const isProLocked = tool.type === 'Pro' && !['pro', 'teams'].includes(user?.plan || '');
+  const isComingSoon = tool.is_coming_soon === true;
+
+  if (isComingSoon) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] pt-28 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">
+        <SEO title={`${tool.name} — Coming Soon`} description={tool.desc} schemaMarkup={tool.schemaMarkup} />
+        <div className="max-w-4xl mx-auto space-y-6 text-center mt-10">
+          <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white border border-neutral-200/80 rounded-3xl p-8 shadow-sm">
+            <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center">
+              <FontAwesomeIcon icon={faRocket} className="text-purple-500 text-2xl" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-800">Coming Soon</h2>
+            <p className="text-gray-500 text-center max-w-sm">
+              This tool is currently in development. Check back soon or
+              <a 
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate('blog');
+                }}
+                href="/whats-new" 
+                className="text-purple-600 underline ml-1 cursor-pointer font-bold"
+              >
+                follow our updates
+              </a>.
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={() => onNavigate('tools')}
+                className="inline-flex items-center gap-2 text-neutral-500 hover:text-purple-600 transition-colors font-bold text-sm cursor-pointer"
+              >
+                <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Back to Tools
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isProLocked) {
     return (

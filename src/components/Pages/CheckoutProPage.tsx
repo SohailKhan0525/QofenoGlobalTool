@@ -36,8 +36,8 @@ export function CheckoutProPage() {
   }, []);
 
   const isTeams = planType === 'teams';
-  const monthlyPrice = isTeams ? 19 : 9;
-  const yearlyMonthlyPrice = isTeams ? 12 : 5.4;
+  const monthlyPrice = isTeams ? 19 : 11;
+  const yearlyMonthlyPrice = isTeams ? 11.4 : 6.6;
   const savings = Math.round((1 - yearlyMonthlyPrice / monthlyPrice) * 100);
 
   const features = isTeams ? TEAMS_FEATURES : PRO_FEATURES;

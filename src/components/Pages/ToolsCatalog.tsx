@@ -142,7 +142,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
     const loadRemote = async () => {
       try {
-        const viewsRes = await databases.listDocuments(DATABASE_ID, 'tool_views', [Query.orderDesc('count'), Query.limit(100)]);
+        const viewsRes = await databases.listDocuments(DATABASE_ID, 'tool_views', [Query.orderDesc('count'), Query.limit(1000)]);
         const popularSlugs = (viewsRes.documents || []).map((d: any) => String(d.tool_slug));
         const countsMap: Record<string, number> = {};
         (viewsRes.documents || []).forEach((d: any) => {
@@ -544,35 +544,46 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 1, scale: 1, y: 0 }}
                         transition={{ duration: 0 }}
-                        whileHover={prefersReduced ? {} : { scale: 1.02, y: -2 }}
-                        className="group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer flex flex-col transition-all duration-300 relative"
+                        whileHover={prefersReduced ? {} : (tool.is_coming_soon ? {} : { scale: 1.02, y: -2 })}
+                        className={cn(
+                          "group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer flex flex-col transition-all duration-300 relative",
+                          tool.is_coming_soon && "opacity-75 bg-neutral-50/50 border-neutral-200/80 cursor-default"
+                        )}
                       >
                         <div className="absolute top-6 right-6 flex items-center gap-1.5 z-10">
-                          <button 
-                            onClick={(e) => toggleFavorite(e, tool.id)}
-                            className={cn(
-                              "p-1.5 rounded-full transition-colors cursor-pointer",
-                              favorites.includes(tool.id) ? "bg-pink-100 text-pink-600" : "bg-neutral-100 text-neutral-400 hover:text-pink-600 hover:bg-pink-50"
-                            )}
-                          >
-                            <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", favorites.includes(tool.id) && "fill-current")} />
-                          </button>
-                          {((tool.is_new_until && new Date(tool.is_new_until) > new Date()) || (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew)) && (
-                            <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                              NEW
+                          {tool.is_coming_soon ? (
+                            <span className="bg-neutral-200 text-neutral-600 text-[10px] font-black tracking-wider px-2.5 py-0.5 rounded-md shadow-sm">
+                              COMING SOON
                             </span>
-                          )}
-                          {tool.isPopular && (
-                            <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <FontAwesomeIcon icon={faFire} className="w-3.5 h-3.5 fill-current text-amber-500" />
-                              POP
-                            </span>
-                          )}
-                          {tool.type === 'Pro' && (
-                            <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-extrabold px-2.5 py-0.5 rounded-md shadow-sm">
-                              PRO
-                            </span>
+                          ) : (
+                            <>
+                              <button 
+                                onClick={(e) => toggleFavorite(e, tool.id)}
+                                className={cn(
+                                  "p-1.5 rounded-full transition-colors cursor-pointer",
+                                  favorites.includes(tool.id) ? "bg-pink-100 text-pink-600" : "bg-neutral-100 text-neutral-400 hover:text-pink-600 hover:bg-pink-50"
+                                )}
+                              >
+                                <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", favorites.includes(tool.id) && "fill-current")} />
+                              </button>
+                              {((tool.is_new_until && new Date(tool.is_new_until) > new Date()) || (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew)) && (
+                                <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                  NEW
+                                </span>
+                              )}
+                              {tool.isPopular && (
+                                <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <FontAwesomeIcon icon={faFire} className="w-3.5 h-3.5 fill-current text-amber-500" />
+                                  POP
+                                </span>
+                              )}
+                              {tool.type === 'Pro' && (
+                                <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-extrabold px-2.5 py-0.5 rounded-md shadow-sm">
+                                  PRO
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
 

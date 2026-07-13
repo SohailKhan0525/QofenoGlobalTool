@@ -268,8 +268,10 @@ function DownloadSuccessDemo() {
 
 export function Home({ onNavigate, onRequestTool }: HomeProps) {
   const { tools, featuredTools, categoryCards } = useToolCatalog();
-  const freeCount = tools.filter(t => t.type === 'Free').length || FALLBACK_TOOLS.filter(t => t.type === 'Free').length;
-  const totalCount = tools.length || FALLBACK_TOOLS.length;
+  const activeTools = tools.filter(t => !t.is_coming_soon);
+  const fallbackActiveTools = FALLBACK_TOOLS.filter(t => !t.is_coming_soon);
+  const freeCount = activeTools.filter(t => t.type === 'Free').length || fallbackActiveTools.filter(t => t.type === 'Free').length;
+  const totalCount = activeTools.length || fallbackActiveTools.length;
   const [activePersona, setActivePersona] = useState('students');
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
   const [isHovered, setIsHovered] = useState(false);
@@ -796,7 +798,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                 <div>
                   <h3 className="font-display text-xl font-black mb-2 text-purple-900">Pro</h3>
                   <p className="text-xs text-neutral-400 mb-6 font-semibold">Billed for individual utility volume creators.</p>
-                  <div className="text-4xl font-black text-[#0F0A1E] mb-6">${pricingYearly ? "5.40" : "9.00"}<span className="text-xs text-neutral-450 font-black uppercase tracking-wider ml-1">/ mo</span></div>
+                  <div className="text-4xl font-black text-[#0F0A1E] mb-6">${pricingYearly ? "6.60" : "11.00"}<span className="text-xs text-neutral-450 font-black uppercase tracking-wider ml-1">/ mo</span></div>
                   <ul className="space-y-4 mb-8 text-sm text-[#0F0A1E]">
                     <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> Everything in Free</li>
                     <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> All tools unlocked ({totalCount} tools)</li>
@@ -814,7 +816,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
               <div>
                 <h3 className="font-display text-xl font-bold mb-2">Teams</h3>
                 <p className="text-xs text-neutral-450 mb-6 font-semibold">Shared logs & priority seats for workgroups.</p>
-                <div className="text-4xl font-black mb-6">${pricingYearly ? "12.00" : "19.00"}<span className="text-xs text-neutral-400 font-black uppercase tracking-wider ml-1">/ mo</span></div>
+                <div className="text-4xl font-black mb-6">${pricingYearly ? "11.40" : "19.00"}<span className="text-xs text-neutral-400 font-black uppercase tracking-wider ml-1">/ mo</span></div>
                 <ul className="space-y-4 mb-8 text-sm text-neutral-300">
                   <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-green-400 bg-green-950/20 p-0.5 rounded" /> Up to 5 team members</li>
                   <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-green-400 bg-green-950/20 p-0.5 rounded" /> Files up to 1GB per session</li>

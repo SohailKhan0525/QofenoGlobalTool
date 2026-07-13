@@ -16,8 +16,8 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
   const [turnstileToken, setTurnstileToken] = useState('');
   const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const monthlyPrice = planType === 'teams' ? 19 : 9;
-  const yearlyPrice = planType === 'teams' ? 12 : 5.40;
+  const monthlyPrice = planType === 'teams' ? 19 : 11;
+  const yearlyPrice = planType === 'teams' ? 11.40 : 6.60;
   const currentPrice = isYearly ? yearlyPrice : monthlyPrice;
 
   return (

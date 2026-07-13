@@ -139,14 +139,14 @@ async function main() {
   const monthlyPlanId = await createPlan(
     token, productId,
     'Qofeno Pro Monthly',
-    'MONTH', '9.00',
+    'MONTH', '11.00',
     `qofeno-plan-monthly-${Date.now()}`
   );
 
   const yearlyPlanId = await createPlan(
     token, productId,
     'Qofeno Pro Yearly',
-    'YEAR', '64.80',
+    'YEAR', '79.20',
     `qofeno-plan-yearly-${Date.now()}`
   );
 
