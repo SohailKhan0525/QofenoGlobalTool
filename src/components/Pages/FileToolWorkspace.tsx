@@ -45,6 +45,20 @@ export const FILE_TOOL_SLUGS = new Set([
   'word-to-pdf',
   'excel-to-pdf',
   'powerpoint-to-pdf',
+  'pdf-booklet-creator',
+  'pdf-color-converter',
+  'pdf-delete-pages',
+  'pdf-extract-pages',
+  'pdf-form-creator',
+  'pdf-form-filler',
+  'pdf-grayscale',
+  'pdf-header-footer',
+  'pdf-metadata-editor',
+  'pdf-page-extractor-bulk',
+  'pdf-page-number-customizer',
+  'pdf-portfolio-creator',
+  'pdf-reorder-pages',
+  'pdf-resize',
   // Image Tools
   'image-resizer',
   'image-compressor',
@@ -613,6 +627,175 @@ const FILE_TOOL_CONFIG: Record<string, FileToolConfig> = {
     processLabel: 'Convert to PDF',
     functionId: FUNCTION_IDS.powerpointToPdf || 'powerpoint-to-pdf',
     fields: [],
+  },
+
+  'pdf-booklet-creator': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to build standard printing signatures booklet.',
+    description: 'Create printing booklets from PDF pages.',
+    processLabel: 'Create Booklet',
+    functionId: FUNCTION_IDS.pdfBookletCreator || 'pdf-booklet-creator',
+    fields: [],
+  },
+  'pdf-color-converter': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Convert PDF color scheme representation model.',
+    description: 'Convert color models in PDF documents.',
+    processLabel: 'Convert Colors',
+    functionId: FUNCTION_IDS.pdfColorConverter || 'pdf-color-converter',
+    fields: [
+      { type: 'select', key: 'color_space', label: 'Color Space', options: ['Grayscale', 'RGB', 'CMYK'], defaultValue: 'Grayscale' }
+    ],
+  },
+  'pdf-delete-pages': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to strip page lists permanently.',
+    description: 'Remove specific page ranges from a PDF.',
+    processLabel: 'Delete Pages',
+    functionId: FUNCTION_IDS.pdfDeletePages || 'pdf-delete-pages',
+    fields: [
+      { type: 'text', key: 'pages', label: 'Pages to delete', placeholder: '2, 4-6, 9', helper: 'Comma-separated list of pages/ranges to remove' }
+    ],
+  },
+  'pdf-extract-pages': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Upload a PDF to keep page ranges list.',
+    description: 'Extract specific pages from a PDF.',
+    processLabel: 'Extract Pages',
+    functionId: FUNCTION_IDS.pdfExtractPages || 'pdf-extract-pages',
+    fields: [
+      { type: 'text', key: 'pages', label: 'Pages to extract', placeholder: '1, 3, 5-8', helper: 'Comma-separated list of pages/ranges to keep' }
+    ],
+  },
+  'pdf-form-creator': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Compile interactive AcroForm form fields onto page.',
+    description: 'Create interactive form fields in PDF.',
+    processLabel: 'Create Form Fields',
+    functionId: FUNCTION_IDS.pdfFormCreator || 'pdf-form-creator',
+    fields: [],
+  },
+  'pdf-form-filler': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Populate values inside AcroForm interactive form fields.',
+    description: 'Fill form fields in PDF documents.',
+    processLabel: 'Fill Form Fields',
+    functionId: FUNCTION_IDS.pdfFormFiller || 'pdf-form-filler',
+    fields: [
+      { type: 'text', key: 'form_data', label: 'Form fields (JSON)', placeholder: '{"name": "John Doe"}', helper: 'JSON key-value pairs matching form field names.' }
+    ],
+  },
+  'pdf-grayscale': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Squeeze color graphics palettes into black and white print.',
+    description: 'Convert color PDF documents to grayscale.',
+    processLabel: 'Grayscale PDF',
+    functionId: FUNCTION_IDS.pdfGrayscale || 'pdf-grayscale',
+    fields: [],
+  },
+  'pdf-header-footer': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Add custom header and footer labels on pages.',
+    description: 'Add header and footer text to PDF pages.',
+    processLabel: 'Apply Headers/Footers',
+    functionId: FUNCTION_IDS.pdfHeaderFooter || 'pdf-header-footer',
+    fields: [
+      { type: 'text', key: 'header_text', label: 'Header Text', placeholder: 'Enter header text' },
+      { type: 'text', key: 'footer_text', label: 'Footer Text', placeholder: 'Enter footer text' },
+      { type: 'select', key: 'alignment', label: 'Alignment', options: ['Left', 'Center', 'Right'], defaultValue: 'Center' }
+    ],
+  },
+  'pdf-metadata-editor': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Alter document meta info tags (Author, Title).',
+    description: 'Edit PDF metadata properties.',
+    processLabel: 'Save Metadata',
+    functionId: FUNCTION_IDS.pdfMetadataEditor || 'pdf-metadata-editor',
+    fields: [
+      { type: 'text', key: 'title', label: 'Title', placeholder: 'Document Title' },
+      { type: 'text', key: 'author', label: 'Author', placeholder: 'Author Name' },
+      { type: 'text', key: 'subject', label: 'Subject', placeholder: 'Subject / Description' },
+      { type: 'text', key: 'keywords', label: 'Keywords', placeholder: 'comma, separated, tags' }
+    ],
+  },
+  'pdf-page-extractor-bulk': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Extract multiple custom page lists in a single operation.',
+    description: 'Extract multiple page lists from PDF in bulk.',
+    processLabel: 'Extract Bulk',
+    functionId: FUNCTION_IDS.pdfPageExtractorBulk || 'pdf-page-extractor-bulk',
+    fields: [
+      { type: 'text', key: 'ranges', label: 'Split Page Ranges', placeholder: '1-2, 3-4, 5-6', helper: 'Each range will create a separate output PDF' }
+    ],
+  },
+  'pdf-page-number-customizer': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Configure custom layout formats for numbers indexes.',
+    description: 'Customize page number formats and positions in PDF.',
+    processLabel: 'Apply Custom Numbers',
+    functionId: FUNCTION_IDS.pdfPageNumberCustomizer || 'pdf-page-number-customizer',
+    fields: [
+      { type: 'select', key: 'position', label: 'Position', options: ['Bottom center', 'Bottom left', 'Bottom right', 'Top center', 'Top left', 'Top right'], defaultValue: 'Bottom center' },
+      { type: 'number', key: 'start_number', label: 'Start number', defaultValue: '1' },
+      { type: 'text', key: 'prefix', label: 'Number prefix', placeholder: 'Page ' },
+      { type: 'text', key: 'color', label: 'Color (HEX)', defaultValue: '#000000' }
+    ],
+  },
+  'pdf-portfolio-creator': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: true,
+    helper: 'Combine multiple document assets into a portfolio envelope container.',
+    description: 'Create a PDF portfolio container from multiple files.',
+    processLabel: 'Create Portfolio',
+    functionId: FUNCTION_IDS.pdfPortfolioCreator || 'pdf-portfolio-creator',
+    fields: [],
+  },
+  'pdf-reorder-pages': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Rearrange page sequences of a document.',
+    description: 'Reorder pages sequence in PDF.',
+    processLabel: 'Reorder Pages',
+    functionId: FUNCTION_IDS.pdfReorderPages || 'pdf-reorder-pages',
+    fields: [
+      { type: 'text', key: 'order', label: 'New page order', placeholder: '3, 2, 1, 4-6', helper: 'Comma-separated new page sequence' }
+    ],
+  },
+  'pdf-resize': {
+    icon: faFileLines,
+    accept: '.pdf,application/pdf',
+    multiple: false,
+    helper: 'Transform pages layout dimensions layout standard size.',
+    description: 'Resize PDF page dimensions.',
+    processLabel: 'Resize PDF',
+    functionId: FUNCTION_IDS.pdfResize || 'pdf-resize',
+    fields: [
+      { type: 'select', key: 'page_size', label: 'New Page Size', options: ['A4', 'Letter', 'Legal', 'Executive', 'A3', 'A5'], defaultValue: 'A4' }
+    ],
   },
 
   'crop-image': {
