@@ -1,0 +1,10 @@
+{
+  "name": "image-saturation",
+  "version": "1.0.0",
+  "main": "src/main.js",
+  "type": "module",
+  "dependencies": {
+    "node-appwrite": "^12.0.0",
+    "sharp": "^0.33.2"
+  }
+}

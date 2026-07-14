@@ -9,9 +9,11 @@ const client = new Client()
 
 const functions = new Functions(client);
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 async function main() {
   try {
-    console.log('Fetching existing functions...');
+    console.log('Fetching existing functions from Appwrite...');
     const allFunctions = [];
     let offset = 0;
     while (true) {
@@ -21,6 +23,7 @@ async function main() {
       offset += 100;
     }
     
+    console.log(`Found ${allFunctions.length} existing functions in Appwrite.`);
     const existingMap = {};
     allFunctions.forEach(fn => {
       existingMap[fn.name] = fn.$id;
@@ -29,43 +32,75 @@ async function main() {
     const toolsDir = path.join(process.cwd(), 'appwrite-functions', 'tools');
     const localTools = fs.readdirSync(toolsDir).filter(f => fs.statSync(path.join(toolsDir, f)).isDirectory());
     
+    console.log(`Total local tool folders to sync: ${localTools.length}`);
+
     const envPath = path.join(process.cwd(), '.env');
     let envContent = fs.readFileSync(envPath, 'utf-8');
 
+    // Run sequentially (one by one) to avoid hitting Appwrite API rate limits
+    let processed = 0;
+    let rateLimitHits = 0;
     for (const toolName of localTools) {
+      processed++;
       let funcId = existingMap[toolName] || existingMap[`tools-${toolName}`];
       
       if (!funcId) {
-        console.log(`Creating function for ${toolName}...`);
-        try {
-          const newFunc = await functions.create(
-            ID.unique(),
-            toolName,
-            'node-18.0',
-            ['any'],
-            [], // events
-            '', // schedule
-            900, // timeout
-            true // enabled
-          );
-          funcId = newFunc.$id;
-          console.log(`Created ${toolName} with ID: ${funcId}`);
-        } catch (e) {
-          console.error(`Failed to create ${toolName}:`, e.message);
-          continue;
+        let created = false;
+        let attempt = 1;
+        while (!created) {
+          try {
+            console.log(`[${processed}/${localTools.length}] Creating function for ${toolName} (Attempt ${attempt})...`);
+            const newFunc = await functions.create(
+              ID.unique(),
+              toolName,
+              'node-18.0',
+              ['any'],
+              [], // events
+              '', // schedule
+              900, // timeout
+              true // enabled
+            );
+            funcId = newFunc.$id;
+            console.log(`[${processed}/${localTools.length}] Successfully created ${toolName} with ID: ${funcId}`);
+            created = true;
+            rateLimitHits = 0; // reset consecutive rate limits
+            
+            // Wait 3.5s after a successful creation to cool down rate limit
+            await sleep(3500);
+          } catch (e) {
+            if (e.code === 429) {
+              rateLimitHits++;
+              if (rateLimitHits >= 3) {
+                console.log(`\n[WARNING] Appwrite daily creation rate limit reached at [${toolName}]. Gracefully exiting function creation stage...`);
+                fs.writeFileSync(envPath, envContent);
+                process.exit(0);
+              }
+              console.log(`[${processed}/${localTools.length}] Rate limited. Waiting 50 seconds before retry...`);
+              await sleep(50000);
+              attempt++;
+            } else {
+              console.error(`[${processed}/${localTools.length}] Error: ${e.message}`);
+              break; // exit loop on non-rate-limit errors
+            }
+          }
         }
       } else {
-        console.log(`Function ${toolName} already exists with ID: ${funcId}`);
+        // Already exists, just make sure env var is set
+        // console.log(`[${processed}/${localTools.length}] ${toolName} already exists with ID: ${funcId}`);
       }
       
-      // Update .env
-      const envKey = `VITE_APPWRITE_FUNCTION_${toolName.toUpperCase().replace(/-/g, '_')}_ID`;
-      const regex = new RegExp(`^${envKey}=.*$`, 'm');
-      if (regex.test(envContent)) {
-        envContent = envContent.replace(regex, `${envKey}=${funcId}`);
-      } else {
-        envContent += `\n${envKey}=${funcId}`;
+      if (funcId) {
+        const envKey = `VITE_APPWRITE_FUNCTION_${toolName.toUpperCase().replace(/-/g, '_')}_ID`;
+        const regex = new RegExp(`^${envKey}=.*$`, 'm');
+        if (regex.test(envContent)) {
+          envContent = envContent.replace(regex, `${envKey}=${funcId}`);
+        } else {
+          envContent += `\n${envKey}=${funcId}`;
+        }
       }
+      
+      // Wait 100ms between loop iterations for safety
+      await sleep(100);
     }
 
     fs.writeFileSync(envPath, envContent);

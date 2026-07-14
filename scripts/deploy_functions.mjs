@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
 import { Client, Functions } from 'node-appwrite';
 
 function loadEnv() {
@@ -16,6 +15,8 @@ function loadEnv() {
     if (match) process.env[match[1]] = match[2];
   }
 }
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function deployFunctions() {
   loadEnv();
@@ -37,10 +38,6 @@ async function deployFunctions() {
   const functionsDir = path.resolve(scriptDir, '..', 'appwrite-functions', 'tools');
   const otherFunctionsDir = path.resolve(scriptDir, '..', 'appwrite-functions');
 
-  if (!fs.existsSync(functionsDir)) {
-    console.log('No tools directory found, checking root functions...');
-  }
-
   // Get all directories under appwrite-functions/tools and appwrite-functions/
   const toolsDirs = fs.existsSync(functionsDir) ? fs.readdirSync(functionsDir).map(f => path.join('appwrite-functions', 'tools', f)) : [];
   const rootDirs = fs.readdirSync(otherFunctionsDir).filter(f => f !== 'tools').map(f => path.join('appwrite-functions', f));
@@ -53,81 +50,45 @@ async function deployFunctions() {
 
   console.log(`Found ${allDirs.length} functions to deploy.`);
 
-  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  // Setup dynamic tar module import
+  const tar = await import('tar');
+  const { InputFile } = await import('node-appwrite/file');
 
-  for (const dir of allDirs) {
-    const fullDir = path.resolve(scriptDir, '..', dir);
-    const baseName = path.basename(dir);
-    // Find mapped ID in environment
-    const envKeyName = baseName.toUpperCase().replace(/-/g, '_');
-    const envKeysToTry = [
-      `VITE_APPWRITE_FUNCTION_${envKeyName}_ID`,
-      `NEXT_PUBLIC_APPWRITE_FUNCTION_${envKeyName}_ID`
-    ];
-    let mappedId = null;
-    for (const key of envKeysToTry) {
-      if (process.env[key] && process.env[key] !== baseName) {
-        mappedId = process.env[key];
-        break;
-      }
-    }
-    const functionId = mappedId || baseName;
-    console.log(`\n--- Deploying ${baseName} (ID: ${functionId}) ---`);
+  // Batch execution of 12 parallel deployments at a time
+  const batchSize = 12;
+  for (let i = 0; i < allDirs.length; i += batchSize) {
+    const batch = allDirs.slice(i, i + batchSize);
+    console.log(`\n=== Deploying Batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(allDirs.length / batchSize)} (${batch.length} functions) ===`);
 
-    try {
-      // 1. Create or get function with retry logic
-      let functionExists = false;
-      let retries = 10;
-      while (retries > 0 && !functionExists) {
-        try {
-          await functionsApi.get(functionId);
-          console.log(`Function ${functionId} exists.`);
-          functionExists = true;
-        } catch (err) {
-          if (err.code === 404) {
-            console.log(`Creating function ${functionId}...`);
-            try {
-              await functionsApi.create(functionId, baseName, 'node-18.0', ['any']);
-              functionExists = true;
-            } catch (createErr) {
-              if (createErr.code === 429) {
-                console.log('Rate limited on create. Waiting 30s...');
-                await sleep(30000);
-                retries--;
-              } else {
-                console.error(`Creation failed for ${functionId}: ${createErr.message}`);
-                retries = 0; // exit loop
-              }
-            }
-          } else if (err.code === 429) {
-            console.log('Rate limited on get. Waiting 30s...');
-            await sleep(30000);
-            retries--;
-          } else {
-            console.error(`Get failed for ${functionId}: ${err.message}`);
-            retries = 0;
-          }
+    await Promise.all(batch.map(async (dir) => {
+      const fullDir = path.resolve(scriptDir, '..', dir);
+      const baseName = path.basename(dir);
+      
+      // Find mapped ID in environment
+      const envKeyName = baseName.toUpperCase().replace(/-/g, '_');
+      const envKeysToTry = [
+        `VITE_APPWRITE_FUNCTION_${envKeyName}_ID`,
+        `NEXT_PUBLIC_APPWRITE_FUNCTION_${envKeyName}_ID`
+      ];
+      let mappedId = null;
+      for (const key of envKeysToTry) {
+        if (process.env[key] && process.env[key] !== baseName) {
+          mappedId = process.env[key];
+          break;
         }
       }
+      const functionId = mappedId || baseName;
 
-      if (!functionExists) {
-        console.error(`Skipping deployment for ${functionId} because function creation/get failed.`);
-        continue;
-      }
-
-      await sleep(2000); // 2 seconds wait to avoid rate limit between functions
-
-      // 2. Package the code into a tar.gz using native node tar module
-      const tarPath = path.join(fullDir, 'code.tar.gz');
       try {
+        // 1. Package the code into a tar.gz using native node tar module
+        const tarPath = path.join(fullDir, 'code.tar.gz');
         if (fs.existsSync(tarPath)) fs.unlinkSync(tarPath);
-        const tar = await import('tar');
         
-        // We only want to tar package.json and src/
         const filesToTar = [];
         if (fs.existsSync(path.join(fullDir, 'package.json'))) filesToTar.push('package.json');
         if (fs.existsSync(path.join(fullDir, 'src'))) filesToTar.push('src');
-        
+        if (fs.existsSync(path.join(fullDir, 'Dockerfile'))) filesToTar.push('Dockerfile'); // Include Dockerfile!
+
         await tar.c(
           {
             gzip: true,
@@ -136,47 +97,44 @@ async function deployFunctions() {
           },
           filesToTar
         );
-      } catch (e) {
-        console.error(`Failed to tar directory ${fullDir}.`);
-        console.error(e.message);
-        continue;
-      }
 
-      // 3. Create deployment
-      console.log(`Uploading deployment for ${functionId}...`);
-      const { InputFile } = await import('node-appwrite/file');
-      
-      let deployed = false;
-      let deployRetries = 3;
-      while (deployRetries > 0 && !deployed) {
-        try {
-          const deployment = await functionsApi.createDeployment(
-            functionId,
-            InputFile.fromPath(tarPath, 'code.tar.gz'),
-            true, // activate immediately
-            'src/main.js',
-            'npm install'
-          );
-          console.log(`Successfully deployed ${functionId}. Deployment ID: ${deployment.$id}`);
-          deployed = true;
-        } catch (depErr) {
-          if (depErr.code === 429) {
-            console.log('Rate limited on createDeployment. Waiting 15s...');
-            await sleep(15000);
-            deployRetries--;
-          } else {
-            throw depErr;
+        // 2. Upload deployment with retries for rate limits
+        let deployed = false;
+        let deployRetries = 6;
+        while (deployRetries > 0 && !deployed) {
+          try {
+            const deployment = await functionsApi.createDeployment(
+              functionId,
+              InputFile.fromPath(tarPath, 'code.tar.gz'),
+              true, // activate immediately
+              'src/main.js',
+              'npm install'
+            );
+            console.log(`[SUCCESS] Deployed ${baseName} (${functionId}). Deployment ID: ${deployment.$id}`);
+            deployed = true;
+          } catch (depErr) {
+            if (depErr.code === 429) {
+              console.log(`[RATE LIMIT] ${baseName} (${functionId}). Retrying in 12s...`);
+              await sleep(12000);
+              deployRetries--;
+            } else {
+              console.error(`[ERROR] Failed deployment for ${baseName}: ${depErr.message}`);
+              deployRetries = 0; // stop retrying
+            }
           }
         }
-      }
-      
-      // Cleanup
-      if (fs.existsSync(tarPath)) fs.unlinkSync(tarPath);
 
-    } catch (err) {
-      console.error(`Error deploying ${functionId}: ${err.message}`);
-    }
+        // Cleanup tar
+        if (fs.existsSync(tarPath)) fs.unlinkSync(tarPath);
+      } catch (err) {
+        console.error(`[EXCEPTION] ${baseName} failed: ${err.message}`);
+      }
+    }));
+
+    await sleep(2000); // Wait 2s between batches to cool down Appwrite rate limits
   }
+
+  console.log('\nAll function deployments finished!');
 }
 
 deployFunctions().catch(console.error);

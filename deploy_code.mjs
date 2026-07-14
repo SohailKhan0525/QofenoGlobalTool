@@ -14,24 +14,47 @@ const client = new Client()
 
 const functions = new Functions(client);
 
+// Concurrency pool helper
+async function runWithConcurrencyLimit(limit, items, asyncWorker) {
+  const executing = new Set();
+  for (const item of items) {
+    const p = Promise.resolve().then(() => asyncWorker(item));
+    executing.add(p);
+    const clean = () => executing.delete(p);
+    p.then(clean, clean);
+    if (executing.size >= limit) {
+      await Promise.race(executing);
+    }
+  }
+  await Promise.all(executing);
+}
+
 async function main() {
   const toolsDir = path.join(process.cwd(), 'appwrite-functions', 'tools');
   const localTools = fs.readdirSync(toolsDir).filter(f => fs.statSync(path.join(toolsDir, f)).isDirectory());
 
+  const toolsToDeploy = [];
   for (const toolName of localTools) {
     const envKey = `VITE_APPWRITE_FUNCTION_${toolName.toUpperCase().replace(/-/g, '_')}_ID`;
     const funcId = process.env[envKey];
     
-    if (!funcId) {
-      console.error(`Skipping ${toolName}, no ID found in .env`);
-      continue;
+    if (funcId) {
+      toolsToDeploy.push({ toolName, funcId });
     }
+  }
 
+  console.log(`Found ${toolsToDeploy.length} tools to package and deploy.`);
+
+  let successCount = 0;
+  let failCount = 0;
+
+  // Deploy with concurrency limit of 10
+  await runWithConcurrencyLimit(10, toolsToDeploy, async ({ toolName, funcId }) => {
     const toolPath = path.join(toolsDir, toolName);
-    const tarPath = path.join(toolsDir, `${toolName}.tar.gz`);
+    const tarPath = path.join(toolsDir, `${toolName}-${funcId}.tar.gz`);
 
-    console.log(`Packaging ${toolName}...`);
     try {
+      // Package code
       await tar.c(
         {
           gzip: true,
@@ -40,13 +63,8 @@ async function main() {
         },
         ['.']
       );
-    } catch (e) {
-      console.error(`Failed to package ${toolName}: ${e.message}`);
-      continue;
-    }
 
-    console.log(`Deploying ${toolName} to Appwrite (ID: ${funcId})...`);
-    try {
+      // Deploy to Appwrite
       const file = InputFile.fromPath(tarPath, 'code.tar.gz');
       const deployment = await functions.createDeployment({
         functionId: funcId,
@@ -55,15 +73,20 @@ async function main() {
         entrypoint: 'src/main.js',
         commands: 'npm install'
       });
-      console.log(`Successfully deployed ${toolName}. Deployment ID: ${deployment.$id}`);
+      
+      console.log(`[SUCCESS] Deployed ${toolName} to Appwrite (ID: ${funcId}). Deployment ID: ${deployment.$id}`);
+      successCount++;
     } catch (e) {
-      console.error(`Failed to deploy ${toolName}:`, e.message);
+      console.error(`[ERROR] Failed to deploy ${toolName} (ID: ${funcId}): ${e.message}`);
+      failCount++;
     } finally {
       if (fs.existsSync(tarPath)) {
         fs.unlinkSync(tarPath);
       }
     }
-  }
+  });
+
+  console.log(`Code deployment finished. Success: ${successCount}, Failed: ${failCount}`);
 }
 
-main();
+main().catch(console.error);
