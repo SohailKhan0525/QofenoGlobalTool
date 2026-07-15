@@ -1,0 +1,21 @@
+{
+  "name": "qofeno-developer",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "node-appwrite": "^26.2.0",
+    "js-yaml": "^4.1.0",
+    "xml-formatter": "^3.6.2",
+    "sql-formatter": "^15.1.2",
+    "prettier": "^3.2.5",
+    "terser": "^5.29.1",
+    "clean-css": "^5.3.3",
+    "html-minifier-terser": "^7.2.0",
+    "uuid": "^9.0.1",
+    "cron-parser": "^4.9.0",
+    "ua-parser-js": "^1.0.37",
+    "zxcvbn": "^4.4.2",
+    "diff": "^5.2.0",
+    "he": "^1.2.0"
+  }
+}

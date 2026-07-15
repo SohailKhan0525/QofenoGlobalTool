@@ -7,7 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
-import { executeJsonFunction, FUNCTION_IDS } from '../../lib/qofeno-appwrite';
+import { executeJsonFunction, FUNCTION_IDS, storage } from '../../lib/qofeno-appwrite';
+import { ID } from 'appwrite';
 import type { ToolCard } from '../../lib/toolCatalog';
 
 import { useAuth } from '../../context/AuthContext';
@@ -1420,19 +1421,35 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
 
     try {
       let payload: Record<string, unknown>;
+      const bucketInputs = 'tool_inputs';
 
       if (isMultiple) {
-        const inputs = await Promise.all(
-          files.map(async (f) => ({ file_base64: await fileToDataUrl(f), input_filename: f.name }))
+        const uploadedFiles = await Promise.all(
+          files.map(async (f) => {
+            const uploaded = await storage.createFile(bucketInputs, ID.unique(), f);
+            return { file_id: uploaded.$id, input_filename: f.name };
+          })
         );
-        payload = { files: inputs, user_id: userId || null, ...fields };
+        payload = {
+          tool: tool.slug,
+          file_ids: uploadedFiles.map(x => x.file_id),
+          input_filenames: uploadedFiles.map(x => x.input_filename),
+          user_id: userId || null,
+          is_pro_tool: tool.type === 'Pro',
+          is_teams_tool: user?.plan === 'teams',
+          ...fields
+        };
       } else {
         const primary = files[0];
+        const uploaded = await storage.createFile(bucketInputs, ID.unique(), primary);
         payload = {
-          file_base64: await fileToDataUrl(primary),
+          tool: tool.slug,
+          file_id: uploaded.$id,
           input_filename: primary.name,
           user_id: userId || null,
-          ...fields,
+          is_pro_tool: tool.type === 'Pro',
+          is_teams_tool: user?.plan === 'teams',
+          ...fields
         };
       }
 

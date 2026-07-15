@@ -1,0 +1,22 @@
+{
+  "name": "qofeno-image",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "node-appwrite": "^26.2.0",
+    "sharp": "^0.33.2",
+    "@imgly/background-removal-node": "^1.4.5",
+    "heic-convert": "^2.1.0",
+    "jimp": "^0.22.10",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.3",
+    "canvas": "^2.11.2",
+    "chroma-js": "^2.4.2",
+    "color-thief-node": "^1.0.4",
+    "image-hash": "^4.0.1",
+    "svgo": "^3.2.0",
+    "to-ico": "^1.1.5",
+    "gif-encoder-2": "^1.0.5",
+    "archiver": "^6.0.1"
+  }
+}

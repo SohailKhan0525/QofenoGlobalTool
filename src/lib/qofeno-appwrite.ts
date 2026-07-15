@@ -160,18 +160,15 @@ export async function trackEvent(eventType: 'view' | 'like' | 'unlike' | 'recent
 }
 
 export async function runJsonFormatter(input: string, action: 'format' | 'minify' | 'validate' = 'format') {
-  return executeJsonFunction(FUNCTION_IDS.jsonFormatter, { json: input, action });
+  return executeJsonFunction('qofeno-developer', { tool: 'json-formatter', json: input, action });
 }
 
 export async function runWordCounter(text: string) {
-  return executeJsonFunction(FUNCTION_IDS.wordCounter, { text });
+  return executeJsonFunction('qofeno-text', { tool: 'word-counter', text });
 }
 
 export async function runBase64Encoder(input: string, action: 'encode' | 'decode' = 'encode') {
-  if (!FUNCTION_IDS.base64Encoder) {
-    throw new Error('Base64 encoder function is not configured');
-  }
-  return executeJsonFunction(FUNCTION_IDS.base64Encoder, { text: input, action });
+  return executeJsonFunction('qofeno-developer', { tool: 'base64-encoder', text: input, action });
 }
 
 export async function submitContactForm(payload: {

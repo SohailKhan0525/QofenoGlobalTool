@@ -1,0 +1,21 @@
+{
+  "name": "qofeno-pdf",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "node-appwrite": "^26.2.0",
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^4.0.370",
+    "archiver": "^6.0.1",
+    "mammoth": "^1.6.0",
+    "docx": "^8.2.4",
+    "exceljs": "^4.4.0",
+    "pptxgenjs": "^3.12.0",
+    "marked": "^11.1.1",
+    "turndown": "^7.1.2",
+    "papaparse": "^5.4.1",
+    "sharp": "^0.33.2",
+    "jszip": "^3.10.1"
+  }
+}
