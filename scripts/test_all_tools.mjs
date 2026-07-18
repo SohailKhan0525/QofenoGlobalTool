@@ -31,14 +31,13 @@ let MINIMAL_PDF_BASE64 = '';
 async function runTests() {
   loadEnv();
 
-  // Dynamically generate a valid PDF with content for conversion/extracting tools to test cleanly
   try {
     const doc = await PDFDocument.create();
     const font = await doc.embedFont(StandardFonts.Helvetica);
     const page = doc.addPage([595, 842]);
     page.drawText('Qofeno Test PDF Document', { x: 50, y: 780, size: 20, font, color: rgb(0, 0, 0) });
     page.drawText('This is a real valid test document with some content for word count and conversion testing.', { x: 50, y: 745, size: 12, font, color: rgb(0.2, 0.2, 0.2) });
-    const bytes = await doc.save();
+    const bytes = await doc.save({ useObjectStreams: false, useCompression: false });
     MINIMAL_PDF_BASE64 = Buffer.from(bytes).toString('base64');
   } catch (err) {
     console.error('Failed to pre-generate valid PDF:', err.message);
@@ -57,7 +56,7 @@ async function runTests() {
     const resolvedId = process.env[envKey] || toolId;
     process.stdout.write(`Testing ${toolId} (ID: ${resolvedId})... `);
     try {
-      const exec = await fnClient.createExecution(resolvedId, JSON.stringify(payload), false);
+      const exec = await fnClient.createExecution(resolvedId, JSON.stringify({ tool: toolId, user_id: 'test-runner', ...payload }), false);
       const resp = exec.responseBody ? JSON.parse(exec.responseBody) : {};
       const passed = validate(resp);
       if (passed) {

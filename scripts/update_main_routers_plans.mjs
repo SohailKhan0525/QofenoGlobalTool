@@ -1,4 +1,18 @@
-import { createClient, getStorage, getDatabases } from "./utils/appwrite.js";
+import fs from 'fs';
+import path from 'path';
+
+const categories = [
+  'qofeno-pdf',
+  'qofeno-image',
+  'qofeno-video',
+  'qofeno-audio',
+  'qofeno-text',
+  'qofeno-developer',
+  'qofeno-data',
+  'qofeno-security'
+];
+
+const newMainJsContent = `import { createClient, getStorage, getDatabases } from "./utils/appwrite.js";
 import { success, error, unauthorized, forbidden } from "./utils/response.js";
 import { verifyPlan } from "./utils/auth.js";
 import { checkRateLimit } from "./utils/rate-limit.js";
@@ -39,20 +53,20 @@ export default async (context) => {
         userPlan = meta.documents[0].plan || "free";
       }
     } catch (err) {
-      logError(`Failed to fetch user plan for ${user_id}: ${err.message}`);
+      logError(\`Failed to fetch user plan for \${user_id}: \${err.message}\`);
     }
   }
 
   // Auth check for pro/teams tools
   if (requiredPlan !== "free" && !user_id) {
-    return unauthorized(res, `Authentication required for ${tool} (Premium Tool)`);
+    return unauthorized(res, \`Authentication required for \${tool} (Premium Tool)\`);
   }
 
   // Plan validation
   if (requiredPlan !== "free") {
     const hasAccess = (requiredPlan === "teams") ? (userPlan === "teams") : (["pro", "teams"].includes(userPlan));
     if (!hasAccess) {
-      return forbidden(res, `Active ${requiredPlan} subscription required`);
+      return forbidden(res, \`Active \${requiredPlan} subscription required\`);
     }
   }
 
@@ -67,11 +81,11 @@ export default async (context) => {
   // Resolve handler dynamically
   let handler;
   try {
-    const handlerModule = await import(`./handlers/${tool}.js`);
+    const handlerModule = await import(\`./handlers/\${tool}.js\`);
     handler = handlerModule.default;
   } catch (err) {
-    logError(`Handler not found for tool ${tool}: ${err.message}`);
-    return error(res, `Tool '${tool}' handler not implemented`, "NOT_IMPLEMENTED", 501);
+    logError(\`Handler not found for tool \${tool}: \${err.message}\`);
+    return error(res, \`Tool '\${tool}' handler not implemented\`, "NOT_IMPLEMENTED", 501);
   }
 
   // Execute handler
@@ -79,7 +93,18 @@ export default async (context) => {
     const result = await handler(context);
     return result;
   } catch (err) {
-    logError(`Execution error in ${tool}: ${err.stack || err.message}`);
+    logError(\`Execution error in \${tool}: \${err.stack || err.message}\`);
     return error(res, err.message, "PROCESSING_ERROR", 500);
   }
 };
+`;
+
+function main() {
+  for (const cat of categories) {
+    const mainFile = path.resolve('functions', cat, 'src', 'main.js');
+    fs.writeFileSync(mainFile, newMainJsContent, 'utf8');
+    console.log(`✓ Updated main.js for ${cat} to support actual user plans & context forwarding`);
+  }
+}
+
+main();

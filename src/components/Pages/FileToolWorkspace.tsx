@@ -1453,7 +1453,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         };
       }
 
-      const response = await executeJsonFunction(config.functionId, payload);
+      const response = await executeJsonFunction(tool.functionId || config.functionId, payload);
       setProgress(100);
 
       if (response?.success === false) {

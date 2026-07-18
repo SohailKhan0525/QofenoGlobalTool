@@ -192,6 +192,17 @@ const COLLECTIONS = {
       { key: 'order_idx', type: 'key', attributes: ['order'] },
     ],
   },
+  rate_limits: {
+    permissions: [Permission.read(Role.any()), Permission.create(Role.any()), Permission.update(Role.any())],
+    attributes: [
+      { key: 'key', type: 'string', size: 256, required: true },
+      { key: 'count', type: 'integer', required: true, default: 1 },
+      { key: 'window_start', type: 'string', size: 128, required: true },
+    ],
+    indexes: [
+      { key: 'key_unique', type: 'unique', attributes: ['key'] }
+    ]
+  },
 };
 
 const BUCKETS = {

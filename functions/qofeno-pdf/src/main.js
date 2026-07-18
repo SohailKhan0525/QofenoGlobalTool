@@ -2,6 +2,7 @@ import { createClient, getStorage, getDatabases } from "./utils/appwrite.js";
 import { success, error, unauthorized, forbidden } from "./utils/response.js";
 import { verifyPlan } from "./utils/auth.js";
 import { checkRateLimit } from "./utils/rate-limit.js";
+import { Query } from "node-appwrite";
 
 export default async (context) => {
   const { req, res, error: logError } = context;
@@ -26,6 +27,22 @@ export default async (context) => {
     requiredPlan = "pro";
   }
 
+  // Fetch actual user plan if user_id is provided
+  let userPlan = "free";
+  if (user_id) {
+    try {
+      const meta = await db.listDocuments(process.env.DATABASE_ID || "qofeno_db", "users_meta", [
+        Query.equal("user_id", user_id),
+        Query.limit(1)
+      ]);
+      if (meta.documents.length > 0) {
+        userPlan = meta.documents[0].plan || "free";
+      }
+    } catch (err) {
+      logError(`Failed to fetch user plan for ${user_id}: ${err.message}`);
+    }
+  }
+
   // Auth check for pro/teams tools
   if (requiredPlan !== "free" && !user_id) {
     return unauthorized(res, `Authentication required for ${tool} (Premium Tool)`);
@@ -33,7 +50,7 @@ export default async (context) => {
 
   // Plan validation
   if (requiredPlan !== "free") {
-    const hasAccess = await verifyPlan(db, user_id, requiredPlan);
+    const hasAccess = (requiredPlan === "teams") ? (userPlan === "teams") : (["pro", "teams"].includes(userPlan));
     if (!hasAccess) {
       return forbidden(res, `Active ${requiredPlan} subscription required`);
     }
@@ -41,9 +58,8 @@ export default async (context) => {
 
   // Rate limiting (IP fallback for anonymous users)
   const identifier = user_id || req.headers['x-real-ip'] || req.headers['client-ip'] || 'anonymous';
-  const plan = user_id ? (requiredPlan !== "free" ? requiredPlan : "free") : "free";
   try {
-    await checkRateLimit(db, identifier, plan);
+    await checkRateLimit(db, identifier, userPlan);
   } catch (err) {
     return error(res, err.message, "RATE_LIMIT_EXCEEDED", 429);
   }
@@ -60,8 +76,8 @@ export default async (context) => {
 
   // Execute handler
   try {
-    const result = await handler({ body, storage, db, client, context });
-    return success(res, result);
+    const result = await handler(context);
+    return result;
   } catch (err) {
     logError(`Execution error in ${tool}: ${err.stack || err.message}`);
     return error(res, err.message, "PROCESSING_ERROR", 500);
