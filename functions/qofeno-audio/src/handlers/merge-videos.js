@@ -1,10 +1,8 @@
 import { Client, Databases, ID, Permission, Role, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
 import fs from 'fs';
 
-ffmpeg.setFfmpegPath(ffmpegStatic);
 
 export default async ({ req, res, log, error }) => {
   let body = {};

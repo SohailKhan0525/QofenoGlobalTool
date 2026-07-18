@@ -534,19 +534,16 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                   {filteredTools.map((tool) => {
                     const ToolIcon = tool.icon;
                     return (
-                      <motion.div
+                      <div
                         key={tool.id}
                         onClick={() => {
+                          if (tool.is_coming_soon) return;
                           localStorage.setItem('selected_tool_id', tool.id);
                           onNavigate('tool');
                         }}
-                        initial={{ opacity: 1, scale: 1, y: 0 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ duration: 0 }}
-                        whileHover={prefersReduced ? {} : (tool.is_coming_soon ? {} : { scale: 1.02, y: -2 })}
                         className={cn(
                           "group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer flex flex-col transition-all duration-300 relative",
+                          !prefersReduced && !tool.is_coming_soon && "hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98]",
                           tool.is_coming_soon && "opacity-75 bg-neutral-50/50 border-neutral-200/80 cursor-default"
                         )}
                       >
@@ -609,7 +606,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                             </span>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
             </div>

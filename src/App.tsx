@@ -49,7 +49,6 @@ import { faGithub, faXTwitter, faLinkedin, faInstagram } from '@fortawesome/free
 import { faCheckCircle as faCheckCircleReg, faBell as faBellReg } from '@fortawesome/free-regular-svg-icons';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import gsap from 'gsap';
 import { cn } from './lib/utils';
 import { toast } from 'sonner';
 import { FALLBACK_TOOLS, useToolCatalog } from './lib/toolCatalog';
@@ -263,13 +262,12 @@ export default function App() {
     };
   }, []);
 
-  // GSAP animation for theme switch
+  // Native CSS transition for theme switch
   useEffect(() => {
-    gsap.to("html", {
-      duration: 0.5,
-      filter: theme === 'dark' ? 'invert(1) hue-rotate(180deg)' : 'invert(0) hue-rotate(0deg)',
-      ease: "power2.inOut"
-    });
+    const isDark = theme === 'dark';
+    document.documentElement.style.filter = isDark 
+      ? 'invert(1) hue-rotate(180deg)' 
+      : 'invert(0) hue-rotate(0deg)';
   }, [theme]);
 
   useEffect(() => {

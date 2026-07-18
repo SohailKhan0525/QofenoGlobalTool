@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShieldHalved, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
-import { PayPalButton } from '../PayPal/PayPalButton';
 import { SEO } from '../../components/SEO';
 import { motion } from 'framer-motion';
-import { Turnstile } from '@marsidev/react-turnstile';
 import { PlanToggle } from '../PlanToggle';
+
+const PayPalButton = lazy(() => import('../PayPal/PayPalButton').then(m => ({ default: m.PayPalButton })));
+const Turnstile = lazy(() => import('@marsidev/react-turnstile').then(m => ({ default: m.Turnstile })));
 
 export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) {
   const params = new URLSearchParams(window.location.search);
@@ -18,52 +19,50 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
 
   const monthlyPrice = planType === 'teams' ? 19 : 11;
   const yearlyPrice = planType === 'teams' ? 11.40 : 6.60;
-  const currentPrice = isYearly ? yearlyPrice : monthlyPrice;
+  const price = isYearly ? yearlyPrice : monthlyPrice;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-24 px-4 select-none relative overflow-hidden">
-      <SEO title={`Upgrade to ${planType === 'teams' ? 'Teams' : 'PRO'}`} description={`Unlock unlimited access to all Qofeno ${planType === 'teams' ? 'Teams' : 'PRO'} tools.`} />
+    <div className="min-h-screen bg-neutral-50/50 py-16 px-4">
+      <SEO 
+        title={`Checkout — Upgrade to ${planType === 'teams' ? 'Qofeno Teams' : 'Qofeno Pro'}`}
+        description="Upgrade your workspace for higher upload limits, server-side processing prioritization, and no watermark outputs."
+      />
       
-      {/* Background elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-purple-300/20 blur-[120px]" />
-        <div className="absolute top-[60%] -right-[10%] w-[60%] h-[60%] rounded-full bg-purple-400/10 blur-[120px]" />
-      </div>
-
-      <motion.div 
-        initial={prefersReduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={prefersReduced ? { duration: 0 } : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="max-w-lg mx-auto p-8 bg-white border border-neutral-200 rounded-3xl shadow-sm relative z-10"
-      >
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <FontAwesomeIcon icon={faShieldHalved} className="w-8 h-8 text-purple-650" />
+      <div className="max-w-md mx-auto bg-white rounded-[32px] border border-neutral-200/60 p-8 sm:p-10 shadow-2xl shadow-neutral-100">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center shrink-0">
+            <FontAwesomeIcon icon={faShieldHalved} className="w-6 h-6 text-purple-600" />
           </div>
-          <h1 className="text-3xl font-black text-[#0F0A1E]">Upgrade to {planType === 'teams' ? 'Teams' : 'Pro'}</h1>
-          <p className="text-neutral-500 mt-2">Unlock the full potential of Qofeno.</p>
+          <div>
+            <h2 className="text-xl font-black text-[#0F0A1E]">Secure Checkout</h2>
+            <p className="text-xs text-neutral-400 font-bold uppercase tracking-wider">Choose subscription billing</p>
+          </div>
         </div>
 
-        {/* Plan toggle */}
-        <div className="flex justify-center mb-8">
+        <div className="mb-8">
           <PlanToggle isYearly={isYearly} onChange={setIsYearly} />
         </div>
 
-        {/* What you get */}
-        <div className="bg-neutral-50 rounded-2xl p-6 mb-8 border border-neutral-100">
-          <h3 className="font-bold text-[#0F0A1E] mb-4">{planType === 'teams' ? 'Teams' : 'Pro'} Plan Includes:</h3>
-          <ul className="space-y-3">
+        <div className="bg-neutral-50 rounded-2xl p-6 border border-neutral-100 mb-8">
+          <div className="flex items-baseline justify-between mb-4">
+            <span className="text-sm font-bold text-[#0F0A1E] capitalize">{planType} Plan</span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black text-[#0F0A1E]">${price}</span>
+              <span className="text-xs text-neutral-400 font-bold">/user/mo</span>
+            </div>
+          </div>
+          
+          <ul className="space-y-3 pt-4 border-t border-neutral-200/60">
             {planType === 'teams' ? (
               [
-                "Everything in Pro",
-                "Up to 5 team members",
-                "Shared tool history",
-                "Priority support",
-                "Higher file size limits (1GB)",
-                "Early access to new tools"
+                "Everything in PRO",
+                "Up to 5 seat licenses",
+                "Priority operations & files up to 1GB",
+                "Direct admin controls",
+                "No watermarks on outputs"
               ].map((feature, idx) => (
                 <li key={idx} className="flex items-start gap-3">
-                  <FontAwesomeIcon icon={faCircleCheck} className="w-5 h-5 text-green-500 shrink-0" />
+                  <FontAwesomeIcon icon={faCircleCheck} className="w-5 h-5 text-purple-600 shrink-0" />
                   <span className="text-sm font-medium text-neutral-600">{feature}</span>
                 </li>
               ))
@@ -76,7 +75,7 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
                 "No watermarks on outputs"
               ].map((feature, idx) => (
                 <li key={idx} className="flex items-start gap-3">
-                  <FontAwesomeIcon icon={faCircleCheck} className="w-5 h-5 text-green-500 shrink-0" />
+                  <FontAwesomeIcon icon={faCircleCheck} className="w-5 h-5 text-purple-600 shrink-0" />
                   <span className="text-sm font-medium text-neutral-600">{feature}</span>
                 </li>
               ))
@@ -86,21 +85,23 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
 
         {/* PayPal button */}
         <div className="mb-4">
-          {(!import.meta.env.VITE_TURNSTILE_SITE_KEY || turnstileToken) ? (
-            <PayPalButton isYearly={isYearly} planType={planType} />
-          ) : (
-            <div className="flex flex-col items-center">
-              <p className="text-sm font-bold text-neutral-500 mb-3 text-center">Please complete the captcha to checkout securely.</p>
-              <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-100">
-                {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
-                  <Turnstile
-                    siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => setTurnstileToken(token)}
-                  />
-                )}
+          <Suspense fallback={<div className="h-12 bg-neutral-100 rounded-xl animate-pulse" />}>
+            {(!import.meta.env.VITE_TURNSTILE_SITE_KEY || turnstileToken) ? (
+              <PayPalButton isYearly={isYearly} planType={planType} />
+            ) : (
+              <div className="flex flex-col items-center">
+                <p className="text-sm font-bold text-neutral-500 mb-3 text-center">Please complete the captcha to checkout securely.</p>
+                <div className="bg-neutral-50 rounded-xl p-2 border border-neutral-100">
+                  {import.meta.env.VITE_TURNSTILE_SITE_KEY && (
+                    <Turnstile
+                      siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+                      onSuccess={(token) => setTurnstileToken(token)}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </Suspense>
         </div>
 
         {/* Coming soon payment methods */}
@@ -117,7 +118,7 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
         <p className="text-xs text-center font-semibold text-neutral-400 mt-6">
           🔒 Secure payment via PayPal · Cancel anytime
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }

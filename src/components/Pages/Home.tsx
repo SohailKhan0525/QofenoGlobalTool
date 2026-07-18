@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import gsap from 'gsap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faArrowRight, faMagnifyingGlass, faChevronRight, faCircleCheck, 
@@ -311,39 +310,44 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
 
   // Entrance animations
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline();
+    let ctx: any;
+    import('gsap').then(({ default: gsap }) => {
+      ctx = gsap.context(() => {
+        const tl = gsap.timeline();
 
-      if (prefersReduced) {
-        if (headlineRef.current) {
-          gsap.set(headlineRef.current.querySelectorAll('.word-reveal'), { y: 0, opacity: 1 });
+        if (prefersReduced) {
+          if (headlineRef.current) {
+            gsap.set(headlineRef.current.querySelectorAll('.word-reveal'), { y: 0, opacity: 1 });
+          }
+          if (subRef.current) gsap.set(subRef.current, { y: 0, opacity: 1 });
+          if (ctaRef.current) gsap.set(ctaRef.current, { scale: 1, opacity: 1 });
+          gsap.set('.floating-chip', { scale: 1, opacity: 1 });
+          return;
         }
-        if (subRef.current) gsap.set(subRef.current, { y: 0, opacity: 1 });
-        if (ctaRef.current) gsap.set(ctaRef.current, { scale: 1, opacity: 1 });
-        gsap.set('.floating-chip', { scale: 1, opacity: 1 });
-        return;
-      }
 
-      if (headlineRef.current) {
-        const words = headlineRef.current.querySelectorAll('.word-reveal');
-        tl.fromTo(words, 
-          { y: 80, opacity: 0 }, 
-          { y: 0, opacity: 1, duration: 0.8, stagger: 0.05, ease: 'power4.out' },
-          0.1
-        );
-      }
+        if (headlineRef.current) {
+          const words = headlineRef.current.querySelectorAll('.word-reveal');
+          tl.fromTo(words, 
+            { y: 80, opacity: 0 }, 
+            { y: 0, opacity: 1, duration: 0.8, stagger: 0.05, ease: 'power4.out' },
+            0.1
+          );
+        }
 
-      if (subRef.current) {
-        tl.fromTo(subRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6 }, '-=0.4');
-      }
-      if (ctaRef.current) {
-        tl.fromTo(ctaRef.current, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.5)' }, '-=0.3');
-      }
-      
-      tl.fromTo('.floating-chip', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, stagger: 0.04, duration: 0.6, ease: 'back.out(1.2)' }, '-=0.2');
+        if (subRef.current) {
+          tl.fromTo(subRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6 }, '-=0.4');
+        }
+        if (ctaRef.current) {
+          tl.fromTo(ctaRef.current, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.5)' }, '-=0.3');
+        }
+        
+        tl.fromTo('.floating-chip', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, stagger: 0.04, duration: 0.6, ease: 'back.out(1.2)' }, '-=0.2');
+      });
     });
 
-    return () => ctx.revert();
+    return () => {
+      if (ctx) ctx.revert();
+    };
   }, [prefersReduced]);
 
   const filteredCategories = categoryCards.filter(c => c.name !== 'All Tools').slice(0, 4);
@@ -923,28 +927,22 @@ interface FloatingChipProps {
 }
 
 function FloatingHeroChip({ text, top, left, right, bottom, rotate, speed }: FloatingChipProps) {
-  const chipRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced) return;
-
-    gsap.to(chipRef.current, {
-      y: '+=14',
-      duration: parseFloat(speed),
-      repeat: -1,
-      yoyo: true,
-      ease: 'sine.inOut'
-    });
-  }, [speed]);
+  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   return (
     <div 
-      ref={chipRef} 
       style={{ top, left, right, bottom, transform: `rotate(${rotate}deg)` }}
-      className="floating-chip absolute bg-white shadow-2xl shadow-purple-500/10 border border-purple-100 px-4 py-2 rounded-2xl flex items-center gap-2 font-semibold text-[#0F0A1E] text-xs pointer-events-auto select-none"
+      className="floating-chip absolute pointer-events-none select-none z-10"
     >
-      {text}
+      <div
+        style={{ animationDuration: `${speed}s` }}
+        className={cn(
+          "bg-white shadow-2xl shadow-purple-500/10 border border-purple-100 px-4 py-2 rounded-2xl flex items-center gap-2 font-semibold text-[#0F0A1E] text-xs pointer-events-auto",
+          !prefersReduced && "animate-[float_infinite_ease-in-out]"
+        )}
+      >
+        {text}
+      </div>
     </div>
   );
 }

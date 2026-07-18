@@ -1,8 +1,6 @@
 import { Client, Databases, ID, Permission, Role, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
-ffmpeg.setFfmpegPath(ffmpegStatic);
 import fs from 'fs';
 
 

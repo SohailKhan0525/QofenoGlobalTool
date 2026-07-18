@@ -1,11 +1,9 @@
 import { Client, Databases, ID, Permission, Role, Storage } from 'node-appwrite';
 import { InputFile } from 'node-appwrite/file';
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegStatic from 'ffmpeg-static';
 import fs from 'fs';
 import path from 'path';
 
-ffmpeg.setFfmpegPath(ffmpegStatic);
 
 function parseBody(req) {
   if (req.bodyRaw && typeof req.bodyRaw === 'string') {
