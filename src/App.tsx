@@ -60,61 +60,6 @@ import { Query } from 'appwrite';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 
-// Text scramble effect component
-function ScrambleText({ 
-  text, 
-  trigger,
-  scrolled = false,
-  collapseOnScroll = false
-}: { 
-  text: string; 
-  trigger: number;
-  scrolled?: boolean;
-  collapseOnScroll?: boolean;
-}) {
-  const [displayText, setDisplayText] = useState(text);
-
-  useEffect(() => {
-    let active = true;
-    let iteration = 0;
-    const chars = 'a@b#c$d%e^f*g!h&i*j(k)l_m+n-o=p{q}r[s]t;u:v,w.x/y?z';
-    let timeoutId: any;
-
-    const targetText = (collapseOnScroll && scrolled) ? "\\" : text;
-
-    const doScramble = () => {
-      if (!active) return;
-
-      setDisplayText(
-        targetText
-          .split('')
-          .map((char, index) => {
-            if (char === ' ') return ' ';
-            if (index < iteration) {
-              return targetText[index];
-            }
-            return chars[Math.floor(Math.random() * chars.length)];
-          })
-          .join('')
-      );
-
-      if (iteration < targetText.length) {
-        iteration += 0.25; // Smooth decode steps
-        timeoutId = setTimeout(doScramble, 30);
-      }
-    };
-
-    doScramble();
-
-    return () => {
-      active = false;
-      clearTimeout(timeoutId);
-    };
-  }, [text, trigger, scrolled, collapseOnScroll]);
-
-  return <span className="font-sans transition-all duration-300">{displayText}</span>;
-}
-
 // QofenoLogo component — shows qofeno.png + text
 function QofenoLogo({ 
   size = 36, 
@@ -129,13 +74,8 @@ function QofenoLogo({
   collapseOnScroll?: boolean;
   scrolled?: boolean;
 }) {
-  const [hoverTrigger, setHoverTrigger] = useState(0);
-
   return (
-    <div 
-      className="flex items-center gap-0.5 select-none"
-      onMouseEnter={() => setHoverTrigger(p => p + 1)}
-    >
+    <div className="flex items-center gap-0.5 select-none">
       <img
         src="/qofeno.png"
         alt="Q"
@@ -160,13 +100,25 @@ function QofenoLogo({
         <FontAwesomeIcon icon={faTools} className="text-white" style={{ fontSize: size * 0.5 }} />
       </div>
       {showText && (
-        <span className={cn('font-extrabold tracking-tight text-[#0F0A1E] select-none', textClass)}>
-          <ScrambleText 
-            text="ofeno" 
-            trigger={hoverTrigger} 
-            scrolled={scrolled}
-            collapseOnScroll={collapseOnScroll}
-          />
+        <span className={cn('font-extrabold tracking-tight text-[#0F0A1E] select-none flex items-center', textClass)}>
+          {/* "ofeno" part: collapses and fades out when scrolled */}
+          <span 
+            className={cn(
+              "transition-all duration-500 ease-in-out overflow-hidden inline-block",
+              collapseOnScroll && scrolled ? "max-w-0 opacity-0" : "max-w-[100px] opacity-100"
+            )}
+          >
+            ofeno
+          </span>
+          {/* "\" part: expands and fades in when scrolled */}
+          <span 
+            className={cn(
+              "transition-all duration-500 ease-in-out overflow-hidden inline-block text-purple-600 ml-0",
+              collapseOnScroll && scrolled ? "max-w-[15px] opacity-100 ml-0.5" : "max-w-0 opacity-0"
+            )}
+          >
+            \
+          </span>
         </span>
       )}
     </div>
