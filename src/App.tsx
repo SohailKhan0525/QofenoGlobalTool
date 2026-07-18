@@ -60,6 +60,24 @@ import { Query } from 'appwrite';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 
+// Custom crisp vector Slash matching the logo weight & height
+function SlashIcon({ size, className }: { size: number; className?: string }) {
+  return (
+    <svg 
+      width={size * 0.45} 
+      height={size} 
+      viewBox={`0 0 16 ${size}`} 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth={3.8} 
+      strokeLinecap="round"
+      className={className}
+    >
+      <line x1="3" y1="2" x2="13" y2={size - 2} />
+    </svg>
+  );
+}
+
 // QofenoLogo component — shows qofeno.png + text
 function QofenoLogo({ 
   size = 36, 
@@ -82,8 +100,8 @@ function QofenoLogo({
         width={size}
         height={size}
         className={cn(
-          "rounded-xl object-contain transition-all duration-500 ease-in-out",
-          collapseOnScroll && scrolled ? "scale-95 shadow-md shadow-purple-500/5" : "scale-100"
+          "rounded-xl object-contain transition-all duration-500 ease-in-out transform-gpu",
+          collapseOnScroll && scrolled ? "scale-90 rotate-6 shadow-md shadow-purple-500/5" : "scale-100"
         )}
         onError={(e) => {
           // Fallback gradient box if png not found
@@ -101,23 +119,23 @@ function QofenoLogo({
       </div>
       {showText && (
         <span className={cn('font-extrabold tracking-tight text-[#0F0A1E] select-none flex items-center', textClass)}>
-          {/* "ofeno" part: collapses and fades out when scrolled */}
+          {/* "ofeno" part: slides left and fades out when scrolled */}
           <span 
             className={cn(
-              "transition-all duration-500 ease-in-out overflow-hidden inline-block",
-              collapseOnScroll && scrolled ? "max-w-0 opacity-0" : "max-w-[100px] opacity-100"
+              "transition-all duration-500 ease-in-out overflow-hidden inline-block transform-gpu",
+              collapseOnScroll && scrolled ? "max-w-0 opacity-0 -translate-x-4" : "max-w-[100px] opacity-100 translate-x-0"
             )}
           >
             ofeno
           </span>
-          {/* "\" part: expands and fades in when scrolled */}
+          {/* "\" part: slides left/inward and fades/scales in when scrolled */}
           <span 
             className={cn(
-              "transition-all duration-500 ease-in-out overflow-hidden inline-block text-purple-600 ml-0",
-              collapseOnScroll && scrolled ? "max-w-[15px] opacity-100 ml-0.5" : "max-w-0 opacity-0"
+              "transition-all duration-500 ease-in-out overflow-hidden flex items-center transform-gpu",
+              collapseOnScroll && scrolled ? "max-w-[20px] opacity-100 translate-x-0 scale-100 ml-1.5" : "max-w-0 opacity-0 translate-x-4 scale-75 ml-0"
             )}
           >
-            \
+            <SlashIcon size={size * 0.65} className="text-purple-650" />
           </span>
         </span>
       )}
