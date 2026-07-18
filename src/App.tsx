@@ -60,88 +60,103 @@ import { Query } from 'appwrite';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 
-// Custom crisp vector Slash matching the logo weight & height
-function SlashIcon({ size, className }: { size: number; className?: string }) {
+
+// ─── Inline Q mark SVG — exact recreation of q_logo.svg ─────────────────────
+// Thick geometric ring (270° arc) + diagonal bar through the bottom-right gap.
+// Inline so it renders instantly (no network round-trip, no img flash).
+function QMark({ size = 38, className = '' }: { size?: number; className?: string }) {
   return (
-    <svg 
-      width={size * 0.45} 
-      height={size} 
-      viewBox={`0 0 16 ${size}`} 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth={3.8} 
-      strokeLinecap="round"
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      fill="none"
+      aria-hidden="true"
       className={className}
     >
-      <line x1="3" y1="2" x2="13" y2={size - 2} />
+      {/* 270° ring arc: from 7 o'clock (lower-left) clockwise to 4 o'clock (lower-right) */}
+      <path
+        d="M 34 77.7 A 32 32 0 1 1 77.7 66"
+        stroke="currentColor"
+        strokeWidth="14"
+        strokeLinecap="butt"
+      />
+      {/* Diagonal bar through the bottom-right gap — the logo's signature mark */}
+      <line
+        x1="21" y1="85"
+        x2="81" y2="55"
+        stroke="currentColor"
+        strokeWidth="14"
+        strokeLinecap="butt"
+      />
     </svg>
   );
 }
 
-// QofenoLogo component — shows qofeno.png + text
-function QofenoLogo({ 
-  size = 36, 
-  showText = true, 
+// ─── QofenoLogo ───────────────────────────────────────────────────────────────
+// Anthropic-style animation: the Q icon stays fixed while QOFENO slides left
+// beneath it and disappears. Pure CSS overflow+translateX — fully composited,
+// reversible, 60fps, no layout jank.
+function QofenoLogo({
+  size = 36,
+  showText = true,
   textClass = '',
+  iconClass = 'text-[#0D0D0D]',
   collapseOnScroll = false,
   scrolled = false
-}: { 
-  size?: number; 
-  showText?: boolean; 
+}: {
+  size?: number;
+  showText?: boolean;
   textClass?: string;
+  iconClass?: string;
   collapseOnScroll?: boolean;
   scrolled?: boolean;
 }) {
+  const collapsed = collapseOnScroll && scrolled;
+
   return (
-    <div className="flex items-center gap-0.5 select-none">
-      <img
-        src="/qofeno.png"
-        alt="Q"
-        width={size}
-        height={size}
-        className={cn(
-          "rounded-xl object-contain transition-all duration-500 ease-in-out transform-gpu",
-          collapseOnScroll && scrolled ? "scale-90 rotate-6 shadow-md shadow-purple-500/5" : "scale-100"
-        )}
-        onError={(e) => {
-          // Fallback gradient box if png not found
-          const el = e.currentTarget;
-          el.style.display = 'none';
-          const next = el.nextElementSibling as HTMLElement;
-          if (next) next.style.display = 'flex';
-        }}
+    <div
+      className="flex items-center select-none"
+      aria-label="Qofeno"
+      role="img"
+    >
+      {/* Q icon — always visible, never moves */}
+      <QMark
+        size={size}
+        className={cn('shrink-0 transition-none', iconClass)}
       />
-      <div
-        style={{ display: 'none', width: size, height: size }}
-        className="bg-gradient-to-tr from-purple-600 to-pink-500 rounded-xl items-center justify-center shadow-lg"
-      >
-        <FontAwesomeIcon icon={faTools} className="text-white" style={{ fontSize: size * 0.5 }} />
-      </div>
+
+      {/* Wordmark container: clips overflow so the slide happens behind the icon */}
       {showText && (
-        <span className={cn('font-extrabold tracking-tight text-[#0F0A1E] select-none flex items-center', textClass)}>
-          {/* "ofeno" part: slides left and fades out when scrolled */}
-          <span 
+        <div
+          className="overflow-hidden"
+          style={{
+            // max-width transition creates the space-collapse effect
+            maxWidth: collapsed ? '0px' : '200px',
+            transition: 'max-width 480ms cubic-bezier(0.4, 0, 0.2, 1)',
+          }}
+        >
+          <span
             className={cn(
-              "transition-all duration-500 ease-in-out overflow-hidden inline-block transform-gpu",
-              collapseOnScroll && scrolled ? "max-w-0 opacity-0 -translate-x-4" : "max-w-[100px] opacity-100 translate-x-0"
+              'inline-block whitespace-nowrap font-extrabold tracking-[-0.04em] will-change-transform pl-[5px]',
+              textClass || 'text-[#0D0D0D]'
             )}
+            style={{
+              // translateX slides the text LEFT behind the icon — the Anthropic pattern
+              transform: collapsed ? 'translateX(-110%)' : 'translateX(0)',
+              opacity: collapsed ? 0 : 1,
+              transition:
+                'transform 480ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease',
+            }}
           >
-            ofeno
+            QOFENO
           </span>
-          {/* "\" part: slides left/inward and fades/scales in when scrolled */}
-          <span 
-            className={cn(
-              "transition-all duration-500 ease-in-out overflow-hidden flex items-center transform-gpu",
-              collapseOnScroll && scrolled ? "max-w-[20px] opacity-100 translate-x-0 scale-100 ml-1.5" : "max-w-0 opacity-0 translate-x-4 scale-75 ml-0"
-            )}
-          >
-            <SlashIcon size={size * 0.65} className="text-purple-650" />
-          </span>
-        </span>
+        </div>
       )}
     </div>
   );
 }
+
 
 const prefersReduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -1325,7 +1340,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-6 gap-8 lg:gap-12 font-sans mb-16">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={() => setActiveTab('home')}>
-              <QofenoLogo size={32} showText={true} textClass="text-xl text-white" />
+              <QofenoLogo size={32} showText={true} textClass="text-xl text-white" iconClass="text-white" />
             </div>
             <p className="text-purple-200/60 max-w-sm text-sm leading-relaxed mb-8 font-medium">
               Every tool you'll ever need — PDF, image, video, AI, developer, and more. Built by Mohd Zaheer Uddin.
