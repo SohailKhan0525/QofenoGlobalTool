@@ -61,7 +61,17 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 
 // Text scramble effect component
-function ScrambleText({ text, trigger }: { text: string; trigger: number }) {
+function ScrambleText({ 
+  text, 
+  trigger,
+  scrolled = false,
+  collapseOnScroll = false
+}: { 
+  text: string; 
+  trigger: number;
+  scrolled?: boolean;
+  collapseOnScroll?: boolean;
+}) {
   const [displayText, setDisplayText] = useState(text);
 
   useEffect(() => {
@@ -70,23 +80,25 @@ function ScrambleText({ text, trigger }: { text: string; trigger: number }) {
     const chars = 'A@B#C$D%E^F*G!H&I*J(K)L_M+N-O=P{Q}R[S]T;U:V,W.X/Y?Z';
     let timeoutId: any;
 
+    const targetText = (collapseOnScroll && scrolled) ? "Q\\" : text;
+
     const doScramble = () => {
       if (!active) return;
 
       setDisplayText(
-        text
+        targetText
           .split('')
           .map((char, index) => {
             if (char === ' ') return ' ';
             if (index < iteration) {
-              return text[index];
+              return targetText[index];
             }
             return chars[Math.floor(Math.random() * chars.length)];
           })
           .join('')
       );
 
-      if (iteration < text.length) {
+      if (iteration < targetText.length) {
         iteration += 0.25; // Smooth decode steps
         timeoutId = setTimeout(doScramble, 30);
       }
@@ -98,13 +110,25 @@ function ScrambleText({ text, trigger }: { text: string; trigger: number }) {
       active = false;
       clearTimeout(timeoutId);
     };
-  }, [text, trigger]);
+  }, [text, trigger, scrolled, collapseOnScroll]);
 
   return <span className="font-sans transition-all duration-300">{displayText}</span>;
 }
 
 // QofenoLogo component — shows qofeno.png + text
-function QofenoLogo({ size = 36, showText = true, textClass = '' }: { size?: number; showText?: boolean; textClass?: string }) {
+function QofenoLogo({ 
+  size = 36, 
+  showText = true, 
+  textClass = '',
+  collapseOnScroll = false,
+  scrolled = false
+}: { 
+  size?: number; 
+  showText?: boolean; 
+  textClass?: string;
+  collapseOnScroll?: boolean;
+  scrolled?: boolean;
+}) {
   const [hoverTrigger, setHoverTrigger] = useState(0);
 
   return (
@@ -117,7 +141,10 @@ function QofenoLogo({ size = 36, showText = true, textClass = '' }: { size?: num
         alt="Qofeno"
         width={size}
         height={size}
-        className="rounded-xl object-contain"
+        className={cn(
+          "rounded-xl object-contain transition-all duration-500 ease-in-out",
+          collapseOnScroll && scrolled ? "scale-90 rotate-6 shadow-md shadow-purple-500/10" : "scale-100 rotate-0"
+        )}
         onError={(e) => {
           // Fallback gradient box if png not found
           const el = e.currentTarget;
@@ -134,7 +161,12 @@ function QofenoLogo({ size = 36, showText = true, textClass = '' }: { size?: num
       </div>
       {showText && (
         <span className={cn('font-extrabold tracking-tight text-[#0F0A1E]', textClass)}>
-          <ScrambleText text="Qofeno" trigger={hoverTrigger} />
+          <ScrambleText 
+            text="Qofeno" 
+            trigger={hoverTrigger} 
+            scrolled={scrolled}
+            collapseOnScroll={collapseOnScroll}
+          />
         </span>
       )}
     </div>
@@ -649,7 +681,7 @@ export default function App() {
           onClick={() => setActiveTab('home')}
           className="flex items-center gap-2.5 cursor-pointer group"
         >
-          <QofenoLogo size={38} showText={true} textClass="text-xl md:text-2xl font-sans" />
+          <QofenoLogo size={38} showText={true} textClass="text-xl md:text-2xl font-sans" collapseOnScroll={true} scrolled={navbarScrolled} />
         </div>
 
         {/* Wide nav categories linking tabs */}
