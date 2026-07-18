@@ -60,10 +60,58 @@ import { Query } from 'appwrite';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 
+// Text scramble effect component
+function ScrambleText({ text, trigger }: { text: string; trigger: number }) {
+  const [displayText, setDisplayText] = useState(text);
+
+  useEffect(() => {
+    let active = true;
+    let iteration = 0;
+    const chars = 'A@B#C$D%E^F*G!H&I*J(K)L_M+N-O=P{Q}R[S]T;U:V,W.X/Y?Z';
+    let timeoutId: any;
+
+    const doScramble = () => {
+      if (!active) return;
+
+      setDisplayText(
+        text
+          .split('')
+          .map((char, index) => {
+            if (char === ' ') return ' ';
+            if (index < iteration) {
+              return text[index];
+            }
+            return chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join('')
+      );
+
+      if (iteration < text.length) {
+        iteration += 0.25; // Smooth decode steps
+        timeoutId = setTimeout(doScramble, 30);
+      }
+    };
+
+    doScramble();
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
+  }, [text, trigger]);
+
+  return <span className="font-sans transition-all duration-300">{displayText}</span>;
+}
+
 // QofenoLogo component — shows qofeno.png + text
 function QofenoLogo({ size = 36, showText = true, textClass = '' }: { size?: number; showText?: boolean; textClass?: string }) {
+  const [hoverTrigger, setHoverTrigger] = useState(0);
+
   return (
-    <div className="flex items-center gap-2">
+    <div 
+      className="flex items-center gap-2"
+      onMouseEnter={() => setHoverTrigger(p => p + 1)}
+    >
       <img
         src="/qofeno.png"
         alt="Qofeno"
@@ -85,7 +133,9 @@ function QofenoLogo({ size = 36, showText = true, textClass = '' }: { size?: num
         <FontAwesomeIcon icon={faTools} className="text-white" style={{ fontSize: size * 0.5 }} />
       </div>
       {showText && (
-        <span className={cn('font-extrabold tracking-tight text-[#0F0A1E]', textClass)}>Qofeno</span>
+        <span className={cn('font-extrabold tracking-tight text-[#0F0A1E]', textClass)}>
+          <ScrambleText text="Qofeno" trigger={hoverTrigger} />
+        </span>
       )}
     </div>
   );
