@@ -77,10 +77,10 @@ function ScrambleText({
   useEffect(() => {
     let active = true;
     let iteration = 0;
-    const chars = 'A@B#C$D%E^F*G!H&I*J(K)L_M+N-O=P{Q}R[S]T;U:V,W.X/Y?Z';
+    const chars = 'a@b#c$d%e^f*g!h&i*j(k)l_m+n-o=p{q}r[s]t;u:v,w.x/y?z';
     let timeoutId: any;
 
-    const targetText = (collapseOnScroll && scrolled) ? "Q\\" : text;
+    const targetText = (collapseOnScroll && scrolled) ? "\\" : text;
 
     const doScramble = () => {
       if (!active) return;
@@ -133,17 +133,17 @@ function QofenoLogo({
 
   return (
     <div 
-      className="flex items-center gap-2"
+      className="flex items-center gap-0.5 select-none"
       onMouseEnter={() => setHoverTrigger(p => p + 1)}
     >
       <img
         src="/qofeno.png"
-        alt="Qofeno"
+        alt="Q"
         width={size}
         height={size}
         className={cn(
           "rounded-xl object-contain transition-all duration-500 ease-in-out",
-          collapseOnScroll && scrolled ? "scale-90 rotate-6 shadow-md shadow-purple-500/10" : "scale-100 rotate-0"
+          collapseOnScroll && scrolled ? "scale-95 shadow-md shadow-purple-500/5" : "scale-100"
         )}
         onError={(e) => {
           // Fallback gradient box if png not found
@@ -160,9 +160,9 @@ function QofenoLogo({
         <FontAwesomeIcon icon={faTools} className="text-white" style={{ fontSize: size * 0.5 }} />
       </div>
       {showText && (
-        <span className={cn('font-extrabold tracking-tight text-[#0F0A1E]', textClass)}>
+        <span className={cn('font-extrabold tracking-tight text-[#0F0A1E] select-none', textClass)}>
           <ScrambleText 
-            text="Qofeno" 
+            text="ofeno" 
             trigger={hoverTrigger} 
             scrolled={scrolled}
             collapseOnScroll={collapseOnScroll}
