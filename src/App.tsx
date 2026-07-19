@@ -65,7 +65,7 @@ import { CookieConsentBanner } from './components/CookieConsentBanner';
 import qofenoFullSvg from '../public/qofeno_full.svg?raw';
 
 // Anthropic-style animation: the Q icon stays fixed while the OFENO letters 
-// slide to the right and fade out staggered (right-to-left collapse, left-to-right reveal)
+// slide to the left and fade out staggered (right-to-left collapse, left-to-right reveal)
 // by compiling your physical `/public/qofeno_full.svg` asset directly inline.
 // Fully synchronous, 60fps, works offline, no CORS/fetch restrictions.
 function QofenoLogo({
@@ -88,7 +88,11 @@ function QofenoLogo({
 }) {
   const collapsed = collapseOnScroll && scrolled;
   const viewBoxWidth = showText ? 784 : 150;
-  const width = size * (viewBoxWidth / 132);
+  
+  // Calculate exact scaled widths based on viewBox coordinate mappings
+  const fullWidth = size * (784 / 132);
+  const qWidth = size * (150 / 132);
+  const width = collapsed ? qWidth : fullWidth;
 
   // If text is hidden (icon-only), render the Q logo ring and stem synchronously using vector geometry
   if (!showText) {
@@ -97,7 +101,7 @@ function QofenoLogo({
         className="qofeno-logo-container select-none flex items-center shrink-0"
         style={{
           height: size,
-          width: size * (150 / 132),
+          width: qWidth,
           filter: invert ? 'brightness(0) invert(1)' : 'none',
           color: 'currentColor'
         }}
@@ -124,7 +128,10 @@ function QofenoLogo({
         width: width,
         filter: invert ? 'brightness(0) invert(1)' : 'none',
         color: 'currentColor',
-        transition: 'width 480ms cubic-bezier(.77,0,.175,1)'
+        transition: 'width 480ms cubic-bezier(.77,0,.175,1)',
+        overflow: 'hidden',
+        position: 'relative',
+        ['--logo-full-width' as any]: `${fullWidth}px`
       }}
       dangerouslySetInnerHTML={{ __html: qofenoFullSvg }}
     />

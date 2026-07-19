@@ -271,7 +271,7 @@ html.lenis {
 
 /* Qofeno Brand SVG Logo Animations (Anthropic-style) */
 .qofeno-logo-container svg {
-  width: 100%;
+  width: var(--logo-full-width, 226px) !important;
   height: 100%;
   display: block;
 }
@@ -293,12 +293,12 @@ html.lenis {
 .qofeno-logo-container svg > g > g:nth-of-type(4) { transform: translate(526px, 0px); transition-delay: 120ms; }
 .qofeno-logo-container svg > g > g:nth-of-type(5) { transform: translate(652px, 0px); transition-delay: 160ms; }
 
-/* Collapsed state transforms and delays (slide right stagger) */
+/* Collapsed state transforms and delays (slide left/accordion compress stagger) */
 .qofeno-logo-collapsed svg > g > g {
   opacity: 0;
 }
-.qofeno-logo-collapsed svg > g > g:nth-of-type(1) { transform: translate(180px, 0px); transition-delay: 160ms; }
-.qofeno-logo-collapsed svg > g > g:nth-of-type(2) { transform: translate(332px, 0px); transition-delay: 120ms; }
-.qofeno-logo-collapsed svg > g > g:nth-of-type(3) { transform: translate(444px, 0px); transition-delay: 80ms; }
-.qofeno-logo-collapsed svg > g > g:nth-of-type(4) { transform: translate(556px, 0px); transition-delay: 40ms; }
-.qofeno-logo-collapsed svg > g > g:nth-of-type(5) { transform: translate(682px, 0px); transition-delay: 0ms; }
+.qofeno-logo-collapsed svg > g > g:nth-of-type(1) { transform: translate(100px, 0px); transition-delay: 160ms; }
+.qofeno-logo-collapsed svg > g > g:nth-of-type(2) { transform: translate(120px, 0px); transition-delay: 120ms; }
+.qofeno-logo-collapsed svg > g > g:nth-of-type(3) { transform: translate(130px, 0px); transition-delay: 80ms; }
+.qofeno-logo-collapsed svg > g > g:nth-of-type(4) { transform: translate(140px, 0px); transition-delay: 40ms; }
+.qofeno-logo-collapsed svg > g > g:nth-of-type(5) { transform: translate(150px, 0px); transition-delay: 0ms; }
