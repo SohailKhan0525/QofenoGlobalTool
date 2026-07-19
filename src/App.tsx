@@ -61,13 +61,13 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 
 
-// Cache for loaded brand SVG assets
-const svgCache = new Map<string, string>();
+// @ts-expect-error - Vite raw import support
+import qofenoFullSvg from '../public/qofeno_full.svg?raw';
 
 // Anthropic-style animation: the Q icon stays fixed while the OFENO letters 
 // slide to the right and fade out staggered (right-to-left collapse, left-to-right reveal)
-// by fetching and inlining your physical `/qofeno_full.svg` file directly from 
-// the public folder at runtime. Fully composited, 60fps, no layout jank.
+// by compiling your physical `/public/qofeno_full.svg` asset directly inline.
+// Fully synchronous, 60fps, works offline, no CORS/fetch restrictions.
 function QofenoLogo({
   size = 36,
   showText = true,
@@ -86,24 +86,6 @@ function QofenoLogo({
   textClass?: string;
   iconClass?: string;
 }) {
-  const [rawSvg, setRawSvg] = useState<string>('');
-
-  useEffect(() => {
-    if (!showText) return;
-    const url = '/qofeno_full.svg';
-    if (svgCache.has(url)) {
-      setRawSvg(svgCache.get(url)!);
-    } else {
-      fetch(url)
-        .then((res) => res.text())
-        .then((text) => {
-          svgCache.set(url, text);
-          setRawSvg(text);
-        })
-        .catch((err) => console.error('Failed to load brand SVG', err));
-    }
-  }, [showText]);
-
   const collapsed = collapseOnScroll && scrolled;
   const viewBoxWidth = showText ? 784 : 150;
   const width = size * (viewBoxWidth / 132);
@@ -132,30 +114,6 @@ function QofenoLogo({
     );
   }
 
-  // Fallback layout rendered synchronously before the SVG file fetch resolves
-  if (!rawSvg) {
-    return (
-      <div
-        className="qofeno-logo-container select-none flex items-center shrink-0"
-        style={{
-          height: size,
-          width: width,
-          filter: invert ? 'brightness(0) invert(1)' : 'none',
-          color: 'currentColor'
-        }}
-      >
-        <svg
-          viewBox={`0 0 ${viewBoxWidth} 132`}
-          className="block w-full h-full"
-          fill="currentColor"
-        >
-          <path d="M 84.00 129.00 A 65.9 65.9 0 1 1 120.00 100.50 L 108.00 90.00 A 49.2 49.2 0 1 0 73.00 115.00 Z" />
-          <path d="M 62.00 83.00 L 83.00 83.00 L 130.00 132.00 L 108.50 131.50 Z" />
-        </svg>
-      </div>
-    );
-  }
-
   return (
     <div
       className={`qofeno-logo-container select-none flex items-center shrink-0 ${collapsed ? 'qofeno-logo-collapsed' : ''}`}
@@ -168,7 +126,7 @@ function QofenoLogo({
         color: 'currentColor',
         transition: 'width 480ms cubic-bezier(.77,0,.175,1)'
       }}
-      dangerouslySetInnerHTML={{ __html: rawSvg }}
+      dangerouslySetInnerHTML={{ __html: qofenoFullSvg }}
     />
   );
 }
