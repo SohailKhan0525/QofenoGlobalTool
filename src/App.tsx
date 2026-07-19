@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Layout } from './components/Layout';
 import { Home } from './components/Pages/Home';
 import { ToolsCatalog } from './components/Pages/ToolsCatalog';
@@ -90,63 +90,65 @@ function QofenoLogo({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Grab the 5 letter <g> elements and animate them on mount + scroll
-  useEffect(() => {
-    if (!showText) return;
+  // Helper: grab the 5 letter <g> elements from the inline SVG
+  const getLetterGroups = () => {
     const el = containerRef.current;
-    if (!el) return;
-
-    // The root structure is: svg > g[fill] > (path, path, g, g, g, g, g)
-    // The first two children of the root <g> are the Q monogram paths (Q ring + tail).
-    // The next five <g> children are the letter groups: O, F, E, N, O.
+    if (!el) return [];
     const rootG = el.querySelector('svg > g');
-    if (!rootG) return;
-    const letterGroups = Array.from(rootG.children).filter(
+    if (!rootG) return [];
+    return Array.from(rootG.children).filter(
       (c): c is SVGGElement => c.tagName === 'g'
     ) as SVGGElement[];
-    if (letterGroups.length !== 5) return;
+  };
 
-    // IMPORTANT: CSS transform on SVG <g> elements operates in SVG *user unit* space
-    // (the viewBox coordinate system, 0–784), NOT in rendered pixel space.
-    // So we use the raw SVG coordinate values directly.
-    const setPos = (g: SVGGElement, x: number, opacity: number) => {
-      // translate() in SVG user units — works correctly regardless of rendered size
-      g.style.transform = `translate(${x}, 0)`;
-      g.style.opacity = String(opacity);
-    };
-
-    // Remove SVG attribute transforms to avoid double-translation (CSS overrides attribute anyway)
-    // Start all letters just left of their resting positions, invisible
-    letterGroups.forEach((g, i) => {
+  // PHASE 1 — runs synchronously before paint to prevent a visible flash.
+  // Sets all letter groups to opacity 0 and slightly left of their resting positions.
+  // Uses setAttribute('transform') because SVG transform attributes use SVG user units
+  // (bare numbers like 90 or 302), whereas style.transform requires CSS units (px/%).
+  useLayoutEffect(() => {
+    if (!showText) return;
+    const groups = getLetterGroups();
+    groups.forEach((g, i) => {
+      g.style.transition = 'none';
+      g.style.opacity = '0';
       g.style.willChange = 'transform, opacity';
-      setPos(g, LETTER_X[i] - 60, 0);
+      // setAttribute uses SVG user units — correct coordinate space
+      g.setAttribute('transform', `translate(${LETTER_X[i] - 60}, 0)`);
     });
+  }, [showText]);
 
-    // Staggered entrance: slide each letter right to its resting position
-    const entranceTimers = letterGroups.map((g, i) =>
+  // PHASE 2 — entrance animation + scroll handler (after paint).
+  useEffect(() => {
+    if (!showText) return;
+    const groups = getLetterGroups();
+    if (groups.length !== 5) return;
+
+    // Staggered entrance: each letter slides right to its resting position
+    const entranceTimers = groups.map((g, i) =>
       setTimeout(() => {
         g.style.transition = `transform 900ms cubic-bezier(0.19,1,0.22,1) ${i * 70}ms, opacity 600ms ease ${i * 60}ms`;
-        setPos(g, LETTER_X[i], 1);
+        g.setAttribute('transform', `translate(${LETTER_X[i]}, 0)`);
+        g.style.opacity = '1';
       }, 80)
     );
 
-    // Scroll handler: collapse letters LEFT toward the Q mark, restore when at top
+    // Scroll: collapse letters behind Q on scroll down, restore on scroll to top
     let rafId: number;
     const handleScroll = () => {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         const isScrolled = window.scrollY > 40;
-        letterGroups.forEach((g, i) => {
-          // When collapsing: left-to-right stagger (first letter moves first)
-          // When restoring: right-to-left stagger (last letter comes back first)
+        groups.forEach((g, i) => {
+          // Collapse left-to-right; restore right-to-left (reverse stagger)
           const delay = isScrolled ? i * 40 : (4 - i) * 40;
           g.style.transition = `transform 480ms cubic-bezier(0.77,0,0.175,1) ${delay}ms, opacity 280ms ease ${delay}ms`;
           if (isScrolled) {
-            // Collapse: slide toward the Q (x ≈ 0 = right behind the Q mark)
-            setPos(g, LETTER_X[i] * 0.06, 0);
+            // Slide each letter back toward the Q mark (near x=0)
+            g.setAttribute('transform', `translate(${Math.round(LETTER_X[i] * 0.06)}, 0)`);
+            g.style.opacity = '0';
           } else {
-            // Restore: slide back to resting position
-            setPos(g, LETTER_X[i], 1);
+            g.setAttribute('transform', `translate(${LETTER_X[i]}, 0)`);
+            g.style.opacity = '1';
           }
         });
       });
@@ -158,6 +160,12 @@ function QofenoLogo({
       entranceTimers.forEach(clearTimeout);
       cancelAnimationFrame(rafId);
       window.removeEventListener('scroll', handleScroll);
+      // Reset on unmount
+      groups.forEach((g, i) => {
+        g.style.transition = '';
+        g.style.opacity = '';
+        g.setAttribute('transform', `translate(${LETTER_X[i]}, 0)`);
+      });
     };
   }, [showText]);
 
