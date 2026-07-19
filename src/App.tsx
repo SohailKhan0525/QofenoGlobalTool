@@ -668,7 +668,7 @@ export default function App() {
         {/* Brand logo & icon */}
         <div 
           onClick={() => setActiveTab('home')}
-          className="flex items-center gap-2.5 cursor-pointer group"
+          className="flex items-center gap-2.5 cursor-pointer group w-[230px] shrink-0"
         >
           <QofenoLogo size={38} showText={true} textClass="text-xl md:text-2xl font-sans" collapseOnScroll={true} scrolled={navbarScrolled} />
         </div>
