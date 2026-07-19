@@ -61,119 +61,99 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 
 
-// ─── Inline Q mark SVG — exact recreation of user's uploaded qofeno_full.svg ─────────────────────
-// Uses exact paths, coordinates, and viewBox 18 0 132 132 from public/qofeno_full.svg.
-// Inline so it renders instantly (no network round-trip, no img flash) and inherits colors.
-function QMark({ size = 38, className = '' }: { size?: number; className?: string }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="18 0 132 132"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        fill="currentColor"
-        d="M 84.00 129.00 A 65.9 65.9 0 1 1 120.00 100.50 L 108.00 90.00 A 49.2 49.2 0 1 0 73.00 115.00 Z"
-      />
-      <path
-        fill="currentColor"
-        d="M 62.00 83.00 L 83.00 83.00 L 130.00 132.00 L 108.50 131.50 Z"
-      />
-    </svg>
-  );
-}
-
-// ─── Inline OFENO text SVG — exact recreation of wordmark paths from qofeno_full.svg ────────
-function OfenoText({ size = 38, className = '' }: { size?: number; className?: string }) {
-  // viewBox: 150 0 634 132 (the text portion of qofeno_full.svg)
-  return (
-    <svg
-      width={size * 4.8}
-      height={size}
-      viewBox="150 0 634 132"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      className={className}
-    >
-      <g fill="currentColor">
-        {/* O (translated 150.00,0) */}
-        <g transform="translate(150.00,0)">
-          <path d="M 131.98 64.38 L 131.92 62.76 L 131.82 61.14 L 131.68 59.53 L 131.50 57.92 L 131.29 56.32 L 130.02 49.96 L 129.61 48.40 L 129.16 46.84 L 128.67 45.30 L 128.14 43.77 L 127.58 42.25 L 126.98 40.74 L 126.34 39.25 L 125.66 37.78 L 124.95 36.33 L 124.21 34.89 L 123.43 33.47 L 122.61 32.07 L 121.76 30.69 L 120.88 29.33 L 119.96 28.00 L 119.01 26.68 L 118.03 25.39 L 117.02 24.13 L 115.98 22.89 L 114.90 21.68 L 113.80 20.49 L 112.67 19.33 L 111.51 18.20 L 110.32 17.10 L 109.11 16.02 L 107.87 14.98 L 106.61 13.97 L 105.32 12.99 L 104.00 12.04 L 102.67 11.12 L 101.31 10.24 L 99.93 9.39 L 98.53 8.57 L 97.11 7.79 L 95.67 7.05 L 94.22 6.34 L 92.75 5.66 L 91.26 5.02 L 89.75 4.42 L 88.23 3.86 L 86.70 3.33 L 85.16 2.84 L 83.60 2.39 L 82.04 1.98 L 80.46 1.60 L 78.88 1.27 L 77.28 0.97 L 75.68 0.71 L 74.08 0.50 L 72.47 0.32 L 70.86 0.18 L 69.24 0.08 L 67.62 0.02 L 66.00 0.00 L 64.38 0.02 L 62.76 0.08 L 61.14 0.18 L 59.53 0.32 L 57.92 0.50 L 56.32 0.71 L 54.72 0.97 L 53.12 1.27 L 51.54 1.60 L 49.96 1.98 L 48.40 2.39 L 46.84 2.84 L 45.30 3.33 L 43.77 3.86 L 42.25 4.42 L 40.74 5.02 L 39.25 5.66 L 37.78 6.34 L 36.33 7.05 L 34.89 7.79 L 33.47 8.57 L 32.07 9.39 L 30.69 10.24 L 29.33 11.12 L 28.00 12.04 L 26.68 12.99 L 25.39 13.97 L 24.13 14.98 L 22.89 16.02 L 21.68 17.10 L 20.49 18.20 L 19.33 19.33 L 18.20 20.49 L 17.10 21.68 L 16.02 22.89 L 14.98 24.13 L 13.97 25.39 L 12.99 26.68 L 12.04 28.00 L 11.12 29.33 L 10.24 30.69 L 9.39 32.07 L 8.57 33.47 L 7.79 34.89 L 7.05 36.33 L 6.34 37.78 L 5.66 39.25 L 5.02 40.74 L 4.42 42.25 L 3.86 43.77 L 3.33 45.30 L 2.84 46.84 L 2.39 48.40 L 1.98 49.96 L 1.60 51.54 L 1.27 53.12 L 0.97 54.72 L 0.71 56.32 L 0.50 57.92 L 0.32 59.53 L 0.18 61.14 L 0.08 62.76 L 0.02 64.38 L 0.00 66.00 L 0.02 67.62 L 0.08 69.24 L 0.18 70.86 L 0.32 72.47 L 0.50 74.08 L 0.71 75.68 L 0.97 77.28 L 1.27 78.88 L 1.60 80.46 L 1.98 82.04 L 2.39 83.60 L 2.84 85.16 L 3.33 86.70 L 3.86 88.23 L 4.42 89.75 L 5.02 91.26 L 5.66 92.75 L 6.34 94.22 L 7.05 95.67 L 7.79 97.11 L 8.57 98.53 L 9.39 99.93 L 10.24 101.31 L 11.12 102.67 L 12.04 104.00 L 12.99 105.32 L 13.97 106.61 L 14.98 107.87 L 16.02 109.11 L 17.10 110.32 L 18.20 111.51 L 19.33 112.67 L 20.49 113.80 L 21.68 114.90 L 22.89 115.98 L 24.13 117.02 L 25.39 118.03 L 26.68 119.01 L 28.00 119.96 L 29.33 120.88 L 30.69 121.76 L 32.07 122.61 L 33.47 123.43 L 34.89 124.21 L 36.33 124.95 L 37.78 125.66 L 39.25 126.34 L 40.74 126.98 L 42.25 127.58 L 43.77 128.14 L 45.30 128.67 L 46.84 129.16 L 48.40 129.61 L 49.96 130.02 L 51.54 130.40 L 53.12 130.73 L 54.72 131.03 L 56.32 131.29 L 57.92 131.50 L 59.53 131.68 L 61.14 131.82 L 62.76 131.92 L 64.38 131.98 L 66.00 132.00 Z" />
-        </g>
-        {/* F (translated 302.00,0) */}
-        <g transform="translate(302.00,0)">
-          <path d="M 92.00 16.70 L 92.00 0.00 L 16.70 0.00 L 0.00 0.00 L 0.00 16.70 L 0.00 57.65 L 0.00 74.35 L 0.00 132.00 L 16.70 132.00 L 16.70 74.35 L 71.76 74.35 L 71.76 57.65 L 16.70 57.65 L 16.70 16.70 Z" />
-        </g>
-        {/* E (translated 414.00,0) */}
-        <g transform="translate(414.00,0)">
-          <path d="M 92.00 0.00 L 16.70 0.00 L 0.00 0.00 L 0.00 16.70 L 0.00 57.65 L 0.00 74.35 L 0.00 115.30 L 0.00 132.00 L 16.70 132.00 L 92.00 132.00 L 92.00 115.30 L 16.70 115.30 L 16.70 74.35 L 66.24 74.35 L 66.24 57.65 L 16.70 57.65 L 16.70 16.70 L 92.00 16.70 Z" />
-        </g>
-        {/* N (translated 526.00,0) */}
-        <g transform="translate(526.00,0)">
-          <path d="M 0.00 0.00 L 0.00 132.00 L 16.70 132.00 L 16.70 27.24 L 90.73 136.68 L 97.65 132.00 L 106.00 132.00 L 106.00 0.00 L 89.30 0.00 L 89.30 104.76 L 15.27 -4.68 L 8.35 0.00 Z" />
-        </g>
-        {/* O (translated 652.00,0) */}
-        <g transform="translate(652.00,0)">
-          <path d="M 131.98 64.38 L 131.92 62.76 L 131.82 61.14 L 131.68 59.53 L 131.50 57.92 L 131.29 56.32 L 130.02 49.96 L 129.61 48.40 L 129.16 46.84 L 128.67 45.30 L 128.14 43.77 L 127.58 42.25 L 126.98 40.74 L 126.34 39.25 L 125.66 37.78 L 124.95 36.33 L 124.21 34.89 L 123.43 33.47 L 122.61 32.07 L 121.76 30.69 L 120.88 29.33 L 119.96 28.00 L 119.01 26.68 L 118.03 25.39 L 117.02 24.13 L 115.98 22.89 L 114.90 21.68 L 113.80 20.49 L 112.67 19.33 L 111.51 18.20 L 110.32 17.10 L 109.11 16.02 L 107.87 14.98 L 106.61 13.97 L 105.32 12.99 L 104.00 12.04 L 102.67 11.12 L 101.31 10.24 L 99.93 9.39 L 98.53 8.57 L 97.11 7.79 L 95.67 7.05 L 94.22 6.34 L 92.75 5.66 L 91.26 5.02 L 89.75 4.42 L 88.23 3.86 L 86.70 3.33 L 85.16 2.84 L 83.60 2.39 L 82.04 1.98 L 80.46 1.60 L 78.88 1.27 L 77.28 0.97 L 75.68 0.71 L 74.08 0.50 L 72.47 0.32 L 70.86 0.18 L 69.24 0.08 L 67.62 0.02 L 66.00 0.00 L 64.38 0.02 L 62.76 0.08 L 61.14 0.18 L 59.53 0.32 L 57.92 0.50 L 56.32 0.71 L 54.72 0.97 L 53.12 1.27 L 51.54 1.60 L 49.96 1.98 L 48.40 2.39 L 46.84 2.84 L 45.30 3.33 L 43.77 3.86 L 42.25 4.42 L 40.74 5.02 L 39.25 5.66 L 37.78 6.34 L 36.33 7.05 L 34.89 7.79 L 33.47 8.57 L 32.07 9.39 L 30.69 10.24 L 29.33 11.12 L 28.00 12.04 L 26.68 12.99 L 25.39 13.97 L 24.13 14.98 L 22.89 16.02 L 21.68 17.10 L 20.49 18.20 L 19.33 19.33 L 18.20 20.49 L 17.10 21.68 L 16.02 22.89 L 14.98 24.13 L 13.97 25.39 L 12.99 26.68 L 12.04 28.00 L 11.12 29.33 L 10.24 30.69 L 9.39 32.07 L 8.57 33.47 L 7.79 34.89 L 7.05 36.33 L 6.34 37.78 L 5.66 39.25 L 5.02 40.74 L 4.42 42.25 L 3.86 43.77 L 3.33 45.30 L 2.84 46.84 L 2.39 48.40 L 1.98 49.96 L 1.60 51.54 L 1.27 53.12 L 0.97 54.72 L 0.71 56.32 L 0.50 57.92 L 0.32 59.53 L 0.18 61.14 L 0.08 62.76 L 0.02 64.38 L 0.00 66.00 Z" />
-        </g>
-      </g>
-    </svg>
-  );
-}
-
 // ─── QofenoLogo ───────────────────────────────────────────────────────────────
 // Anthropic-style animation: the Q icon stays fixed while OFENO slides right
-// beneath it and disappears. Pure CSS overflow+translateX — fully composited,
-// reversible, 60fps, no layout jank.
+// beneath it and disappears. Pure CSS overflow+translateX of dual instances of
+// the physical `/qofeno_full.svg` file directly from the public folder.
+// Fully composited, reversible, 60fps, no layout jank.
 function QofenoLogo({
   size = 36,
   showText = true,
-  textClass = 'text-[#0F0A1E]',
-  iconClass = 'text-[#0F0A1E]',
+  invert = false,
   collapseOnScroll = false,
-  scrolled = false
+  scrolled = false,
+  // Ignored backward-compatible props:
+  textClass = '',
+  iconClass = ''
 }: {
   size?: number;
   showText?: boolean;
-  textClass?: string;
-  iconClass?: string;
+  invert?: boolean;
   collapseOnScroll?: boolean;
   scrolled?: boolean;
+  textClass?: string;
+  iconClass?: string;
 }) {
   const collapsed = collapseOnScroll && scrolled;
 
+  // The full SVG width-to-height ratio is 784 / 132 = 5.93939
+  const fullWidth = size * (784 / 132);
+  
+  // The Q logo portion is from x = 0 to x = 150. (150 / 132)
+  const qWidth = size * (150 / 132);
+  
+  // The OFENO wordmark portion is from x = 150 to x = 784. (634 / 132)
+  const textWidth = size * (634 / 132);
+
   return (
     <div
-      className="flex items-center select-none"
+      className="flex items-center select-none relative"
       aria-label="Qofeno"
       role="img"
+      style={{ 
+        height: size,
+        filter: invert ? 'brightness(0) invert(1)' : 'none'
+      }}
     >
-      {/* Q icon — canonical qofeno_full.svg paths, always visible, never moves */}
-      <QMark size={size} className={cn('shrink-0 transition-all duration-300', iconClass)} />
+      {/* Q Icon part: Crops the first 150px (scaled) of qofeno_full.svg */}
+      <div 
+        className="overflow-hidden shrink-0"
+        style={{ width: qWidth, height: size }}
+      >
+        <img 
+          src="/qofeno_full.svg" 
+          alt="" 
+          style={{ 
+            width: fullWidth, 
+            height: size, 
+            maxWidth: 'none',
+            display: 'block'
+          }} 
+        />
+      </div>
 
-      {/* Wordmark container: overflow hidden so text slides out right under the icon */}
+      {/* Wordmark part: Crops the remaining part of qofeno_full.svg and animates it */}
       {showText && (
         <div
           className="overflow-hidden"
           style={{
-            maxWidth: collapsed ? '0px' : `${size * 5.0}px`,
+            maxWidth: collapsed ? '0px' : `${textWidth}px`,
+            height: size,
             transition: 'max-width 480ms cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
           <div
-            className={cn('will-change-transform pl-[8px] flex items-center', textClass)}
+            className="will-change-transform"
             style={{
+              width: textWidth,
+              height: size,
+              overflow: 'hidden',
               transform: collapsed ? 'translateX(24px)' : 'translateX(0)',
               opacity: collapsed ? 0 : 1,
               transition: 'transform 480ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease',
             }}
           >
-            <OfenoText size={size * 0.9} />
+            <img 
+              src="/qofeno_full.svg" 
+              alt="" 
+              style={{ 
+                width: fullWidth, 
+                height: size, 
+                maxWidth: 'none',
+                transform: `translateX(-${qWidth}px)`,
+                display: 'block'
+              }} 
+            />
           </div>
         </div>
       )}
