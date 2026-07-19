@@ -61,11 +61,13 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 
 
-// ─── QofenoLogo ───────────────────────────────────────────────────────────────
-// Anthropic-style animation: the Q icon stays fixed while OFENO slides right
-// beneath it and disappears. Pure CSS overflow+translateX of dual instances of
-// the physical `/qofeno_full.svg` file directly from the public folder.
-// Fully composited, reversible, 60fps, no layout jank.
+// Cache for loaded brand SVG assets
+const svgCache = new Map<string, string>();
+
+// Anthropic-style animation: the Q icon stays fixed while the OFENO letters 
+// slide to the right and fade out staggered (right-to-left collapse, left-to-right reveal)
+// by fetching and inlining your physical `/qofeno_full.svg` file directly from 
+// the public folder at runtime. Fully composited, 60fps, no layout jank.
 function QofenoLogo({
   size = 36,
   showText = true,
@@ -84,80 +86,90 @@ function QofenoLogo({
   textClass?: string;
   iconClass?: string;
 }) {
-  const collapsed = collapseOnScroll && scrolled;
+  const [rawSvg, setRawSvg] = useState<string>('');
 
-  // The full SVG width-to-height ratio is 784 / 132 = 5.93939
-  const fullWidth = size * (784 / 132);
-  
-  // The Q logo portion is from x = 0 to x = 150. (150 / 132)
-  const qWidth = size * (150 / 132);
-  
-  // The OFENO wordmark portion is from x = 150 to x = 784. (634 / 132)
-  const textWidth = size * (634 / 132);
+  useEffect(() => {
+    if (!showText) return;
+    const url = '/qofeno_full.svg';
+    if (svgCache.has(url)) {
+      setRawSvg(svgCache.get(url)!);
+    } else {
+      fetch(url)
+        .then((res) => res.text())
+        .then((text) => {
+          svgCache.set(url, text);
+          setRawSvg(text);
+        })
+        .catch((err) => console.error('Failed to load brand SVG', err));
+    }
+  }, [showText]);
+
+  const collapsed = collapseOnScroll && scrolled;
+  const viewBoxWidth = showText ? 784 : 150;
+  const width = size * (viewBoxWidth / 132);
+
+  // If text is hidden (icon-only), render the Q logo ring and stem synchronously using vector geometry
+  if (!showText) {
+    return (
+      <div
+        className="qofeno-logo-container select-none flex items-center shrink-0"
+        style={{
+          height: size,
+          width: size * (150 / 132),
+          filter: invert ? 'brightness(0) invert(1)' : 'none',
+          color: 'currentColor'
+        }}
+      >
+        <svg
+          viewBox="0 0 150 132"
+          className="block w-full h-full"
+          fill="currentColor"
+        >
+          <path d="M 84.00 129.00 A 65.9 65.9 0 1 1 120.00 100.50 L 108.00 90.00 A 49.2 49.2 0 1 0 73.00 115.00 Z" />
+          <path d="M 62.00 83.00 L 83.00 83.00 L 130.00 132.00 L 108.50 131.50 Z" />
+        </svg>
+      </div>
+    );
+  }
+
+  // Fallback layout rendered synchronously before the SVG file fetch resolves
+  if (!rawSvg) {
+    return (
+      <div
+        className="qofeno-logo-container select-none flex items-center shrink-0"
+        style={{
+          height: size,
+          width: width,
+          filter: invert ? 'brightness(0) invert(1)' : 'none',
+          color: 'currentColor'
+        }}
+      >
+        <svg
+          viewBox={`0 0 ${viewBoxWidth} 132`}
+          className="block w-full h-full"
+          fill="currentColor"
+        >
+          <path d="M 84.00 129.00 A 65.9 65.9 0 1 1 120.00 100.50 L 108.00 90.00 A 49.2 49.2 0 1 0 73.00 115.00 Z" />
+          <path d="M 62.00 83.00 L 83.00 83.00 L 130.00 132.00 L 108.50 131.50 Z" />
+        </svg>
+      </div>
+    );
+  }
 
   return (
     <div
-      className="flex items-center select-none relative"
+      className={`qofeno-logo-container select-none flex items-center shrink-0 ${collapsed ? 'qofeno-logo-collapsed' : ''}`}
       aria-label="Qofeno"
       role="img"
-      style={{ 
+      style={{
         height: size,
-        filter: invert ? 'brightness(0) invert(1)' : 'none'
+        width: width,
+        filter: invert ? 'brightness(0) invert(1)' : 'none',
+        color: 'currentColor',
+        transition: 'width 480ms cubic-bezier(.77,0,.175,1)'
       }}
-    >
-      {/* Q Icon part: Crops the first 150px (scaled) of qofeno_full.svg */}
-      <div 
-        className="overflow-hidden shrink-0"
-        style={{ width: qWidth, height: size }}
-      >
-        <img 
-          src="/qofeno_full.svg" 
-          alt="" 
-          style={{ 
-            width: fullWidth, 
-            height: size, 
-            maxWidth: 'none',
-            display: 'block'
-          }} 
-        />
-      </div>
-
-      {/* Wordmark part: Crops the remaining part of qofeno_full.svg and animates it */}
-      {showText && (
-        <div
-          className="overflow-hidden"
-          style={{
-            maxWidth: collapsed ? '0px' : `${textWidth}px`,
-            height: size,
-            transition: 'max-width 480ms cubic-bezier(.77,0,.175,1)',
-          }}
-        >
-          <div
-            className="will-change-transform"
-            style={{
-              width: textWidth,
-              height: size,
-              overflow: 'hidden',
-              transform: collapsed ? 'translateX(24px)' : 'translateX(0)',
-              opacity: collapsed ? 0 : 1,
-              transition: 'transform 480ms cubic-bezier(.77,0,.175,1), opacity 300ms ease',
-            }}
-          >
-            <img 
-              src="/qofeno_full.svg" 
-              alt="" 
-              style={{ 
-                width: fullWidth, 
-                height: size, 
-                maxWidth: 'none',
-                transform: `translateX(-${qWidth}px)`,
-                display: 'block'
-              }} 
-            />
-          </div>
-        </div>
-      )}
-    </div>
+      dangerouslySetInnerHTML={{ __html: rawSvg }}
+    />
   );
 }
 
