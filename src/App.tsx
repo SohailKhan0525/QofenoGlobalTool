@@ -61,33 +61,27 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 
 
-// ─── Inline Q mark SVG — exact recreation of q_logo.svg ─────────────────────
-// Thick geometric ring (270° arc) + diagonal bar through the bottom-right gap.
-// Inline so it renders instantly (no network round-trip, no img flash).
+// ─── Inline Q mark SVG — exact recreation of user's uploaded q_logo.svg ─────────────────────
+// Uses exact paths, coordinates, and viewBox 0 0 228 216 from public/q_logo.svg.
+// Inline so it renders instantly (no network round-trip, no img flash) and inherits colors.
 function QMark({ size = 38, className = '' }: { size?: number; className?: string }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 100 100"
+      viewBox="0 0 228 216"
       fill="none"
+      xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
       className={className}
     >
-      {/* 270° ring arc: from 7 o'clock (lower-left) clockwise to 4 o'clock (lower-right) */}
       <path
-        d="M 34 77.7 A 32 32 0 1 1 77.7 66"
-        stroke="currentColor"
-        strokeWidth="14"
-        strokeLinecap="butt"
+        fill="currentColor"
+        d="M 119 180 A 65.9 65.9 0 1 1 155 151.5 L 143 141 A 49.2 49.2 0 1 0 108 166 Z"
       />
-      {/* Diagonal bar through the bottom-right gap — the logo's signature mark */}
-      <line
-        x1="21" y1="85"
-        x2="81" y2="55"
-        stroke="currentColor"
-        strokeWidth="14"
-        strokeLinecap="butt"
+      <path
+        fill="currentColor"
+        d="M 97 134 L 118 134 L 165 183 L 143.5 182.5 Z"
       />
     </svg>
   );
@@ -100,8 +94,8 @@ function QMark({ size = 38, className = '' }: { size?: number; className?: strin
 function QofenoLogo({
   size = 36,
   showText = true,
-  textClass = '',
-  iconClass = 'text-[#0D0D0D]',
+  textClass = 'text-[#0F0A1E]',
+  iconClass = 'text-[#0F0A1E]',
   collapseOnScroll = false,
   scrolled = false
 }: {
@@ -120,33 +114,27 @@ function QofenoLogo({
       aria-label="Qofeno"
       role="img"
     >
-      {/* Q icon — always visible, never moves */}
-      <QMark
-        size={size}
-        className={cn('shrink-0 transition-none', iconClass)}
-      />
+      {/* Q icon — canonical q_logo.svg paths, always visible, never moves */}
+      <QMark size={size} className={cn('shrink-0 transition-all duration-300', iconClass)} />
 
-      {/* Wordmark container: clips overflow so the slide happens behind the icon */}
+      {/* Wordmark container: overflow hidden so text slides out left under the icon */}
       {showText && (
         <div
           className="overflow-hidden"
           style={{
-            // max-width transition creates the space-collapse effect
             maxWidth: collapsed ? '0px' : '200px',
             transition: 'max-width 480ms cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
           <span
             className={cn(
-              'inline-block whitespace-nowrap font-extrabold tracking-[-0.04em] will-change-transform pl-[5px]',
-              textClass || 'text-[#0D0D0D]'
+              'inline-block whitespace-nowrap font-extrabold tracking-[-0.04em] will-change-transform pl-[6px]',
+              textClass
             )}
             style={{
-              // translateX slides the text LEFT behind the icon — the Anthropic pattern
               transform: collapsed ? 'translateX(-110%)' : 'translateX(0)',
               opacity: collapsed ? 0 : 1,
-              transition:
-                'transform 480ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease',
+              transition: 'transform 480ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease',
             }}
           >
             QOFENO
