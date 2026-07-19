@@ -65,16 +65,16 @@ import { CookieConsentBanner } from './components/CookieConsentBanner';
 import qofenoFullSvg from '../public/qofeno_full.svg?raw';
 
 // Anthropic-style animation: the Q icon stays fixed while the OFENO letters 
-// slide to the left and fade out staggered (right-to-left collapse, left-to-right reveal)
+// slide to the right and fade in staggered (staggered entry animation)
 // by compiling your physical `/public/qofeno_full.svg` asset directly inline.
 // Fully synchronous, 60fps, works offline, no CORS/fetch restrictions.
 function QofenoLogo({
   size = 36,
   showText = true,
   invert = false,
+  // Ignored backward-compatible props:
   collapseOnScroll = false,
   scrolled = false,
-  // Ignored backward-compatible props:
   textClass = '',
   iconClass = ''
 }: {
@@ -86,13 +86,11 @@ function QofenoLogo({
   textClass?: string;
   iconClass?: string;
 }) {
-  const collapsed = collapseOnScroll && scrolled;
   const viewBoxWidth = showText ? 784 : 150;
   
   // Calculate exact scaled widths based on viewBox coordinate mappings
   const fullWidth = size * (784 / 132);
   const qWidth = size * (150 / 132);
-  const width = collapsed ? qWidth : fullWidth;
 
   // If text is hidden (icon-only), render the Q logo ring and stem synchronously using vector geometry
   if (!showText) {
@@ -120,15 +118,14 @@ function QofenoLogo({
 
   return (
     <div
-      className={`qofeno-logo-container select-none flex items-center shrink-0 ${collapsed ? 'qofeno-logo-collapsed' : ''}`}
+      className="qofeno-logo-container select-none flex items-center shrink-0"
       aria-label="Qofeno"
       role="img"
       style={{
         height: size,
-        width: width,
+        width: fullWidth,
         filter: invert ? 'brightness(0) invert(1)' : 'none',
         color: 'currentColor',
-        transition: 'width 480ms cubic-bezier(.77,0,.175,1)',
         overflow: 'hidden',
         position: 'relative',
         ['--logo-full-width' as any]: `${fullWidth}px`
@@ -647,7 +644,7 @@ export default function App() {
           onClick={() => setActiveTab('home')}
           className="flex items-center gap-2.5 cursor-pointer group w-[230px] shrink-0"
         >
-          <QofenoLogo size={38} showText={true} textClass="text-xl md:text-2xl font-sans" collapseOnScroll={true} scrolled={navbarScrolled} />
+          <QofenoLogo size={38} showText={true} textClass="text-xl md:text-2xl font-sans" />
         </div>
 
         {/* Wide nav categories linking tabs */}
