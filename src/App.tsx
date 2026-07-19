@@ -87,8 +87,54 @@ function QMark({ size = 38, className = '' }: { size?: number; className?: strin
   );
 }
 
+// ─── Inline OFENO text SVG — exact recreation of wordmark paths matching q_logo.svg style ─────
+function OfenoText({ size = 38, className = '' }: { size?: number; className?: string }) {
+  return (
+    <svg
+      width={size * 1.39}
+      height={size}
+      viewBox="170 0 300 216"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      className={className}
+    >
+      {/* O */}
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M 207.5 70 A 37.5 37.5 0 1 0 207.5 145 A 37.5 37.5 0 1 0 207.5 70 Z M 207.5 86 A 21.5 21.5 0 1 1 207.5 129 A 21.5 21.5 0 1 1 207.5 86 Z"
+      />
+      {/* F */}
+      <path
+        fill="currentColor"
+        d="M 242 70 H 292 V 86 H 258 V 99.5 H 284 V 115.5 H 258 V 145 H 242 Z"
+      />
+      {/* E */}
+      <path
+        fill="currentColor"
+        d="M 289 70 H 341 V 86 H 305 V 99.5 H 333 V 115.5 H 305 V 129 H 341 V 145 H 289 Z"
+      />
+      {/* N */}
+      <g fill="currentColor">
+        <rect x="338" y="70" width="16" height="75" />
+        <rect x="382" y="70" width="16" height="75" />
+        <polygon points="354,70 370,70 398,145 382,145" />
+      </g>
+      {/* O */}
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M 432.5 70 A 37.5 37.5 0 1 0 432.5 145 A 37.5 37.5 0 1 0 432.5 70 Z M 432.5 86 A 21.5 21.5 0 1 1 432.5 129 A 21.5 21.5 0 1 1 432.5 86 Z"
+      />
+    </svg>
+  );
+}
+
 // ─── QofenoLogo ───────────────────────────────────────────────────────────────
-// Anthropic-style animation: the Q icon stays fixed while QOFENO slides left
+// Anthropic-style animation: the Q icon stays fixed while OFENO slides left
 // beneath it and disappears. Pure CSS overflow+translateX — fully composited,
 // reversible, 60fps, no layout jank.
 function QofenoLogo({
@@ -122,23 +168,20 @@ function QofenoLogo({
         <div
           className="overflow-hidden"
           style={{
-            maxWidth: collapsed ? '0px' : '200px',
+            maxWidth: collapsed ? '0px' : `${size * 1.5}px`,
             transition: 'max-width 480ms cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
-          <span
-            className={cn(
-              'inline-block whitespace-nowrap font-extrabold tracking-[-0.04em] will-change-transform pl-[6px]',
-              textClass
-            )}
+          <div
+            className={cn('will-change-transform pl-[4px] flex items-center', textClass)}
             style={{
               transform: collapsed ? 'translateX(-110%)' : 'translateX(0)',
               opacity: collapsed ? 0 : 1,
               transition: 'transform 480ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease',
             }}
           >
-            QOFENO
-          </span>
+            <OfenoText size={size * 0.9} />
+          </div>
         </div>
       )}
     </div>
