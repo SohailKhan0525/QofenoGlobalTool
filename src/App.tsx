@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from './components/Layout';
 import { Home } from './components/Pages/Home';
 import { ToolsCatalog } from './components/Pages/ToolsCatalog';
@@ -64,13 +64,14 @@ import { CookieConsentBanner } from './components/CookieConsentBanner';
 // @ts-expect-error - Vite raw import support
 import qofenoFullSvg from '../public/qofeno_full.svg?raw';
 
-// Natural translate-X positions of the 5 letter <g> groups inside qofeno_full.svg
-// These match the transform="translate(X,0)" values in the SVG source exactly.
+// Natural translate-X positions of the 5 OFENO letter groups (SVG user units, matches qofeno_full.svg)
 const LETTER_X = [150, 302, 414, 526, 652] as const;
+// How far left each letter slides when fully collapsed (toward behind the Q mark)
+const LETTER_X_COLLAPSED = [9, 18, 25, 32, 40] as const;
 
-// Anthropic-style logo: Q mark stays fixed. OFENO letters slide right on load
-// and collapse left behind the Q mark when scrolling — driven by direct SVG
-// transform manipulation (no CSS nth-of-type, which doesn't work in mixed-sibling SVGs).
+// Qofeno logo with Anthropic-style scroll animation.
+// Uses GSAP for SVG attribute tweens — the only reliable cross-browser way to
+// animate SVG <g transform="translate(x,0)"> in SVG user-unit coordinate space.
 function QofenoLogo({
   size = 36,
   showText = true,
@@ -90,108 +91,83 @@ function QofenoLogo({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Helper: grab the 5 letter <g> elements from the inline SVG
-  const getLetterGroups = () => {
-    const el = containerRef.current;
-    if (!el) return [];
-    const rootG = el.querySelector('svg > g');
-    if (!rootG) return [];
-    return Array.from(rootG.children).filter(
-      (c): c is SVGGElement => c.tagName === 'g'
-    ) as SVGGElement[];
-  };
-
-  // PHASE 1 — runs synchronously before paint to prevent a visible flash.
-  // Sets all letter groups to opacity 0 and slightly left of their resting positions.
-  // Uses setAttribute('transform') because SVG transform attributes use SVG user units
-  // (bare numbers like 90 or 302), whereas style.transform requires CSS units (px/%).
-  useLayoutEffect(() => {
-    if (!showText) return;
-    const groups = getLetterGroups();
-    groups.forEach((g, i) => {
-      g.style.transition = 'none';
-      g.style.opacity = '0';
-      g.style.willChange = 'transform, opacity';
-      // setAttribute uses SVG user units — correct coordinate space
-      g.setAttribute('transform', `translate(${LETTER_X[i] - 60}, 0)`);
-    });
-  }, [showText]);
-
-  // PHASE 2 — entrance animation + scroll handler (after paint).
   useEffect(() => {
     if (!showText) return;
-    const groups = getLetterGroups();
-    if (groups.length !== 5) return;
+    let gsapCtx: any = null;
 
-    // Staggered entrance: each letter slides right to its resting position
-    const entranceTimers = groups.map((g, i) =>
-      setTimeout(() => {
-        g.style.transition = `transform 900ms cubic-bezier(0.19,1,0.22,1) ${i * 70}ms, opacity 600ms ease ${i * 60}ms`;
-        g.setAttribute('transform', `translate(${LETTER_X[i]}, 0)`);
-        g.style.opacity = '1';
-      }, 80)
-    );
+    // Load GSAP dynamically (already in node_modules, just avoids SSR issues)
+    Promise.all([
+      import('gsap'),
+      import('gsap/ScrollTrigger')
+    ]).then(([{ gsap }, { ScrollTrigger }]) => {
+      gsap.registerPlugin(ScrollTrigger);
 
-    // Scroll: collapse letters behind Q on scroll down, restore on scroll to top
-    let rafId: number;
-    const handleScroll = () => {
-      cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(() => {
-        const isScrolled = window.scrollY > 40;
-        groups.forEach((g, i) => {
-          // Collapse left-to-right; restore right-to-left (reverse stagger)
-          const delay = isScrolled ? i * 40 : (4 - i) * 40;
-          g.style.transition = `transform 480ms cubic-bezier(0.77,0,0.175,1) ${delay}ms, opacity 280ms ease ${delay}ms`;
-          if (isScrolled) {
-            // Slide each letter back toward the Q mark (near x=0)
-            g.setAttribute('transform', `translate(${Math.round(LETTER_X[i] * 0.06)}, 0)`);
-            g.style.opacity = '0';
-          } else {
-            g.setAttribute('transform', `translate(${LETTER_X[i]}, 0)`);
-            g.style.opacity = '1';
+      const el = containerRef.current;
+      if (!el) return;
+
+      // Query the 5 letter <g> elements: children of the root <g> that are themselves <g> tags
+      const rootG = el.querySelector('svg > g');
+      if (!rootG) return;
+      const letterGs = Array.from(rootG.children).filter(
+        (c) => c.tagName === 'g'
+      ) as SVGGElement[];
+      if (letterGs.length !== 5) return;
+
+      gsapCtx = gsap.context(() => {
+        // --- ENTRANCE: staggered slide-in on page load ---
+        // Start letters invisible, 60 user-units left of resting position
+        gsap.set(letterGs, { autoAlpha: 0 });
+        letterGs.forEach((g, i) => {
+          gsap.set(g, { attr: { transform: `translate(${LETTER_X[i] - 60}, 0)` } });
+        });
+
+        // Stagger each letter sliding right into its resting position
+        gsap.to(letterGs, {
+          autoAlpha: 1,
+          attr: (i: number) => ({ transform: `translate(${LETTER_X[i]}, 0)` }),
+          duration: 0.9,
+          ease: 'power3.out',
+          stagger: 0.07,
+          delay: 0.1
+        });
+
+        // --- SCROLL COLLAPSE: scrub letters toward Q mark as user scrolls ---
+        // This mirrors Anthropic exactly: scroll 0→120px = animation 0→100%
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: document.body,
+            start: 'top top',
+            end: '120px top',
+            scrub: 0.3,        // slight smoothing, like Anthropic
           }
         });
-      });
-    };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+        letterGs.forEach((g, i) => {
+          tl.to(g, {
+            autoAlpha: 0,
+            attr: { transform: `translate(${LETTER_X_COLLAPSED[i]}, 0)` },
+            ease: 'power1.inOut',
+            duration: 1
+          }, 0); // all at position 0 = play simultaneously (no stagger on scroll = matches Anthropic)
+        });
+      }, el);
+    });
 
     return () => {
-      entranceTimers.forEach(clearTimeout);
-      cancelAnimationFrame(rafId);
-      window.removeEventListener('scroll', handleScroll);
-      // Reset on unmount
-      groups.forEach((g, i) => {
-        g.style.transition = '';
-        g.style.opacity = '';
-        g.setAttribute('transform', `translate(${LETTER_X[i]}, 0)`);
-      });
+      if (gsapCtx) gsapCtx.revert();
     };
   }, [showText]);
 
-  const viewBoxWidth = showText ? 784 : 150;
-  
-  // Calculate exact scaled widths based on viewBox coordinate mappings
   const fullWidth = size * (784 / 132);
-  const qWidth = size * (150 / 132);
+  const qWidth   = size * (150 / 132);
 
-  // If text is hidden (icon-only), render the Q logo ring and stem synchronously using vector geometry
   if (!showText) {
     return (
       <div
         className="qofeno-logo-container select-none flex items-center shrink-0"
-        style={{
-          height: size,
-          width: qWidth,
-          filter: invert ? 'brightness(0) invert(1)' : 'none',
-          color: 'currentColor'
-        }}
+        style={{ height: size, width: qWidth, filter: invert ? 'brightness(0) invert(1)' : 'none', color: 'currentColor' }}
       >
-        <svg
-          viewBox="0 0 150 132"
-          className="block w-full h-full"
-          fill="currentColor"
-        >
+        <svg viewBox="0 0 150 132" className="block w-full h-full" fill="currentColor">
           <path d="M 84.00 129.00 A 65.9 65.9 0 1 1 120.00 100.50 L 108.00 90.00 A 49.2 49.2 0 1 0 73.00 115.00 Z" />
           <path d="M 62.00 83.00 L 83.00 83.00 L 130.00 132.00 L 108.50 131.50 Z" />
         </svg>
