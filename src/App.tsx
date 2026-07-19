@@ -64,15 +64,17 @@ import { CookieConsentBanner } from './components/CookieConsentBanner';
 // @ts-expect-error - Vite raw import support
 import qofenoFullSvg from '../public/qofeno_full.svg?raw';
 
-// Anthropic-style animation: the Q icon stays fixed while the OFENO letters 
-// slide to the right and fade in staggered (staggered entry animation)
-// by compiling your physical `/public/qofeno_full.svg` asset directly inline.
-// Fully synchronous, 60fps, works offline, no CORS/fetch restrictions.
+// Natural translate-X positions of the 5 letter <g> groups inside qofeno_full.svg
+// These match the transform="translate(X,0)" values in the SVG source exactly.
+const LETTER_X = [150, 302, 414, 526, 652] as const;
+
+// Anthropic-style logo: Q mark stays fixed. OFENO letters slide right on load
+// and collapse left behind the Q mark when scrolling — driven by direct SVG
+// transform manipulation (no CSS nth-of-type, which doesn't work in mixed-sibling SVGs).
 function QofenoLogo({
   size = 36,
   showText = true,
   invert = false,
-  // Ignored backward-compatible props:
   collapseOnScroll = false,
   scrolled = false,
   textClass = '',
@@ -86,6 +88,79 @@ function QofenoLogo({
   textClass?: string;
   iconClass?: string;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Grab the 5 letter <g> elements and animate them on mount + scroll
+  useEffect(() => {
+    if (!showText) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    // The root structure is: svg > g[fill] > (path, path, g, g, g, g, g)
+    // The first two children of the root <g> are the Q monogram paths (Q ring + tail).
+    // The next five <g> children are the letter groups: O, F, E, N, O.
+    const rootG = el.querySelector('svg > g');
+    if (!rootG) return;
+    const letterGroups = Array.from(rootG.children).filter(
+      (c): c is SVGGElement => c.tagName === 'g'
+    ) as SVGGElement[];
+    if (letterGroups.length !== 5) return;
+
+    // IMPORTANT: CSS transform on SVG <g> elements operates in SVG *user unit* space
+    // (the viewBox coordinate system, 0–784), NOT in rendered pixel space.
+    // So we use the raw SVG coordinate values directly.
+    const setPos = (g: SVGGElement, x: number, opacity: number) => {
+      // translate() in SVG user units — works correctly regardless of rendered size
+      g.style.transform = `translate(${x}, 0)`;
+      g.style.opacity = String(opacity);
+    };
+
+    // Remove SVG attribute transforms to avoid double-translation (CSS overrides attribute anyway)
+    // Start all letters just left of their resting positions, invisible
+    letterGroups.forEach((g, i) => {
+      g.style.willChange = 'transform, opacity';
+      setPos(g, LETTER_X[i] - 60, 0);
+    });
+
+    // Staggered entrance: slide each letter right to its resting position
+    const entranceTimers = letterGroups.map((g, i) =>
+      setTimeout(() => {
+        g.style.transition = `transform 900ms cubic-bezier(0.19,1,0.22,1) ${i * 70}ms, opacity 600ms ease ${i * 60}ms`;
+        setPos(g, LETTER_X[i], 1);
+      }, 80)
+    );
+
+    // Scroll handler: collapse letters LEFT toward the Q mark, restore when at top
+    let rafId: number;
+    const handleScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const isScrolled = window.scrollY > 40;
+        letterGroups.forEach((g, i) => {
+          // When collapsing: left-to-right stagger (first letter moves first)
+          // When restoring: right-to-left stagger (last letter comes back first)
+          const delay = isScrolled ? i * 40 : (4 - i) * 40;
+          g.style.transition = `transform 480ms cubic-bezier(0.77,0,0.175,1) ${delay}ms, opacity 280ms ease ${delay}ms`;
+          if (isScrolled) {
+            // Collapse: slide toward the Q (x ≈ 0 = right behind the Q mark)
+            setPos(g, LETTER_X[i] * 0.06, 0);
+          } else {
+            // Restore: slide back to resting position
+            setPos(g, LETTER_X[i], 1);
+          }
+        });
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      entranceTimers.forEach(clearTimeout);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [showText]);
+
   const viewBoxWidth = showText ? 784 : 150;
   
   // Calculate exact scaled widths based on viewBox coordinate mappings
@@ -118,6 +193,7 @@ function QofenoLogo({
 
   return (
     <div
+      ref={containerRef}
       className="qofeno-logo-container select-none flex items-center shrink-0"
       aria-label="Qofeno"
       role="img"
