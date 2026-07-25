@@ -7,7 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
-import { executeJsonFunction, FUNCTION_IDS, storage } from '../../lib/qofeno-appwrite';
+import { executeJsonFunction, FUNCTION_IDS, storage, fallbackStorage } from '../../lib/qofeno-appwrite';
+
 import { ID, Permission, Role } from 'appwrite';
 
 import type { ToolCard } from '../../lib/toolCatalog';
@@ -1424,13 +1425,20 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       let payload: Record<string, unknown>;
       const bucketInputs = 'tool_inputs';
 
+      const safeUpload = async (fileToUpload: File) => {
+        const perms = [Permission.read(Role.any()), Permission.write(Role.any())];
+        try {
+          return await storage.createFile(bucketInputs, ID.unique(), fileToUpload, perms);
+        } catch (e1: any) {
+          console.warn('Primary storage upload failed, trying fallback storage endpoint...', e1?.message);
+          return await fallbackStorage.createFile(bucketInputs, ID.unique(), fileToUpload, perms);
+        }
+      };
+
       if (isMultiple) {
         const uploadedFiles = await Promise.all(
           files.map(async (f) => {
-            const uploaded = await storage.createFile(bucketInputs, ID.unique(), f, [
-              Permission.read(Role.any()),
-              Permission.write(Role.any()),
-            ]);
+            const uploaded = await safeUpload(f);
             return { file_id: uploaded.$id, input_filename: f.name };
           })
         );
@@ -1446,10 +1454,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         };
       } else {
         const primary = files[0];
-        const uploaded = await storage.createFile(bucketInputs, ID.unique(), primary, [
-          Permission.read(Role.any()),
-          Permission.write(Role.any()),
-        ]);
+        const uploaded = await safeUpload(primary);
         payload = {
           tool: tool.slug,
           bucket_id: bucketInputs,
@@ -1461,6 +1466,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           ...fields
         };
       }
+
 
 
 

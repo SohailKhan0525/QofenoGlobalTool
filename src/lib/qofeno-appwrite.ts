@@ -109,16 +109,25 @@ export const FUNCTION_IDS = {
   wordToPdf                : env.VITE_APPWRITE_FUNCTION_WORD_TO_PDF_ID || 'word-to-pdf',
 };
 
-const client = new Client().setEndpoint(endpoint).setProject(projectId);
+const primaryEndpoint = env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+const secondaryEndpoint = primaryEndpoint.includes('fra.') 
+  ? 'https://cloud.appwrite.io/v1' 
+  : 'https://fra.cloud.appwrite.io/v1';
+
+const client = new Client().setEndpoint(primaryEndpoint).setProject(projectId);
+const fallbackClient = new Client().setEndpoint(secondaryEndpoint).setProject(projectId);
+
 
 export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
+export const fallbackStorage = new Storage(fallbackClient);
 export const functions = new Functions(client);
+export const fallbackFunctions = new Functions(fallbackClient);
 export const realtime = new Realtime(client);
 
 export function isAppwriteConfigured() {
-  return Boolean(endpoint && projectId);
+  return Boolean(primaryEndpoint && projectId);
 }
 
 export function resolveGroupedFunctionId(toolSlug: string, category?: string): string {
@@ -178,7 +187,6 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
   }
 
   try {
-    // Execute synchronously so guest users do not encounter 401 on getExecution
     const execution = await functions.createExecution(targetId, JSON.stringify(payload), false);
     
     if (execution.status === 'failed') {
@@ -195,16 +203,34 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
     } catch {
       return { success: false, error: raw };
     }
-  } catch (err: any) {
-    console.error('Appwrite executeJsonFunction error:', err);
-    return {
-      success: false,
-      error: err?.message?.includes('Failed to fetch')
-        ? 'Connection to processing server failed. Please check your internet connection and try again.'
-        : (err?.message || 'Processing server is currently unreachable. Please try again.')
-    };
+  } catch (err1: any) {
+    console.warn(`Primary Appwrite endpoint failed (${err1?.message}), retrying with fallback endpoint...`);
+    try {
+      const execution2 = await fallbackFunctions.createExecution(targetId, JSON.stringify(payload), false);
+      if (execution2.status === 'failed') {
+        const serverErr = execution2.errors || 'Function execution failed on server.';
+        return { success: false, error: serverErr };
+      }
+
+      const raw2 = execution2.responseBody || '{}';
+      if (typeof raw2 !== 'string') {
+        return raw2;
+      }
+      try {
+        return JSON.parse(raw2);
+      } catch {
+        return { success: false, error: raw2 };
+      }
+    } catch (err2: any) {
+      console.error('All Appwrite endpoints failed:', err2);
+      return {
+        success: false,
+        error: err2?.message || err1?.message || 'Processing server is currently unreachable. Please try again.'
+      };
+    }
   }
 }
+
 
 
 
