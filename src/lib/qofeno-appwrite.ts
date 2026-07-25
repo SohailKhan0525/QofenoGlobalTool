@@ -175,37 +175,44 @@ export function resolveGroupedFunctionId(toolSlug: string, category?: string): s
 }
 
 async function pollExecutionResult(toolSlug: string, startTime: number): Promise<any> {
-  const maxWaitMs = 180000; // 3 minutes polling window
-  const pollIntervalMs = 2500;
+  const maxWaitMs = 300000; // 5 minutes polling window
+  const pollIntervalMs = 2000;
   const ep = (env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
   const pid = env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 
   while (Date.now() - startTime < maxWaitMs) {
     await new Promise((r) => setTimeout(r, pollIntervalMs));
     try {
-      const docs = await databases.listDocuments(DATABASE_ID, 'tool_executions', [
+      let docs = await databases.listDocuments(DATABASE_ID, 'tool_executions', [
         Query.equal('tool_slug', toolSlug),
         Query.orderDesc('$createdAt'),
-        Query.limit(1)
+        Query.limit(5)
       ]);
 
-      if (docs.documents.length > 0) {
-        const latest = docs.documents[0];
-        const docAge = Date.now() - new Date(latest.$createdAt).getTime();
+      if (docs.documents.length === 0) {
+        docs = await databases.listDocuments(DATABASE_ID, 'tool_executions', [
+          Query.orderDesc('$createdAt'),
+          Query.limit(5)
+        ]);
+      }
 
-        if (docAge < maxWaitMs) {
-          if (latest.status === 'completed' || latest.download_url) {
-            return {
-              success: true,
-              output_filename: latest.output_filename || `${toolSlug}_result`,
-              download_url: latest.download_url || `${ep}/storage/buckets/tool_outputs/files/${latest.output_file_id}/download?project=${pid}`,
-              file_id: latest.output_file_id,
-            };
-          } else if (latest.status === 'failed') {
-            return {
-              success: false,
-              error: latest.error_message || 'Processing failed on the server. Please check options and try again.'
-            };
+      if (docs.documents.length > 0) {
+        for (const latest of docs.documents) {
+          const docTime = new Date(latest.$createdAt).getTime();
+          if (docTime >= startTime - 10000) {
+            if (latest.status === 'completed' || latest.download_url) {
+              return {
+                success: true,
+                output_filename: latest.output_filename || `${toolSlug}_result`,
+                download_url: latest.download_url || `${ep}/storage/buckets/tool_outputs/files/${latest.output_file_id}/download?project=${pid}`,
+                file_id: latest.output_file_id,
+              };
+            } else if (latest.status === 'failed') {
+              return {
+                success: false,
+                error: latest.error_message || 'Processing failed on the server. Please check options and try again.'
+              };
+            }
           }
         }
       }
@@ -230,11 +237,23 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
     targetId = resolveGroupedFunctionId(toolSlug);
   }
 
+  const toolSlug = String(payload.tool || targetId);
+  const startTime = Date.now();
+
   try {
     const execution = await functions.createExecution(targetId, JSON.stringify(payload), false);
     
     if (execution.status === 'failed') {
-      const serverErr = execution.errors || 'Function execution failed on server.';
+      const serverErr = String(execution.errors || 'Function execution failed on server.');
+      if (serverErr.includes('timed out') || serverErr.includes('exceed 30 seconds') || serverErr.includes('408')) {
+        console.warn('Appwrite Cloud function timed out (>30s). Launching background async execution & polling DB...');
+        try {
+          await functions.createExecution(targetId, JSON.stringify(payload), true);
+        } catch (asyncErr) {
+          console.warn('Async execution launch warning:', asyncErr);
+        }
+        return await pollExecutionResult(toolSlug, startTime);
+      }
       return { success: false, error: serverErr };
     }
 
@@ -250,11 +269,8 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
   } catch (err1: any) {
     const msg1 = String(err1?.message || '');
 
-    // Check if synchronous execution timed out (>30s)
-    if (msg1.includes('timed out') || msg1.includes('exceed 30 seconds')) {
+    if (msg1.includes('timed out') || msg1.includes('exceed 30 seconds') || msg1.includes('408')) {
       console.warn('Synchronous execution timed out (>30s). Triggering background async execution and polling...');
-      const toolSlug = String(payload.tool || targetId);
-      const startTime = Date.now();
       try {
         await functions.createExecution(targetId, JSON.stringify(payload), true);
       } catch (asyncErr) {
@@ -267,7 +283,16 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
     try {
       const execution2 = await fallbackFunctions.createExecution(targetId, JSON.stringify(payload), false);
       if (execution2.status === 'failed') {
-        const serverErr = execution2.errors || 'Function execution failed on server.';
+        const serverErr = String(execution2.errors || 'Function execution failed on server.');
+        if (serverErr.includes('timed out') || serverErr.includes('exceed 30 seconds') || serverErr.includes('408')) {
+          console.warn('Fallback execution timed out. Launching async execution and polling DB...');
+          try {
+            await fallbackFunctions.createExecution(targetId, JSON.stringify(payload), true);
+          } catch (asyncErr) {
+            console.warn('Async execution launch warning:', asyncErr);
+          }
+          return await pollExecutionResult(toolSlug, startTime);
+        }
         return { success: false, error: serverErr };
       }
 
@@ -283,10 +308,8 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
     } catch (err2: any) {
       const msg2 = String(err2?.message || '');
 
-      if (msg2.includes('timed out') || msg2.includes('exceed 30 seconds')) {
+      if (msg2.includes('timed out') || msg2.includes('exceed 30 seconds') || msg2.includes('408')) {
         console.warn('Fallback endpoint timed out. Triggering background async execution and polling...');
-        const toolSlug = String(payload.tool || targetId);
-        const startTime = Date.now();
         try {
           await fallbackFunctions.createExecution(targetId, JSON.stringify(payload), true);
         } catch (asyncErr) {
@@ -303,6 +326,7 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
     }
   }
 }
+
 
 
 
