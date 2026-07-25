@@ -315,40 +315,31 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
       ctx = gsap.context(() => {
         const tl = gsap.timeline();
 
-        if (prefersReduced) {
-          if (headlineRef.current) {
-            gsap.set(headlineRef.current.querySelectorAll('.word-reveal'), { y: 0, opacity: 1 });
-          }
-          if (subRef.current) gsap.set(subRef.current, { y: 0, opacity: 1 });
-          if (ctaRef.current) gsap.set(ctaRef.current, { scale: 1, opacity: 1 });
-          gsap.set('.floating-chip', { scale: 1, opacity: 1 });
-          return;
-        }
-
         if (headlineRef.current) {
           const words = headlineRef.current.querySelectorAll('.word-reveal');
           tl.fromTo(words, 
             { y: 80, opacity: 0 }, 
-            { y: 0, opacity: 1, duration: 0.8, stagger: 0.05, ease: 'power4.out' },
+            { y: 0, opacity: 1, duration: 0.8, stagger: 0.08, ease: 'power4.out' },
             0.1
           );
         }
 
         if (subRef.current) {
-          tl.fromTo(subRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6 }, '-=0.4');
+          tl.fromTo(subRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out' }, '-=0.4');
         }
         if (ctaRef.current) {
-          tl.fromTo(ctaRef.current, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: 'back.out(1.5)' }, '-=0.3');
+          tl.fromTo(ctaRef.current, { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.7, ease: 'back.out(1.5)' }, '-=0.3');
         }
         
-        tl.fromTo('.floating-chip', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, stagger: 0.04, duration: 0.6, ease: 'back.out(1.2)' }, '-=0.2');
+        tl.fromTo('.floating-chip', { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, stagger: 0.08, duration: 0.7, ease: 'back.out(1.4)' }, '-=0.2');
       });
     });
 
     return () => {
       if (ctx) ctx.revert();
     };
-  }, [prefersReduced]);
+  }, []);
+
 
   const filteredCategories = categoryCards.filter(c => c.name !== 'All Tools').slice(0, 4);
 

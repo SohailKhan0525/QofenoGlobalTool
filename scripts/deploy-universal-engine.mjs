@@ -20,10 +20,34 @@ import { Query, ID, Permission, Role } from "node-appwrite";
 import { InputFile } from "node-appwrite/file";
 import crypto from "crypto";
 
-async function universalFallback(context, body, storage) {
+async function saveToolExecution(client, payload, resultData) {
+  try {
+    const db = getDatabases(client);
+    await db.createDocument(
+      process.env.DATABASE_ID || 'qofeno_db',
+      'tool_executions',
+      ID.unique(),
+      {
+        tool_slug: payload.tool || 'general-tool',
+        tool_name: payload.tool_name || payload.tool || 'General Tool',
+        status: resultData.success ? 'completed' : 'failed',
+        output_filename: resultData.output_filename || null,
+        download_url: resultData.download_url || null,
+        output_file_id: resultData.file_id || null,
+        error_message: resultData.error || null
+      },
+      [Permission.read(Role.any()), Permission.write(Role.any()), Permission.delete(Role.any())]
+    );
+  } catch (err) {
+    console.error("Failed to log tool_execution doc:", err.message);
+  }
+}
+
+async function universalFallback(context, body, storage, client) {
   const { res } = context;
   const tool = (body.tool || '').toLowerCase();
   const textInput = body.text || body.json || body.csv || body.input || body.code || '';
+  let responseObj = null;
 
   // 1. Password Generator
   if (tool.includes('password')) {
@@ -34,23 +58,23 @@ async function universalFallback(context, body, storage) {
     for (let i = 0; i < len; i++) {
       password += chars[bytes[i] % chars.length];
     }
-    return res.json({ success: true, password, result: password, length: len }, 200);
+    responseObj = { success: true, password, result: password, length: len };
   }
 
   // 2. UUID / Hash / Crypto
-  if (tool.includes('uuid')) {
+  else if (tool.includes('uuid')) {
     const count = Number(body.count || 1);
     const uuids = Array.from({ length: count }, () => crypto.randomUUID());
-    return res.json({ success: true, result: uuids.join('\\n'), uuids }, 200);
+    responseObj = { success: true, result: uuids.join('\\n'), uuids };
   }
-  if (tool.includes('hash') || tool.includes('md5') || tool.includes('sha')) {
+  else if (tool.includes('hash') || tool.includes('md5') || tool.includes('sha')) {
     const algo = tool.includes('md5') ? 'md5' : (tool.includes('sha512') ? 'sha512' : 'sha256');
     const hash = crypto.createHash(algo).update(textInput || 'qofeno').digest('hex');
-    return res.json({ success: true, result: hash, algorithm: algo }, 200);
+    responseObj = { success: true, result: hash, algorithm: algo };
   }
 
   // 3. Base64
-  if (tool.includes('base64')) {
+  else if (tool.includes('base64')) {
     const action = body.action || 'encode';
     let result = '';
     if (action === 'decode') {
@@ -58,37 +82,38 @@ async function universalFallback(context, body, storage) {
     } else {
       result = Buffer.from(textInput, 'utf8').toString('base64');
     }
-    return res.json({ success: true, result, action }, 200);
+    responseObj = { success: true, result, action };
   }
 
   // 4. JSON Formatter / Validator / Minifier
-  if (tool.includes('json')) {
+  else if (tool.includes('json')) {
     if (tool.includes('csv')) {
-      // CSV to JSON
       const lines = textInput.trim().split('\\n');
-      if (lines.length === 0) return res.json({ success: true, result: '[]', data: [] }, 200);
-      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-      const data = lines.slice(1).map(line => {
-        const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-        const obj = {};
-        headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
-        return obj;
-      });
-      const formatted = JSON.stringify(data, null, 2);
-      return res.json({ success: true, result: formatted, data }, 200);
-    }
-    try {
-      const parsed = typeof textInput === 'object' ? textInput : JSON.parse(textInput || '{}');
-      const action = body.action || (tool.includes('minify') ? 'minify' : 'format');
-      const formatted = action === 'minify' ? JSON.stringify(parsed) : JSON.stringify(parsed, null, 2);
-      return res.json({ success: true, result: formatted, valid: true }, 200);
-    } catch (err) {
-      return res.json({ success: false, error: 'Invalid JSON syntax: ' + err.message, valid: false }, 200);
+      if (lines.length === 0) responseObj = { success: true, result: '[]', data: [] };
+      else {
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        const data = lines.slice(1).map(line => {
+          const vals = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          const obj = {};
+          headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
+          return obj;
+        });
+        responseObj = { success: true, result: JSON.stringify(data, null, 2), data };
+      }
+    } else {
+      try {
+        const parsed = typeof textInput === 'object' ? textInput : JSON.parse(textInput || '{}');
+        const action = body.action || (tool.includes('minify') ? 'minify' : 'format');
+        const formatted = action === 'minify' ? JSON.stringify(parsed) : JSON.stringify(parsed, null, 2);
+        responseObj = { success: true, result: formatted, valid: true };
+      } catch (err) {
+        responseObj = { success: false, error: 'Invalid JSON syntax: ' + err.message, valid: false };
+      }
     }
   }
 
   // 5. CSV to JSON / JSON to CSV
-  if (tool.includes('csv')) {
+  else if (tool.includes('csv')) {
     const lines = textInput.trim().split('\\n');
     const headers = lines[0] ? lines[0].split(',').map(h => h.trim()) : ['col1', 'col2'];
     const rows = lines.slice(1).map(line => {
@@ -97,17 +122,17 @@ async function universalFallback(context, body, storage) {
       headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
       return obj;
     });
-    return res.json({ success: true, result: JSON.stringify(rows, null, 2), rows }, 200);
+    responseObj = { success: true, result: JSON.stringify(rows, null, 2), rows };
   }
 
   // 6. Text Counter & Case Converter
-  if (tool.includes('word') || tool.includes('text') || tool.includes('case')) {
+  else if (tool.includes('word') || tool.includes('text') || tool.includes('case')) {
     const str = textInput.trim();
     const words = str ? str.split(/\\s+/).length : 0;
     const chars = textInput.length;
     const sentences = str ? (str.match(/[.!?]+/g) || []).length || 1 : 0;
     const readingTime = Math.ceil(words / 200);
-    return res.json({
+    responseObj = {
       success: true,
       result: str,
       words,
@@ -116,15 +141,14 @@ async function universalFallback(context, body, storage) {
       sentences,
       paragraphs: str ? str.split(/\\n+/).length : 0,
       reading_time_minutes: readingTime
-    }, 200);
+    };
   }
 
   // 7. QR / Barcode SVG generator
-  if (tool.includes('qr') || tool.includes('barcode')) {
+  else if (tool.includes('qr') || tool.includes('barcode')) {
     const text = textInput || 'https://qofeno.com';
     const svg = \`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff"/><rect x="10" y="10" width="80" height="80" fill="#000"/><rect x="20" y="20" width="60" height="60" fill="#fff"/><rect x="30" y="30" width="40" height="40" fill="#000"/><text x="50" y="95" font-size="6" text-anchor="middle">\${text.slice(0, 20)}</text></svg>\`;
     
-    // Save SVG file to storage outputs
     try {
       const file = await storage.createFile(
         process.env.BUCKET_OUTPUTS || 'tool_outputs',
@@ -134,14 +158,14 @@ async function universalFallback(context, body, storage) {
       );
       const ep = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
       const downloadUrl = \`\${ep}/storage/buckets/\${process.env.BUCKET_OUTPUTS || 'tool_outputs'}/files/\${file.$id}/download?project=\${process.env.APPWRITE_PROJECT_ID}\`;
-      return res.json({ success: true, result: svg, download_url: downloadUrl, file_id: file.$id, output_filename: \`\${tool}.svg\` }, 200);
+      responseObj = { success: true, result: svg, download_url: downloadUrl, file_id: file.$id, output_filename: \`\${tool}.svg\` };
     } catch {
-      return res.json({ success: true, result: svg, svg_data: svg }, 200);
+      responseObj = { success: true, result: svg, svg_data: svg };
     }
   }
 
   // 8. General File Transformer Fallback (PDF, Image, Video, Audio)
-  if (body.file_id) {
+  else if (body.file_id) {
     const bucketId = body.bucket_id || process.env.BUCKET_INPUTS || 'tool_inputs';
     const ep = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
     const fileId = body.file_id;
@@ -167,19 +191,24 @@ async function universalFallback(context, body, storage) {
       );
 
       const downloadUrl = \`\${ep}/storage/buckets/\${process.env.BUCKET_OUTPUTS || 'tool_outputs'}/files/\${outFile.$id}/download?project=\${process.env.APPWRITE_PROJECT_ID}\`;
-      return res.json({
+      responseObj = {
         success: true,
         output_filename: outName,
         download_url: downloadUrl,
         file_id: outFile.$id,
         output_size: buf.length
-      }, 200);
+      };
     } catch (e) {
-      return res.json({ success: false, error: 'File operation failed: ' + e.message }, 200);
+      responseObj = { success: false, error: 'File operation failed: ' + e.message };
     }
+  } else {
+    responseObj = { success: true, message: \`Tool '\${tool}' processed successfully\`, tool };
   }
 
-  return res.json({ success: true, message: \`Tool '\${tool}' processed successfully\`, tool }, 200);
+  // Save document to tool_executions for async polling support
+  await saveToolExecution(client, body, responseObj);
+
+  return res.json(responseObj, responseObj.success ? 200 : 500);
 }
 
 export default async (context) => {
@@ -187,7 +216,7 @@ export default async (context) => {
   const rawBody = req.body || req.payload || '{}';
   const body = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody;
   
-  const { tool, user_id, is_pro_tool, is_teams_tool } = body;
+  const { tool, user_id } = body;
   
   if (!tool) {
     return error(res, "Missing 'tool' parameter", "INVALID_REQUEST", 200);
@@ -224,6 +253,11 @@ export default async (context) => {
     const handlerModule = await import(\`./handlers/\${tool}.js\`);
     if (handlerModule && typeof handlerModule.default === 'function') {
       const result = await handlerModule.default(context);
+      // Log successful executions to tool_executions
+      try {
+        const resData = typeof result === 'object' && result !== null ? result : { success: true };
+        await saveToolExecution(client, body, resData);
+      } catch {}
       return result;
     }
   } catch (importErr) {
@@ -232,9 +266,11 @@ export default async (context) => {
 
   // Execute Universal Fallback Engine if specific handler module is absent
   try {
-    return await universalFallback(context, body, storage);
+    return await universalFallback(context, body, storage, client);
   } catch (err) {
     logError(\`Universal fallback execution error in \${tool}: \${err.stack || err.message}\`);
+    const failObj = { success: false, error: err.message || 'Processing failed' };
+    await saveToolExecution(client, body, failObj);
     return error(res, err.message || 'Processing failed', "PROCESSING_ERROR", 200);
   }
 };
@@ -243,7 +279,7 @@ export default async (context) => {
 for (const fn of functions) {
   const mainPath = path.join(process.cwd(), 'functions', fn, 'src', 'main.js');
   fs.writeFileSync(mainPath, mainJsTemplate(fn));
-  console.log(`✅ Deployed Universal Fallback Engine to ${fn}/src/main.js`);
+  console.log(`✅ Updated ${fn}/src/main.js with DB execution logging`);
 }
 
-console.log("\nAll 8 function main.js files upgraded with Universal Engine!");
+console.log("\nAll 8 function main.js entrypoints upgraded with DB logging!");

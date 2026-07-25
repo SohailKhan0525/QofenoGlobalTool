@@ -43,8 +43,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="bg-white text-neutral-900 min-h-screen overflow-hidden selection:bg-neutral-900 selection:text-white">
+    <div className="bg-white text-neutral-900 min-h-screen overflow-x-hidden selection:bg-neutral-900 selection:text-white">
       {children}
     </div>
   );
+
 }
