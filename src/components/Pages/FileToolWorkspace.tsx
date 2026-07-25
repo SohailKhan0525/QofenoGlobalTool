@@ -8,7 +8,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 import { executeJsonFunction, FUNCTION_IDS, storage } from '../../lib/qofeno-appwrite';
-import { ID } from 'appwrite';
+import { ID, Permission, Role } from 'appwrite';
+
 import type { ToolCard } from '../../lib/toolCatalog';
 
 import { useAuth } from '../../context/AuthContext';
@@ -1426,12 +1427,16 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       if (isMultiple) {
         const uploadedFiles = await Promise.all(
           files.map(async (f) => {
-            const uploaded = await storage.createFile(bucketInputs, ID.unique(), f);
+            const uploaded = await storage.createFile(bucketInputs, ID.unique(), f, [
+              Permission.read(Role.any()),
+              Permission.write(Role.any()),
+            ]);
             return { file_id: uploaded.$id, input_filename: f.name };
           })
         );
         payload = {
           tool: tool.slug,
+          bucket_id: bucketInputs,
           file_ids: uploadedFiles.map(x => x.file_id),
           input_filenames: uploadedFiles.map(x => x.input_filename),
           user_id: userId || null,
@@ -1441,9 +1446,13 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         };
       } else {
         const primary = files[0];
-        const uploaded = await storage.createFile(bucketInputs, ID.unique(), primary);
+        const uploaded = await storage.createFile(bucketInputs, ID.unique(), primary, [
+          Permission.read(Role.any()),
+          Permission.write(Role.any()),
+        ]);
         payload = {
           tool: tool.slug,
+          bucket_id: bucketInputs,
           file_id: uploaded.$id,
           input_filename: primary.name,
           user_id: userId || null,
@@ -1452,6 +1461,8 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           ...fields
         };
       }
+
+
 
       const response = await executeJsonFunction(tool.functionId || config.functionId, payload);
       setProgress(100);
