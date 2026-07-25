@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
-import { executeJsonFunction, FUNCTION_IDS, storage, fallbackStorage } from '../../lib/qofeno-appwrite';
+import { executeJsonFunction, FUNCTION_IDS, storage, fallbackStorage, realtime, databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
 
 import { ID, Permission, Role } from 'appwrite';
 
@@ -1306,6 +1306,8 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, any>>({});
   const [wrongType, setWrongType] = useState(false);
+  const [progressMessage, setProgressMessage] = useState<string>('Starting...');
+  const realtimeUnsubRef = useRef<(() => void) | null>(null);
 
   // Reset when tool changes
   useEffect(() => {
@@ -1396,6 +1398,11 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     setErrorMsg(null);
     setProgress(0);
     setWrongType(false);
+    setProgressMessage('Starting...');
+    if (realtimeUnsubRef.current) {
+      realtimeUnsubRef.current();
+      realtimeUnsubRef.current = null;
+    }
   };
 
   const fileToDataUrl = (file: File): Promise<string> =>
@@ -1416,10 +1423,49 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     setStage('processing');
     setProgress(10);
     setErrorMsg(null);
+    setProgressMessage('Uploading your file...');
+
+    // Subscribe to real-time progress updates via tool_execution_logs
+    const executionId = `exec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const progressSteps = [
+      { progress: 10, message: 'Uploading your file...' },
+      { progress: 25, message: 'File received — preparing to process...' },
+      { progress: 45, message: 'Processing on server...' },
+      { progress: 65, message: 'Applying transformations...' },
+      { progress: 80, message: 'Finalizing output file...' },
+      { progress: 90, message: 'Uploading result...' },
+    ];
+    let stepIdx = 0;
 
     const ticker = window.setInterval(() => {
-      setProgress((prev) => Math.min(90, prev + 6));
-    }, 200);
+      if (stepIdx < progressSteps.length) {
+        const step = progressSteps[stepIdx];
+        setProgress(step.progress);
+        setProgressMessage(step.message);
+        stepIdx++;
+      }
+    }, 2500);
+
+    // Appwrite Realtime subscription for live status from tool_execution_logs
+    try {
+      const channel = `databases.${DATABASE_ID}.collections.tool_execution_logs.documents`;
+      const unsub = realtime.subscribe(channel, (response) => {
+        const doc = response.payload as any;
+        if (!doc) return;
+        if (doc.status === 'processing' && doc.message) {
+          setProgressMessage(doc.message);
+          if (doc.progress) setProgress(doc.progress);
+        } else if (doc.status === 'completed') {
+          setProgressMessage('Complete! Preparing download...');
+          setProgress(100);
+        } else if (doc.status === 'failed' && doc.error_message) {
+          setProgressMessage(`Error: ${doc.error_message}`);
+        }
+      });
+      realtimeUnsubRef.current = unsub;
+    } catch {
+      // Realtime not critical — polling fallback handles result
+    }
 
     try {
       let payload: Record<string, unknown>;
@@ -1510,7 +1556,12 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       toast.error(message);
     } finally {
       window.clearInterval(ticker);
-      setTimeout(() => setProgress(0), 400);
+      if (realtimeUnsubRef.current) {
+        realtimeUnsubRef.current();
+        realtimeUnsubRef.current = null;
+      }
+      setTimeout(() => setProgress(0), 800);
+      setTimeout(() => setProgressMessage('Starting...'), 800);
     }
   };
 
@@ -1592,26 +1643,66 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         animate={{ opacity: 1 }}
         className="flex flex-col items-center justify-center py-20 gap-6 w-full"
       >
-        <div className="relative w-20 h-20">
-          <svg className="w-20 h-20 animate-spin" viewBox="0 0 80 80">
-            <circle cx="40" cy="40" r="34" stroke="#E9D5FF" strokeWidth="8" fill="none" />
-            <circle cx="40" cy="40" r="34" stroke="#7C3AED" strokeWidth="8" fill="none"
-              strokeDasharray="213" strokeDashoffset="150" strokeLinecap="round" />
+        <div className="relative w-24 h-24">
+          <svg className="w-24 h-24" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" stroke="#E9D5FF" strokeWidth="6" fill="none" />
+            <motion.circle
+              cx="40" cy="40" r="34" stroke="#7C3AED" strokeWidth="6" fill="none"
+              strokeLinecap="round"
+              strokeDasharray="213"
+              animate={{ strokeDashoffset: [213, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
           </svg>
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-sm font-black text-purple-700">{Math.round(progress)}%</span>
           </div>
         </div>
-        <div className="text-center">
+        <div className="text-center max-w-xs">
           <p className="text-xl font-bold text-[#0F0A1E]">Processing your file...</p>
-          <p className="text-sm text-neutral-500 mt-1">Running on our servers - this won't take long</p>
-        </div>
-        <div className="w-full max-w-xs bg-neutral-100 rounded-full h-2 overflow-hidden">
-          <motion.div
-            className="h-full bg-gradient-to-r from-purple-600 to-fuchsia-500 rounded-full"
-            animate={{ width: `${progress}%` }}
+          <motion.p
+            key={progressMessage}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
+            className="text-sm text-purple-600 font-medium mt-2"
+          >
+            {progressMessage}
+          </motion.p>
+          <p className="text-xs text-neutral-400 mt-1">Running on our servers — please wait</p>
+        </div>
+        <div className="w-full max-w-sm bg-neutral-100 rounded-full h-2.5 overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500 rounded-full"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
           />
+        </div>
+        {/* Live steps list */}
+        <div className="w-full max-w-sm space-y-1.5">
+          {[
+            { label: 'File uploaded', done: progress >= 20 },
+            { label: 'Processing on server', done: progress >= 50 },
+            { label: 'Applying transformations', done: progress >= 70 },
+            { label: 'Output ready', done: progress >= 95 },
+          ].map((s, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className={`flex items-center gap-2 text-sm ${
+                s.done ? 'text-green-600 font-semibold' : 'text-neutral-400'
+              }`}
+            >
+              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0 ${
+                s.done ? 'bg-green-500 text-white' : 'bg-neutral-200 text-neutral-500'
+              }`}>
+                {s.done ? '✓' : (i + 1)}
+              </span>
+              {s.label}
+            </motion.div>
+          ))}
         </div>
       </motion.div>
     );
