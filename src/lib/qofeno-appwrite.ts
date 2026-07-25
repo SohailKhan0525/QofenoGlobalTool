@@ -126,14 +126,8 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
     throw new Error('Function not configured yet. Please deploy the Appwrite function and add the ID to .env.');
   }
   
-  // Create an asynchronous execution so it never times out on the API Gateway level (30s limit)
-  let execution = await functions.createExecution(functionId, JSON.stringify(payload), true);
-  
-  // Poll until the execution is completed or failed
-  while (execution.status === 'waiting' || execution.status === 'processing') {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    execution = await functions.getExecution(functionId, execution.$id);
-  }
+  // Execute synchronously so guest users do not encounter 401 on getExecution
+  const execution = await functions.createExecution(functionId, JSON.stringify(payload), false);
   
   if (execution.status === 'failed') {
     throw new Error(execution.errors || 'Appwrite function execution failed silently on the server.');
@@ -143,8 +137,13 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
   if (typeof raw !== 'string') {
     return raw;
   }
-  return JSON.parse(raw);
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return { success: false, error: raw };
+  }
 }
+
 
 export async function trackEvent(eventType: 'view' | 'like' | 'unlike' | 'recent', toolSlug: string, userId?: string) {
   if (!FUNCTION_IDS.trackEvent) return null;
