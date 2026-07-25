@@ -48,6 +48,7 @@ import {
 import { faGithub, faXTwitter, faLinkedin, faInstagram } from '@fortawesome/free-brands-svg-icons';
 import { faCheckCircle as faCheckCircleReg, faBell as faBellReg } from '@fortawesome/free-regular-svg-icons';
 
+import gsap from 'gsap';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './lib/utils';
 import { toast } from 'sonner';
@@ -64,14 +65,11 @@ import { CookieConsentBanner } from './components/CookieConsentBanner';
 // @ts-expect-error - Vite raw import support
 import qofenoFullSvg from '../public/qofeno_full.svg?raw';
 
-// Natural translate-X positions of the 5 OFENO letter groups (SVG user units, matches qofeno_full.svg)
-const LETTER_X = [150, 302, 414, 526, 652] as const;
-// How far left each letter slides when fully collapsed (toward behind the Q mark)
-const LETTER_X_COLLAPSED = [9, 18, 25, 32, 40] as const;
+// Natural translate-X positions of the 5 OFENO letter <g> groups (SVG user units)
+const LETTER_X      = [150, 302, 414, 526, 652] as const;
+const LETTER_X_COLL = [  9,  18,  25,  32,  39] as const;
+const SCROLL_END    = 100; // px of scroll = full collapse
 
-// Qofeno logo with Anthropic-style scroll animation.
-// Uses GSAP for SVG attribute tweens — the only reliable cross-browser way to
-// animate SVG <g transform="translate(x,0)"> in SVG user-unit coordinate space.
 function QofenoLogo({
   size = 36,
   showText = true,
@@ -81,85 +79,92 @@ function QofenoLogo({
   textClass = '',
   iconClass = ''
 }: {
-  size?: number;
-  showText?: boolean;
-  invert?: boolean;
-  collapseOnScroll?: boolean;
-  scrolled?: boolean;
-  textClass?: string;
-  iconClass?: string;
+  size?: number; showText?: boolean; invert?: boolean;
+  collapseOnScroll?: boolean; scrolled?: boolean;
+  textClass?: string; iconClass?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!showText) return;
-    let gsapCtx: any = null;
+    const el = containerRef.current;
+    if (!el) return;
 
-    // Load GSAP dynamically (already in node_modules, just avoids SSR issues)
-    Promise.all([
-      import('gsap'),
-      import('gsap/ScrollTrigger')
-    ]).then(([{ gsap }, { ScrollTrigger }]) => {
-      gsap.registerPlugin(ScrollTrigger);
+    // Find the 5 letter <g> groups inside the inline SVG
+    const rootG = el.querySelector('svg > g');
+    if (!rootG) return;
+    const letters = Array.from(rootG.children).filter(
+      c => c.tagName === 'g'
+    ) as SVGGElement[];
+    if (letters.length !== 5) return;
 
-      const el = containerRef.current;
-      if (!el) return;
-
-      // Query the 5 letter <g> elements: children of the root <g> that are themselves <g> tags
-      const rootG = el.querySelector('svg > g');
-      if (!rootG) return;
-      const letterGs = Array.from(rootG.children).filter(
-        (c) => c.tagName === 'g'
-      ) as SVGGElement[];
-      if (letterGs.length !== 5) return;
-
-      gsapCtx = gsap.context(() => {
-        // --- ENTRANCE: staggered slide-in on page load ---
-        // Start letters invisible, 60 user-units left of resting position
-        gsap.set(letterGs, { autoAlpha: 0 });
-        letterGs.forEach((g, i) => {
-          gsap.set(g, { attr: { transform: `translate(${LETTER_X[i] - 60}, 0)` } });
-        });
-
-        // Stagger each letter sliding right into its resting position
-        gsap.to(letterGs, {
-          autoAlpha: 1,
-          attr: (i: number) => ({ transform: `translate(${LETTER_X[i]}, 0)` }),
-          duration: 0.9,
-          ease: 'power3.out',
-          stagger: 0.07,
-          delay: 0.1
-        });
-
-        // --- SCROLL COLLAPSE: scrub letters toward Q mark as user scrolls ---
-        // This mirrors Anthropic exactly: scroll 0→120px = animation 0→100%
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: document.body,
-            start: 'top top',
-            end: '120px top',
-            scrub: 0.3,        // slight smoothing, like Anthropic
-          }
-        });
-
-        letterGs.forEach((g, i) => {
-          tl.to(g, {
-            autoAlpha: 0,
-            attr: { transform: `translate(${LETTER_X_COLLAPSED[i]}, 0)` },
-            ease: 'power1.inOut',
-            duration: 1
-          }, 0); // all at position 0 = play simultaneously (no stagger on scroll = matches Anthropic)
-        });
-      }, el);
+    // Set initial entrance state: shifted left by 55 units, opacity 0
+    letters.forEach((g, i) => {
+      g.setAttribute('transform', `translate(${LETTER_X[i] - 55}, 0)`);
+      g.style.opacity = '0';
     });
 
+    let entranceDone = false;
+
+    // Staggered entrance animation: slide right to natural resting LETTER_X position
+    const ctx = gsap.context(() => {
+      letters.forEach((g, i) => {
+        const delay = 0.1 + i * 0.07;
+        gsap.to(g, {
+          opacity: 1,
+          duration: 0.7,
+          ease: 'power3.out',
+          delay,
+        });
+        gsap.to(g, {
+          attr: { transform: `translate(${LETTER_X[i]}, 0)` },
+          duration: 0.85,
+          ease: 'power3.out',
+          delay,
+        });
+      });
+    }, el);
+
+    const timer = setTimeout(() => {
+      entranceDone = true;
+    }, 1200);
+
+    // Scroll collapse handler (reads scrollY on every frame / scroll event)
+    let lastScrollY = -1;
+    const handleScroll = () => {
+      if (!entranceDone) return;
+      const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      if (Math.abs(scrollY - lastScrollY) < 0.5) return;
+      lastScrollY = scrollY;
+
+      const progress = Math.min(1, Math.max(0, scrollY / SCROLL_END));
+      letters.forEach((g, i) => {
+        const x = LETTER_X[i] + (LETTER_X_COLL[i] - LETTER_X[i]) * progress;
+        g.setAttribute('transform', `translate(${x.toFixed(2)}, 0)`);
+        g.style.opacity = (1 - progress).toFixed(3);
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    const tickerFn = () => {
+      handleScroll();
+    };
+    gsap.ticker.add(tickerFn);
+
     return () => {
-      if (gsapCtx) gsapCtx.revert();
+      clearTimeout(timer);
+      ctx.revert();
+      window.removeEventListener('scroll', handleScroll);
+      gsap.ticker.remove(tickerFn);
+      letters.forEach((g, i) => {
+        g.setAttribute('transform', `translate(${LETTER_X[i]}, 0)`);
+        g.style.opacity = '1';
+      });
     };
   }, [showText]);
 
   const fullWidth = size * (784 / 132);
-  const qWidth   = size * (150 / 132);
+  const qWidth    = size * (150 / 132);
 
   if (!showText) {
     return (
@@ -194,6 +199,8 @@ function QofenoLogo({
     />
   );
 }
+
+
 
 
 const prefersReduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
