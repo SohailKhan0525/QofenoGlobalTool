@@ -121,28 +121,87 @@ export function isAppwriteConfigured() {
   return Boolean(endpoint && projectId);
 }
 
-export async function executeJsonFunction(functionId: string, payload: Record<string, unknown>) {
-  if (!functionId) {
-    throw new Error('Function not configured yet. Please deploy the Appwrite function and add the ID to .env.');
-  }
-  
-  // Execute synchronously so guest users do not encounter 401 on getExecution
-  const execution = await functions.createExecution(functionId, JSON.stringify(payload), false);
-  
-  if (execution.status === 'failed') {
-    throw new Error(execution.errors || 'Appwrite function execution failed silently on the server.');
+export function resolveGroupedFunctionId(toolSlug: string, category?: string): string {
+  const slug = (toolSlug || '').toLowerCase();
+  const cat = (category || '').toLowerCase();
+
+  // 1. Security & Web
+  if (slug.includes('password') || slug.includes('qr') || slug.includes('barcode') || slug.includes('encrypt') || slug.includes('decrypt') || slug.includes('security') || cat.includes('security')) {
+    return 'qofeno-security';
   }
 
-  const raw = execution.responseBody || '{}';
-  if (typeof raw !== 'string') {
-    return raw;
+  // 2. Developer Tools
+  if (slug.includes('json') || slug.includes('base64') || slug.includes('xml') || slug.includes('yaml') || slug.includes('sql') || slug.includes('formatter') || slug.includes('minifier') || slug.includes('jwt') || slug.includes('uuid') || slug.includes('hash') || cat.includes('developer')) {
+    return 'qofeno-developer';
   }
+
+  // 3. Text Tools
+  if (slug.includes('word-counter') || slug.includes('character-counter') || slug.includes('paragraph-counter') || slug.includes('text') || slug.includes('syllable') || slug.includes('readability') || slug.includes('diff') || cat.includes('text')) {
+    return 'qofeno-text';
+  }
+
+  // 4. Data Tools
+  if (slug.includes('csv') || slug.includes('xlsx') || slug.includes('xls') || slug.includes('data') || slug.includes('chart') || slug.includes('table') || cat.includes('data')) {
+    return 'qofeno-data';
+  }
+
+  // 5. Image Tools
+  if (slug.includes('image') || slug.match(/(jpg|png|webp|avif|heic|bmp|tiff|svg|ico|raw|psd|resize|crop-image|blur-image|sharpen-image|brightness|contrast|flip-image|rotate-image|watermark-image)/) || cat.includes('image')) {
+    return 'qofeno-image';
+  }
+
+  // 6. Video Tools
+  if (slug.includes('video') || slug.match(/(mp4|mov|avi|webm|mkv|flv|wmv|3gp|trim-video|crop-video|compress-video|merge-video|rotate-video|flip-video|extract-audio|remove-audio|speed-changer-video|reverse-video|loop-video|gif-maker-video|thumbnail-extractor)/) || cat.includes('video')) {
+    return 'qofeno-video';
+  }
+
+  // 7. Audio Tools
+  if (slug.includes('audio') || slug.match(/(mp3|wav|ogg|flac|aac|opus|wma|aiff|amr|trim-audio|merge-audio|volume-booster|change-audio|fade-in-audio|fade-out-audio|silence-remover|audio-reverser|ringtone-maker|bass-booster|background-noise-remover)/) || cat.includes('audio')) {
+    return 'qofeno-audio';
+  }
+
+  // 8. PDF Tools (Default)
+  return 'qofeno-pdf';
+}
+
+export async function executeJsonFunction(functionId: string, payload: Record<string, unknown>) {
+  const validFunctionIds = [
+    'qofeno-pdf', 'qofeno-image', 'qofeno-video', 'qofeno-audio',
+    'qofeno-text', 'qofeno-developer', 'qofeno-data', 'qofeno-security',
+    'track-event', 'auth-webhook', 'payment-webhook', 'create-download-link', 'contact-form'
+  ];
+
+  let targetId = functionId;
+  if (!targetId || !validFunctionIds.includes(targetId)) {
+    const toolSlug = String(payload.tool || targetId || '');
+    targetId = resolveGroupedFunctionId(toolSlug);
+  }
+
   try {
-    return JSON.parse(raw);
-  } catch {
-    return { success: false, error: raw };
+    // Execute synchronously so guest users do not encounter 401 on getExecution
+    const execution = await functions.createExecution(targetId, JSON.stringify(payload), false);
+    
+    if (execution.status === 'failed') {
+      throw new Error(execution.errors || 'Appwrite function execution failed on the server.');
+    }
+
+    const raw = execution.responseBody || '{}';
+    if (typeof raw !== 'string') {
+      return raw;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return { success: false, error: raw };
+    }
+  } catch (err: any) {
+    if (err?.message === 'Failed to fetch' || err?.name === 'TypeError') {
+      throw new Error('Connection to processing server failed. Please try again.');
+    }
+    throw err;
   }
 }
+
 
 
 export async function trackEvent(eventType: 'view' | 'like' | 'unlike' | 'recent', toolSlug: string, userId?: string) {
