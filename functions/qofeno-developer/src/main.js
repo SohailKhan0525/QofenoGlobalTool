@@ -61,7 +61,7 @@ export default async (context) => {
   try {
     await checkRateLimit(db, identifier, userPlan);
   } catch (err) {
-    return error(res, err.message, "RATE_LIMIT_EXCEEDED", 429);
+    return error(res, err.message, "RATE_LIMIT_EXCEEDED", 200);
   }
 
   // Resolve handler dynamically
@@ -80,6 +80,6 @@ export default async (context) => {
     return result;
   } catch (err) {
     logError(`Execution error in ${tool}: ${err.stack || err.message}`);
-    return error(res, err.message, "PROCESSING_ERROR", 500);
+    return error(res, err.message, "PROCESSING_ERROR", 200);
   }
 };
