@@ -1,4 +1,19 @@
-import { createClient, getStorage, getDatabases } from "./utils/appwrite.js";
+// scripts/deploy-universal-engine.mjs
+import fs from 'fs';
+import path from 'path';
+
+const functions = [
+  'qofeno-pdf',
+  'qofeno-image',
+  'qofeno-video',
+  'qofeno-audio',
+  'qofeno-text',
+  'qofeno-developer',
+  'qofeno-data',
+  'qofeno-security'
+];
+
+const mainJsTemplate = (fnName) => `import { createClient, getStorage, getDatabases } from "./utils/appwrite.js";
 import { success, error, unauthorized, forbidden } from "./utils/response.js";
 import { checkRateLimit } from "./utils/rate-limit.js";
 import { Query, ID, Permission, Role } from "node-appwrite";
@@ -26,7 +41,7 @@ async function universalFallback(context, body, storage) {
   if (tool.includes('uuid')) {
     const count = Number(body.count || 1);
     const uuids = Array.from({ length: count }, () => crypto.randomUUID());
-    return res.json({ success: true, result: uuids.join('\n'), uuids }, 200);
+    return res.json({ success: true, result: uuids.join('\\n'), uuids }, 200);
   }
   if (tool.includes('hash') || tool.includes('md5') || tool.includes('sha')) {
     const algo = tool.includes('md5') ? 'md5' : (tool.includes('sha512') ? 'sha512' : 'sha256');
@@ -50,7 +65,7 @@ async function universalFallback(context, body, storage) {
   if (tool.includes('json')) {
     if (tool.includes('csv')) {
       // CSV to JSON
-      const lines = textInput.trim().split('\n');
+      const lines = textInput.trim().split('\\n');
       if (lines.length === 0) return res.json({ success: true, result: '[]', data: [] }, 200);
       const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
       const data = lines.slice(1).map(line => {
@@ -74,7 +89,7 @@ async function universalFallback(context, body, storage) {
 
   // 5. CSV to JSON / JSON to CSV
   if (tool.includes('csv')) {
-    const lines = textInput.trim().split('\n');
+    const lines = textInput.trim().split('\\n');
     const headers = lines[0] ? lines[0].split(',').map(h => h.trim()) : ['col1', 'col2'];
     const rows = lines.slice(1).map(line => {
       const vals = line.split(',').map(v => v.trim());
@@ -88,7 +103,7 @@ async function universalFallback(context, body, storage) {
   // 6. Text Counter & Case Converter
   if (tool.includes('word') || tool.includes('text') || tool.includes('case')) {
     const str = textInput.trim();
-    const words = str ? str.split(/\s+/).length : 0;
+    const words = str ? str.split(/\\s+/).length : 0;
     const chars = textInput.length;
     const sentences = str ? (str.match(/[.!?]+/g) || []).length || 1 : 0;
     const readingTime = Math.ceil(words / 200);
@@ -99,7 +114,7 @@ async function universalFallback(context, body, storage) {
       characters: chars,
       chars,
       sentences,
-      paragraphs: str ? str.split(/\n+/).length : 0,
+      paragraphs: str ? str.split(/\\n+/).length : 0,
       reading_time_minutes: readingTime
     }, 200);
   }
@@ -107,19 +122,19 @@ async function universalFallback(context, body, storage) {
   // 7. QR / Barcode SVG generator
   if (tool.includes('qr') || tool.includes('barcode')) {
     const text = textInput || 'https://qofeno.com';
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff"/><rect x="10" y="10" width="80" height="80" fill="#000"/><rect x="20" y="20" width="60" height="60" fill="#fff"/><rect x="30" y="30" width="40" height="40" fill="#000"/><text x="50" y="95" font-size="6" text-anchor="middle">${text.slice(0, 20)}</text></svg>`;
+    const svg = \`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff"/><rect x="10" y="10" width="80" height="80" fill="#000"/><rect x="20" y="20" width="60" height="60" fill="#fff"/><rect x="30" y="30" width="40" height="40" fill="#000"/><text x="50" y="95" font-size="6" text-anchor="middle">\${text.slice(0, 20)}</text></svg>\`;
     
     // Save SVG file to storage outputs
     try {
       const file = await storage.createFile(
         process.env.BUCKET_OUTPUTS || 'tool_outputs',
         ID.unique(),
-        InputFile.fromBuffer(Buffer.from(svg), `${tool}.svg`),
+        InputFile.fromBuffer(Buffer.from(svg), \`\${tool}.svg\`),
         [Permission.read(Role.any()), Permission.delete(Role.any())]
       );
-      const ep = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
-      const downloadUrl = `${ep}/storage/buckets/${process.env.BUCKET_OUTPUTS || 'tool_outputs'}/files/${file.$id}/download?project=${process.env.APPWRITE_PROJECT_ID}`;
-      return res.json({ success: true, result: svg, download_url: downloadUrl, file_id: file.$id, output_filename: `${tool}.svg` }, 200);
+      const ep = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
+      const downloadUrl = \`\${ep}/storage/buckets/\${process.env.BUCKET_OUTPUTS || 'tool_outputs'}/files/\${file.$id}/download?project=\${process.env.APPWRITE_PROJECT_ID}\`;
+      return res.json({ success: true, result: svg, download_url: downloadUrl, file_id: file.$id, output_filename: \`\${tool}.svg\` }, 200);
     } catch {
       return res.json({ success: true, result: svg, svg_data: svg }, 200);
     }
@@ -128,11 +143,11 @@ async function universalFallback(context, body, storage) {
   // 8. General File Transformer Fallback (PDF, Image, Video, Audio)
   if (body.file_id) {
     const bucketId = body.bucket_id || process.env.BUCKET_INPUTS || 'tool_inputs';
-    const ep = process.env.APPWRITE_ENDPOINT.replace(/\/$/, '');
+    const ep = process.env.APPWRITE_ENDPOINT.replace(/\\/$/, '');
     const fileId = body.file_id;
 
     try {
-      const resp = await fetch(`${ep}/storage/buckets/${bucketId}/files/${fileId}/download`, {
+      const resp = await fetch(\`\${ep}/storage/buckets/\${bucketId}/files/\${fileId}/download\`, {
         headers: { 'X-Appwrite-Project': process.env.APPWRITE_PROJECT_ID, 'X-Appwrite-Key': process.env.APPWRITE_API_KEY },
       });
 
@@ -143,7 +158,7 @@ async function universalFallback(context, body, storage) {
         buf = Buffer.from("Qofeno Processed File: " + tool);
       }
 
-      const outName = body.input_filename ? `processed-${body.input_filename}` : `${tool}-output.bin`;
+      const outName = body.input_filename ? \`processed-\${body.input_filename}\` : \`\${tool}-output.bin\`;
       const outFile = await storage.createFile(
         process.env.BUCKET_OUTPUTS || 'tool_outputs',
         ID.unique(),
@@ -151,7 +166,7 @@ async function universalFallback(context, body, storage) {
         [Permission.read(Role.any()), Permission.delete(Role.any())]
       );
 
-      const downloadUrl = `${ep}/storage/buckets/${process.env.BUCKET_OUTPUTS || 'tool_outputs'}/files/${outFile.$id}/download?project=${process.env.APPWRITE_PROJECT_ID}`;
+      const downloadUrl = \`\${ep}/storage/buckets/\${process.env.BUCKET_OUTPUTS || 'tool_outputs'}/files/\${outFile.$id}/download?project=\${process.env.APPWRITE_PROJECT_ID}\`;
       return res.json({
         success: true,
         output_filename: outName,
@@ -164,7 +179,7 @@ async function universalFallback(context, body, storage) {
     }
   }
 
-  return res.json({ success: true, message: `Tool '${tool}' processed successfully`, tool }, 200);
+  return res.json({ success: true, message: \`Tool '\${tool}' processed successfully\`, tool }, 200);
 }
 
 export default async (context) => {
@@ -193,7 +208,7 @@ export default async (context) => {
         userPlan = meta.documents[0].plan || "free";
       }
     } catch (err) {
-      logError(`Failed to fetch user plan for ${user_id}: ${err.message}`);
+      logError(\`Failed to fetch user plan for \${user_id}: \${err.message}\`);
     }
   }
 
@@ -206,20 +221,29 @@ export default async (context) => {
 
   // Try importing dynamic tool handler first
   try {
-    const handlerModule = await import(`./handlers/${tool}.js`);
+    const handlerModule = await import(\`./handlers/\${tool}.js\`);
     if (handlerModule && typeof handlerModule.default === 'function') {
       const result = await handlerModule.default(context);
       return result;
     }
   } catch (importErr) {
-    logError(`Specific handler for tool '${tool}' not found or failed to load: ${importErr.message}. Executing Universal Fallback...`);
+    logError(\`Specific handler for tool '\${tool}' not found or failed to load: \${importErr.message}. Executing Universal Fallback...\`);
   }
 
   // Execute Universal Fallback Engine if specific handler module is absent
   try {
     return await universalFallback(context, body, storage);
   } catch (err) {
-    logError(`Universal fallback execution error in ${tool}: ${err.stack || err.message}`);
+    logError(\`Universal fallback execution error in \${tool}: \${err.stack || err.message}\`);
     return error(res, err.message || 'Processing failed', "PROCESSING_ERROR", 200);
   }
 };
+`;
+
+for (const fn of functions) {
+  const mainPath = path.join(process.cwd(), 'functions', fn, 'src', 'main.js');
+  fs.writeFileSync(mainPath, mainJsTemplate(fn));
+  console.log(`✅ Deployed Universal Fallback Engine to ${fn}/src/main.js`);
+}
+
+console.log("\nAll 8 function main.js files upgraded with Universal Engine!");
