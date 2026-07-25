@@ -283,3 +283,42 @@ html.lenis {
 .qofeno-logo-container svg g path {
   fill: currentColor !important;
 }
+
+/* Smoothness & animation helpers */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1);    opacity: 1; }
+  50%  { transform: scale(1.08); opacity: 0.7; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f3f0ff 25%, #e9e4ff 50%, #f3f0ff 75%);
+  background-size: 200% auto;
+  animation: shimmer 1.5s ease infinite;
+}
+
+.upload-zone-active {
+  animation: pulse-ring 1.5s ease infinite;
+}
+
+.badge-new {
+  animation: pulse-ring 2s ease infinite;
+}
+
+.interactive {
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 200ms ease,
+              opacity 150ms ease;
+}
+.interactive:hover  { transform: translateY(-4px) scale(1.01); }
+.interactive:active { transform: translateY(0)    scale(0.98); }
