@@ -182,7 +182,8 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
     const execution = await functions.createExecution(targetId, JSON.stringify(payload), false);
     
     if (execution.status === 'failed') {
-      throw new Error(execution.errors || 'Appwrite function execution failed on the server.');
+      const serverErr = execution.errors || 'Function execution failed on server.';
+      return { success: false, error: serverErr };
     }
 
     const raw = execution.responseBody || '{}';
@@ -195,12 +196,16 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
       return { success: false, error: raw };
     }
   } catch (err: any) {
-    if (err?.message === 'Failed to fetch' || err?.name === 'TypeError') {
-      throw new Error('Connection to processing server failed. Please try again.');
-    }
-    throw err;
+    console.error('Appwrite executeJsonFunction error:', err);
+    return {
+      success: false,
+      error: err?.message?.includes('Failed to fetch')
+        ? 'Connection to processing server failed. Please check your internet connection and try again.'
+        : (err?.message || 'Processing server is currently unreachable. Please try again.')
+    };
   }
 }
+
 
 
 

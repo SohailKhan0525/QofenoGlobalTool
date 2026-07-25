@@ -1467,25 +1467,26 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       const response = await executeJsonFunction(tool.functionId || config.functionId, payload);
       setProgress(100);
 
-      if (response?.success === false) {
-        throw new Error(String(response?.error || 'The tool could not finish the task.'));
+      if (!response || response.success === false) {
+        const message = String(response?.error || 'The tool could not finish the task. Please try again.');
+        setErrorMsg(message);
+        setStage('error');
+        toast.error(message);
+        return;
       }
 
       // Resolve download URL from file_id if needed
+      const ep = (import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
+      const pid = import.meta.env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
+
       if (!response.download_url && response.file_id) {
-        try {
-          const dl = await executeJsonFunction(FUNCTION_IDS.createDownloadLink, { file_id: response.file_id });
-          if (dl?.success && dl.download_url) response.download_url = dl.download_url;
-        } catch {}
+        response.download_url = `${ep}/storage/buckets/tool_outputs/files/${response.file_id}/download?project=${pid}`;
       }
 
       if (Array.isArray(response.outputs)) {
         for (const item of response.outputs) {
           if (!item.download_url && item.file_id) {
-            try {
-              const dl = await executeJsonFunction(FUNCTION_IDS.createDownloadLink, { file_id: item.file_id });
-              if (dl?.success && dl.download_url) item.download_url = dl.download_url;
-            } catch {}
+            item.download_url = `${ep}/storage/buckets/tool_outputs/files/${item.file_id}/download?project=${pid}`;
           }
         }
       }
@@ -1494,7 +1495,10 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       setStage('done');
       toast.success('Processing complete!');
     } catch (err: any) {
-      const message = err?.message || 'Something went wrong while processing the file.';
+      const rawMsg = String(err?.message || '');
+      const message = (rawMsg.includes('Failed to fetch') || !rawMsg)
+        ? 'Unable to connect to the processing server. Please try again.'
+        : rawMsg;
       setErrorMsg(message);
       setStage('error');
       toast.error(message);
@@ -1503,6 +1507,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       setTimeout(() => setProgress(0), 400);
     }
   };
+
 
   // --- STAGE: IDLE ----------------------------------------------------
   if (stage === 'idle') {
