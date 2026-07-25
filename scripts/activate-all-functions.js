@@ -15,18 +15,8 @@ async function activateAll() {
   console.log("\n=== ACTIVATING ALL FUNCTIONS ===\n")
 
   for (const fn of list.functions) {
-    const fnId = fn.$id || fn['$id'];
+    const fnId = fn.$id;
     const fnName = fn.name || fnId;
-
-    // Make sure function is enabled
-    if (!fn.enabled) {
-      try {
-        await funcs.update(fnId, fnName, undefined, undefined, undefined, true);
-        console.log(`✓ ${fnName}: Enabled function`);
-      } catch (e) {
-        console.log(`⚠️ ${fnName}: Could not enable function: ${e.message}`);
-      }
-    }
 
     let deployments = { deployments: [] };
     try {
@@ -36,7 +26,6 @@ async function activateAll() {
       continue
     }
 
-    // Find the most recent successful deployment
     const successful = deployments.deployments
       .filter(d => d.status === "ready")
       .sort((a, b) => new Date(b.$createdAt) - new Date(a.$createdAt))[0]
@@ -46,14 +35,19 @@ async function activateAll() {
       continue
     }
 
-    if (fn.deploymentId === successful.$id || fn.deployment === successful.$id) {
-      console.log(`✅ ${fnName}: Already active (${successful.$id})`)
+    const currentDeploy = fn.deploymentId || fn.deployment || fn.latestDeploymentId;
+    if (currentDeploy === successful.$id && fn.enabled) {
+      console.log(`✅ ${fnName}: Active and ready (${successful.$id})`)
       continue
     }
 
-    // Activate the latest successful deployment
+    // Activate the latest successful deployment via updateFunctionDeployment
     try {
-      await funcs.updateDeployment(fnId, successful.$id)
+      if (typeof funcs.updateFunctionDeployment === 'function') {
+        await funcs.updateFunctionDeployment(fnId, successful.$id)
+      } else if (typeof funcs.updateDeployment === 'function') {
+        await funcs.updateDeployment(fnId, successful.$id)
+      }
       console.log(`✓ ${fnName}: Activated deployment ${successful.$id}`)
     } catch (e) {
       console.log(`❌ ${fnName}: Failed to activate deployment: ${e.message}`)
