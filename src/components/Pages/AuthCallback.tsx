@@ -13,20 +13,27 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
 
   useEffect(() => {
     const run = async () => {
-      try {
-        await refreshSession();
-        setStatus('success');
-        // Small delay so user sees the success state, then redirect
-        setTimeout(() => {
-          onNavigate(getRedirectTarget(window.location.search));
-        }, 700);
-      } catch (e) {
+      const resolvedUser = await refreshSession();
+
+      if (!resolvedUser) {
+        // refreshSession never throws — if user is null, session genuinely failed.
+        // Do NOT navigate to checkout; show the error so the user can retry login.
         setStatus('error');
-        setError(e instanceof Error ? e.message : 'Unable to complete sign-in. Please try again.');
+        setError(
+          'We couldn\'t verify your account session. This usually means the sign-in didn\'t complete successfully. Please sign in again.'
+        );
+        return;
       }
+
+      setStatus('success');
+      // Brief delay so the user sees the success state before navigating.
+      setTimeout(() => {
+        onNavigate(getRedirectTarget(window.location.search));
+      }, 600);
     };
+
     void run();
-  }, []); // run once on mount only
+  }, []); // run once on mount
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F5F3FF] via-white to-[#EEF2FF] flex items-center justify-center px-4 pt-28 pb-10">
@@ -46,7 +53,7 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
               </div>
             </div>
             <h1 className="text-xl font-black text-[#0F0A1E]">Signing you in…</h1>
-            <p className="mt-2 text-sm text-neutral-500">Verifying your session with Appwrite. This only takes a moment.</p>
+            <p className="mt-2 text-sm text-neutral-500">Verifying your session. This only takes a moment.</p>
           </>
         )}
 
@@ -70,12 +77,15 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
               </div>
             </div>
             <h1 className="text-xl font-black text-[#0F0A1E]">Sign-in failed</h1>
-            <p className="mt-2 text-sm text-neutral-500">{error}</p>
+            <p className="mt-2 text-sm text-neutral-500 leading-snug">{error}</p>
             <button
-              onClick={() => onNavigate('login')}
+              onClick={() => {
+                const redirect = getRedirectTarget(window.location.search);
+                onNavigate(`/login?redirect=${encodeURIComponent(redirect)}`);
+              }}
               className="mt-6 w-full rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 py-3 text-sm font-bold text-white shadow-lg shadow-purple-500/20 hover:from-purple-700 hover:to-indigo-700 transition-all cursor-pointer"
             >
-              Back to Sign In
+              Try Signing In Again
             </button>
           </>
         )}

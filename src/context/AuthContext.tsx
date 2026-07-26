@@ -16,7 +16,8 @@ type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  refreshSession: () => Promise<void>;
+  // Returns the resolved user (or null if no session). Never throws.
+  refreshSession: () => Promise<AuthUser | null>;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -61,16 +62,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setUserRef = useRef(setUser);
   setUserRef.current = setUser;
 
-  const refreshSession = useCallback(async () => {
+  const refreshSession = useCallback(async (): Promise<AuthUser | null> => {
     setIsLoading(true);
     try {
       const raw = await account.get();
       const plan = await loadPlan(raw.$id);
       window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
-      setUserRef.current(toAuthUser(raw, plan));
+      const resolved = toAuthUser(raw, plan);
+      setUserRef.current(resolved);
+      return resolved;
     } catch {
       window.localStorage.removeItem(AUTH_SESSION_MARKER);
       setUserRef.current(null);
+      return null;
     } finally {
       setIsLoading(false);
     }

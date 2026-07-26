@@ -23,17 +23,20 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
   const { user, isLoading, refreshSession } = useAuth();
   const [success, setSuccess] = useState(false);
   const [processing, setProcessing] = useState(false);
-  // Track whether we've already attempted a one-time re-verify so we don't loop.
+  // null = not yet attempted, true = retry in progress or done
   const retried = useRef(false);
+  // After one retry, if still no user, retryFailed=true
+  const [retryFailed, setRetryFailed] = useState(false);
 
-  // If the component mounts with no user and no in-progress load, it means
-  // we arrived here right after a redirect (OAuth or email login) but the
-  // AuthContext's initial account.get() already finished and returned null.
-  // Do one silent re-verify to catch this race condition.
+  // When the component first sees isLoading=false but user=null, do ONE silent re-verify.
+  // This catches the race where AuthContext's initial check finished before the SPA
+  // navigated here (e.g. right after an OAuth redirect or email login).
   useEffect(() => {
     if (!isLoading && !user && !retried.current) {
       retried.current = true;
-      void refreshSession();
+      refreshSession().then(u => {
+        if (!u) setRetryFailed(true);
+      });
     }
   }, [isLoading, user, refreshSession]);
 
@@ -68,8 +71,8 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
   }
 
   // ── Auth loading guard — show spinner while session is being verified ────────
-  // This prevents the login gate from flashing right after OAuth redirect.
-  if (isLoading) {
+  // Covers: initial AuthContext load AND the one-time silent retry above.
+  if (isLoading || (retried.current && !retryFailed && !user)) {
     return (
       <div className="flex items-center justify-center gap-3 py-6 text-neutral-500">
         <FontAwesomeIcon icon={faSpinner} className="h-5 w-5 animate-spin text-purple-500" />
@@ -78,21 +81,23 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
     );
   }
 
-  // ── Unauthenticated Guard — only shown once isLoading is false ────────────────
+  // ── Unauthenticated Guard — only shown once isLoading is false AND retry done ─
   if (!user) {
+    const redirectParam = encodeURIComponent(`/checkout/${planType}?plan=${planType}`);
     return (
       <div className="w-full text-center space-y-3">
         <button
           onClick={() => {
-            const currentPlan = planType || 'pro';
-            window.history.pushState({}, '', `/login?redirect=/checkout/pro?plan=${currentPlan}`);
+            window.history.pushState({}, '', `/login?redirect=/checkout/${planType}?plan=${planType}`);
             window.dispatchEvent(new PopStateEvent('popstate'));
           }}
           className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-2xl font-black text-sm hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-purple-600/20"
         >
-          <span>Sign In to Subscribe to {planType.toUpperCase()} →</span>
+          <span>Sign In to Subscribe →</span>
         </button>
-        <p className="text-xs text-neutral-400 font-medium">Please sign in first so your subscription links directly to your Qofeno profile.</p>
+        <p className="text-xs text-neutral-400 font-medium">
+          Sign in first so your subscription links to your Qofeno account.
+        </p>
       </div>
     );
   }
