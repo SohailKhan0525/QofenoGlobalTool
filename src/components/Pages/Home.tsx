@@ -413,49 +413,89 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
         </div>
       </section>
 
-      {/* SECTION 2 — WHAT IS QOFENO */}
-      <section ref={trustBarRef} className="py-24 border-t border-b border-purple-50 bg-[#FAFAFA] relative z-20">
+      {/* SECTION 2 — HOW IT WORKS */}
+      <section ref={trustBarRef} className="py-24 border-t border-b border-purple-50 bg-[#FAFAFA] relative z-20 overflow-hidden">
         <div className="max-w-5xl mx-auto px-6 md:px-12 text-center">
-          <h2 className="font-display text-3xl md:text-5xl font-black text-[#0F0A1E] mb-6">One place. Hundreds of tools.</h2>
-          <p className="text-lg md:text-xl text-neutral-500 leading-relaxed mb-16 max-w-3xl mx-auto font-medium">
-            Qofeno is a growing collection of free online tools. Every tool runs on our servers — you upload, we process, you download. Your files are never stored permanently.
-          </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <span className="text-xs uppercase tracking-widest font-black text-purple-600 bg-purple-100/60 px-3.5 py-1.5 rounded-full inline-block mb-4">
+              Simple 3-Step Process
+            </span>
+            <h2 className="font-display text-3xl md:text-5xl font-black text-[#0F0A1E] mb-6">How Qofeno Works</h2>
+            <p className="text-lg md:text-xl text-neutral-500 leading-relaxed mb-16 max-w-3xl mx-auto font-medium">
+              Every tool runs on ultra-fast servers — you upload, we process, you download. Your files are never stored permanently.
+            </p>
+          </motion.div>
 
-          <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-4 relative mb-12">
-            <div className="hidden md:block absolute top-1/2 left-[20%] right-[20%] h-0.5 border-t-2 border-dashed border-neutral-350 -z-10" />
+          <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-6 relative mb-12">
+            <div className="hidden md:block absolute top-1/2 left-[15%] right-[15%] h-1 bg-gradient-to-r from-purple-200 via-purple-500 to-emerald-300 -z-10 rounded-full opacity-60 animate-pulse" />
             
-            <div className="flex flex-col items-center bg-white p-6 rounded-3xl z-10 w-48 shadow-xl shadow-purple-900/5 border border-neutral-100">
-              <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                </svg>
+            {/* Step 1 */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              whileHover={{ y: -6, scale: 1.02 }}
+              className="flex flex-col items-center bg-white p-8 rounded-3xl z-10 w-full md:w-60 shadow-xl shadow-purple-900/5 border border-purple-100/80 transition-all cursor-pointer"
+            >
+              <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+                <FontAwesomeIcon icon={faUpload} className="w-6 h-6" />
               </div>
-              <span className="font-bold text-[#0F0A1E]">1. Upload</span>
-            </div>
+              <span className="text-xs font-black text-purple-600 uppercase tracking-widest mb-1">Step 1</span>
+              <span className="font-extrabold text-lg text-[#0F0A1E]">Upload File</span>
+              <p className="text-xs text-neutral-400 mt-2 font-medium">Drag & drop or select from your device.</p>
+            </motion.div>
 
-            <div className="flex flex-col items-center bg-purple-600 text-white p-6 rounded-3xl z-10 w-48 shadow-2xl shadow-purple-600/20">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-4 animate-[spin_6s_linear_infinite]">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+            {/* Step 2 */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              whileHover={{ y: -6, scale: 1.02 }}
+              className="flex flex-col items-center bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 text-white p-8 rounded-3xl z-10 w-full md:w-60 shadow-2xl shadow-purple-600/30 transition-all cursor-pointer relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none" />
+              <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-4 shadow-inner">
+                <FontAwesomeIcon icon={faGear} className="w-6 h-6 text-white animate-spin" style={{ animationDuration: '8s' }} />
               </div>
-              <span className="font-bold">2. Server processes</span>
-            </div>
+              <span className="text-xs font-black text-purple-200 uppercase tracking-widest mb-1">Step 2</span>
+              <span className="font-extrabold text-lg">Fast Processing</span>
+              <p className="text-xs text-purple-100/80 mt-2 font-medium">Server processes in seconds.</p>
+            </motion.div>
 
-            <div className="flex flex-col items-center bg-white p-6 rounded-3xl z-10 w-48 shadow-xl shadow-purple-900/5 border border-neutral-100">
-              <div className="w-12 h-12 bg-green-50 text-green-600 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
+            {/* Step 3 */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              whileHover={{ y: -6, scale: 1.02 }}
+              className="flex flex-col items-center bg-white p-8 rounded-3xl z-10 w-full md:w-60 shadow-xl shadow-purple-900/5 border border-purple-100/80 transition-all cursor-pointer"
+            >
+              <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+                <FontAwesomeIcon icon={faDownload} className="w-6 h-6" />
               </div>
-              <span className="font-bold text-[#0F0A1E]">3. Download</span>
-            </div>
+              <span className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-1">Step 3</span>
+              <span className="font-extrabold text-lg text-[#0F0A1E]">Download Result</span>
+              <p className="text-xs text-neutral-400 mt-2 font-medium">Save your processed file instantly.</p>
+            </motion.div>
           </div>
 
-          <div className="inline-flex items-center gap-2 bg-white border border-neutral-200 px-4 py-2 rounded-full text-neutral-600 font-bold text-xs shadow-sm">
-            🔒 Files are deleted from our servers after processing
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 0.5 }}
+            className="inline-flex items-center gap-2 bg-white border border-neutral-200 px-5 py-2.5 rounded-full text-neutral-700 font-bold text-xs shadow-md shadow-purple-900/5"
+          >
+            🔒 Files automatically deleted after download / 1 hour for free users
+          </motion.div>
         </div>
       </section>
 
