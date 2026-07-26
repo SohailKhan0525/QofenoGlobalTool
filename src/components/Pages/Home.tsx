@@ -35,96 +35,117 @@ const CATEGORY_META: Record<string, { icon: any, color: string }> = {
   'Writing Tools': { icon: faPenNib, color: 'bg-violet-50 text-violet-650' },
 };
 
-// Interactive Typing demo subcomponent
+// Interactive Typing demo subcomponent with multi-phrase loop
 function SearchTypingDemo() {
   const [text, setText] = useState('');
   const [showResults, setShowResults] = useState(false);
-  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  
-  useEffect(() => {
-    if (prefersReduced) {
-      setText('compress pdf');
-      setShowResults(true);
-      return;
-    }
+  const [phraseIdx, setPhraseIdx] = useState(0);
 
+  const phrases = [
+    'compress pdf',
+    'png to webp converter',
+    'format json payload',
+    'merge pdf documents'
+  ];
+
+  const currentPhrase = phrases[phraseIdx % phrases.length];
+
+  useEffect(() => {
     let active = true;
-    const runTypingCycle = () => {
+    let isDeleting = false;
+    let charIndex = 0;
+    let timer: any = null;
+
+    const tick = () => {
       if (!active) return;
-      setText('');
-      setShowResults(false);
-      
-      let index = 0;
-      const phrase = 'compress pdf';
-      
-      const typingInterval = setInterval(() => {
-        if (!active) {
-          clearInterval(typingInterval);
-          return;
+
+      if (!isDeleting) {
+        // Typing
+        if (charIndex <= currentPhrase.length) {
+          setText(currentPhrase.substring(0, charIndex));
+          charIndex++;
+          if (charIndex > currentPhrase.length) {
+            setShowResults(true);
+            timer = setTimeout(() => {
+              isDeleting = true;
+              setShowResults(false);
+              tick();
+            }, 1800);
+            return;
+          }
+          timer = setTimeout(tick, 70);
         }
-        if (index < phrase.length) {
-          setText(phrase.substring(0, index + 1));
-          index++;
+      } else {
+        // Deleting
+        if (charIndex > 0) {
+          charIndex--;
+          setText(currentPhrase.substring(0, charIndex));
+          timer = setTimeout(tick, 35);
         } else {
-          clearInterval(typingInterval);
-          setTimeout(() => {
-            if (active) setShowResults(true);
-          }, 400);
+          isDeleting = false;
+          setPhraseIdx(prev => prev + 1);
+          timer = setTimeout(tick, 300);
         }
-      }, 100);
+      }
     };
 
-    runTypingCycle();
-    const mainInterval = setInterval(runTypingCycle, 8000);
+    timer = setTimeout(tick, 200);
 
     return () => {
       active = false;
-      clearInterval(mainInterval);
+      if (timer) clearTimeout(timer);
     };
-  }, [prefersReduced]);
+  }, [phraseIdx]);
 
   const results = [
-    { id: 1, name: 'Compress PDF', desc: 'Reduce file size without quality loss' },
-    { id: 2, name: 'PDF to Word', desc: 'Convert PDF to editable DOCX document' },
-    { id: 3, name: 'Word to PDF', desc: 'Convert DOCX document to high-quality PDF' }
+    { id: 1, name: currentPhrase.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), desc: 'Fast, secure server processing' },
+    { id: 2, name: 'PDF Tools', desc: 'Merge, split & compress PDFs' },
+    { id: 3, name: 'Format & Convert', desc: 'Clean, optimize & export files' }
   ];
 
   return (
     <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 flex flex-col gap-4 min-h-[250px] justify-center font-sans">
-      <div className="flex items-center gap-3 bg-neutral-50 px-4 py-3 rounded-xl border border-neutral-150">
-        <FontAwesomeIcon icon={faMagnifyingGlass} className="text-neutral-400 w-4 h-4" />
-        <span className="text-sm font-semibold text-neutral-800 flex-1">{text}</span>
-        <span className="w-0.5 h-4 bg-purple-650 animate-[pulse_1s_infinite]" />
+      <div className="flex items-center gap-3 bg-neutral-50 px-4 py-3 rounded-xl border border-neutral-200 shadow-inner">
+        <FontAwesomeIcon icon={faMagnifyingGlass} className="text-purple-600 w-4 h-4 animate-pulse" />
+        <span className="text-sm font-bold text-neutral-800 flex-1 font-mono tracking-tight">{text}</span>
+        <span className="w-0.5 h-4 bg-purple-600 animate-[ping_1s_infinite]" />
       </div>
-      <div className="flex flex-col gap-2 flex-1 justify-center">
+      <div className="flex flex-col gap-2 flex-1 justify-center min-h-[140px]">
         {showResults ? (
           results.map((r, idx) => (
             <motion.div 
-              key={r.id}
-              initial={prefersReduced ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 12, scale: 0.96 }}
+              key={`${r.id}-${phraseIdx}`}
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={prefersReduced ? { duration: 0 } : { delay: idx * 0.15, ease: [0.22, 1, 0.36, 1], duration: 0.35 }}
+              transition={{ delay: idx * 0.1, duration: 0.25 }}
               className={cn(
                 "border rounded-xl p-3 flex items-center justify-between transition-all",
                 r.id === 1 
-                  ? "bg-purple-50/50 border-purple-500 shadow-md shadow-purple-500/5 ring-2 ring-purple-100" 
+                  ? "bg-purple-50/70 border-purple-500 shadow-sm ring-1 ring-purple-200" 
                   : "bg-white border-neutral-150"
               )}
             >
               <div>
-                <h4 className={cn("font-bold text-xs", r.id === 1 ? "text-purple-900" : "text-neutral-700")}>{r.name}</h4>
-                <p className="text-[9px] text-neutral-400 mt-0.5">{r.desc}</p>
+                <h4 className={cn("font-extrabold text-xs", r.id === 1 ? "text-purple-900" : "text-neutral-700")}>{r.name}</h4>
+                <p className="text-[9px] text-neutral-400 mt-0.5 font-medium">{r.desc}</p>
               </div>
               <span className={cn(
-                "text-[9px] font-bold px-3 py-1.5 rounded-lg",
-                r.id === 1 ? "bg-purple-600 text-white" : "bg-neutral-100 text-neutral-500"
+                "text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider",
+                r.id === 1 ? "bg-purple-600 text-white shadow-sm" : "bg-neutral-100 text-neutral-500"
               )}>
                 {r.id === 1 ? 'Selected' : 'Open'}
               </span>
             </motion.div>
           ))
         ) : (
-          <div className="text-center py-8 text-xs font-semibold text-neutral-400">Searching...</div>
+          <div className="flex flex-col items-center justify-center py-6 text-neutral-400 gap-2">
+            <span className="text-xs font-semibold">Searching Qofeno tools...</span>
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+          </div>
         )}
       </div>
     </div>
