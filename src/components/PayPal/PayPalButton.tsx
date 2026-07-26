@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
@@ -20,9 +20,22 @@ type PayPalButtonProps = {
 };
 
 export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButtonProps) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, refreshSession } = useAuth();
   const [success, setSuccess] = useState(false);
   const [processing, setProcessing] = useState(false);
+  // Track whether we've already attempted a one-time re-verify so we don't loop.
+  const retried = useRef(false);
+
+  // If the component mounts with no user and no in-progress load, it means
+  // we arrived here right after a redirect (OAuth or email login) but the
+  // AuthContext's initial account.get() already finished and returned null.
+  // Do one silent re-verify to catch this race condition.
+  useEffect(() => {
+    if (!isLoading && !user && !retried.current) {
+      retried.current = true;
+      void refreshSession();
+    }
+  }, [isLoading, user, refreshSession]);
 
   const planId = planType === 'teams'
     ? (isYearly ? (TEAMS_PLAN_ID_YEARLY || PLAN_ID_YEARLY) : (TEAMS_PLAN_ID_MONTHLY || PLAN_ID_MONTHLY))
