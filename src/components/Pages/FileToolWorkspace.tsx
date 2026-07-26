@@ -9,6 +9,7 @@ import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 import { executeJsonFunction, FUNCTION_IDS, storage, fallbackStorage, realtime, databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
 import { trackToolUse, trackFileProcessed, trackDownload } from '../../lib/analytics';
+import { captureException } from '../../lib/sentry';
 
 import { ID, Permission, Role } from 'appwrite';
 
@@ -1526,6 +1527,12 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       if (!response || response.success === false) {
         const message = String(response?.error || 'The tool could not finish the task. Please try again.');
         trackFileProcessed(tool.slug, files[0]?.size || 0, 0, false);
+        captureException(new Error(`[${tool.slug}] ${message}`), {
+          tool: tool.slug,
+          filename: files[0]?.name,
+          filesize: files[0]?.size,
+          error: response?.error
+        });
         setErrorMsg(message);
         setStage('error');
         toast.error(message);
@@ -1558,6 +1565,11 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       const message = (rawMsg.includes('Failed to fetch') || !rawMsg)
         ? 'Unable to connect to the processing server. Please try again.'
         : rawMsg;
+      captureException(err, {
+        tool: tool.slug,
+        filename: files[0]?.name,
+        filesize: files[0]?.size
+      });
       setErrorMsg(message);
       setStage('error');
       toast.error(message);

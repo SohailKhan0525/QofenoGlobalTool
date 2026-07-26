@@ -1,4 +1,5 @@
 import { Account, Client, Databases, Functions, Realtime, Storage, Query } from 'appwrite';
+import { captureException } from './sentry';
 
 
 const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
@@ -208,6 +209,8 @@ async function pollExecutionResult(toolSlug: string, startTime: number): Promise
                 file_id: latest.output_file_id,
               };
             } else if (latest.status === 'failed') {
+              const errObj = new Error(`Tool Execution Failed [${toolSlug}]: ${latest.error_message || 'Unknown error'}`);
+              captureException(errObj, { toolSlug, error_message: latest.error_message });
               return {
                 success: false,
                 error: latest.error_message || 'Processing failed on the server. Please check options and try again.'
@@ -220,6 +223,9 @@ async function pollExecutionResult(toolSlug: string, startTime: number): Promise
       console.warn('Polling tool_executions document error:', e);
     }
   }
+
+  const timeoutErr = new Error(`Tool Processing Timeout [${toolSlug}]: Processing timed out on server (>5 min).`);
+  captureException(timeoutErr, { toolSlug, waitDurationMs: Date.now() - startTime });
 
   return { success: false, error: 'Processing timed out on server. Please try again with a smaller file or different options.' };
 }

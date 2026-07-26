@@ -30,8 +30,9 @@ export function initSentry() {
 
 export function captureException(error: any, context?: Record<string, any>) {
   try {
+    const errToCapture = typeof error === 'string' ? new Error(error) : (error || new Error('Unknown error'));
     if (SENTRY_DSN) {
-      Sentry.captureException(error, { extra: context });
+      Sentry.captureException(errToCapture, { extra: context });
     }
   } catch {
     console.error("[Qofeno Error]", error, context);
