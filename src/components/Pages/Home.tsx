@@ -152,136 +152,197 @@ function SearchTypingDemo() {
   );
 }
 
-// Upload progress simulation subcomponent
+// Upload progress simulation subcomponent with rich looping animation
 function UploadProgressDemo() {
   const [progress, setProgress] = useState(0);
-  const [stage, setStage] = useState<'uploading' | 'processing'>('uploading');
-  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [stage, setStage] = useState<'uploading' | 'processing' | 'done'>('uploading');
 
   useEffect(() => {
-    if (prefersReduced) {
-      setProgress(100);
-      setStage('processing');
-      return;
-    }
-
     let active = true;
+    let timer: any = null;
+
     const runCycle = () => {
       if (!active) return;
       setProgress(0);
       setStage('uploading');
 
+      let currentProgress = 0;
       const interval = setInterval(() => {
         if (!active) {
           clearInterval(interval);
           return;
         }
-        setProgress(p => {
-          if (p >= 100) {
-            clearInterval(interval);
-            setStage('processing');
-            setTimeout(() => {
+        currentProgress += 12;
+        if (currentProgress >= 100) {
+          currentProgress = 100;
+          setProgress(100);
+          clearInterval(interval);
+          setStage('processing');
+
+          timer = setTimeout(() => {
+            if (!active) return;
+            setStage('done');
+            timer = setTimeout(() => {
               if (active) runCycle();
-            }, 3000);
-            return 100;
-          }
-          return p + 10;
-        });
-      }, 150);
+            }, 2500);
+          }, 2000);
+        } else {
+          setProgress(currentProgress);
+        }
+      }, 120);
     };
 
     runCycle();
+
     return () => {
       active = false;
+      if (timer) clearTimeout(timer);
     };
-  }, [prefersReduced]);
+  }, []);
 
   return (
     <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 flex flex-col justify-center items-center gap-4 min-h-[250px] font-sans">
-      <div className="w-full border-2 border-dashed border-neutral-200 rounded-xl p-6 flex flex-col items-center justify-center relative bg-neutral-50/50">
-        {stage === 'uploading' ? (
-          <>
+      <div className="w-full border-2 border-dashed border-purple-200 rounded-2xl p-6 flex flex-col items-center justify-center relative bg-purple-50/20 overflow-hidden">
+        {stage === 'uploading' && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full flex flex-col items-center"
+          >
             <motion.div
-              initial={prefersReduced ? { y: 0, opacity: 1 } : { y: -20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={prefersReduced ? { duration: 0 } : { repeat: Infinity, duration: 1.5, repeatType: "reverse", ease: "easeInOut" }}
-              className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-650 border border-purple-100 mb-4 shadow-sm"
+              animate={{ y: [0, -8, 0] }}
+              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
+              className="w-14 h-14 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center border border-purple-200 mb-4 shadow-sm"
             >
-              <FontAwesomeIcon icon={faFileLines} className="w-5 h-5" />
+              <FontAwesomeIcon icon={faUpload} className="w-6 h-6" />
             </motion.div>
             
             <div className="w-full">
-              <div className="flex justify-between text-[10px] font-bold text-neutral-500 mb-1.5 px-1">
+              <div className="flex justify-between text-[11px] font-extrabold text-neutral-600 mb-1.5 px-1">
                 <span>annual_report.pdf</span>
-                <span>{progress}%</span>
+                <span className="text-purple-600">{progress}%</span>
               </div>
-              <div className="w-full bg-neutral-200 rounded-full h-2 overflow-hidden">
-                <div className="bg-purple-600 h-full transition-all duration-200" style={{ width: `${progress}%` }} />
+              <div className="w-full bg-neutral-200 rounded-full h-2.5 overflow-hidden p-0.5">
+                <div className="bg-gradient-to-r from-purple-500 to-indigo-600 h-full rounded-full transition-all duration-150" style={{ width: `${progress}%` }} />
               </div>
+              <p className="text-[10px] text-neutral-400 font-semibold text-center mt-2">
+                Uploading {Math.round((progress / 100) * 2.4 * 10) / 10} MB / 2.4 MB...
+              </p>
             </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center py-4 text-center">
-            <div className="relative w-12 h-12 mb-4 flex items-center justify-center">
-              <FontAwesomeIcon icon={faGear} className={cn("text-purple-650 w-10 h-10", prefersReduced ? "" : "animate-spin")} />
-              <FontAwesomeIcon icon={faGear} className={cn("text-pink-500 w-5 h-5 absolute -bottom-1 -right-1", prefersReduced ? "" : "animate-[spin_2s_linear_infinite_reverse]")} />
+          </motion.div>
+        )}
+
+        {stage === 'processing' && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center py-2 text-center"
+          >
+            <div className="relative w-14 h-14 mb-4 flex items-center justify-center">
+              <FontAwesomeIcon icon={faGear} className="text-purple-600 w-12 h-12 animate-spin" style={{ animationDuration: '4s' }} />
+              <FontAwesomeIcon icon={faGear} className="text-pink-500 w-6 h-6 absolute -bottom-1 -right-1 animate-[spin_2s_linear_infinite_reverse]" />
             </div>
-            <h4 className="font-extrabold text-neutral-800 text-sm">Processing file...</h4>
-            <p className="text-[9px] text-neutral-500 mt-1">Executing PDF compression filters on our servers</p>
-          </div>
+            <h4 className="font-extrabold text-neutral-900 text-sm">Server Processing...</h4>
+            <p className="text-[10px] text-purple-600 font-semibold mt-1 bg-purple-50 px-3 py-1 rounded-full border border-purple-100 animate-pulse">
+              ⚡ Executing compression algorithm
+            </p>
+          </motion.div>
+        )}
+
+        {stage === 'done' && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center py-2 text-center"
+          >
+            <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-3 shadow-md">
+              <FontAwesomeIcon icon={faCircleCheck} className="w-6 h-6" />
+            </div>
+            <h4 className="font-extrabold text-neutral-900 text-sm">Processing Complete!</h4>
+            <p className="text-[10px] text-emerald-600 font-bold mt-1 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+              Done in 0.8 seconds
+            </p>
+          </motion.div>
         )}
       </div>
     </div>
   );
 }
 
-// Success Check & Confetti simulation subcomponent
+// Success Check & Confetti simulation subcomponent with looping celebration
 function DownloadSuccessDemo() {
   const [particles, setParticles] = useState<any[]>([]);
-  const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const [downloaded, setDownloaded] = useState(false);
 
   useEffect(() => {
-    if (prefersReduced) return;
-    const list = Array.from({ length: 20 }).map((_, i) => ({
-      id: i,
-      x: Math.random() * 120 - 60,
-      y: Math.random() * 120 - 60,
-      color: ['bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-yellow-500', 'bg-green-500'][i % 5],
-      delay: Math.random() * 0.4
-    }));
-    setParticles(list);
-  }, [prefersReduced]);
+    let active = true;
+
+    const generateParticles = () => {
+      if (!active) return;
+      setDownloaded(false);
+      const list = Array.from({ length: 24 }).map((_, i) => ({
+        id: i,
+        x: (Math.random() - 0.5) * 160,
+        y: (Math.random() - 0.5) * 160,
+        color: ['bg-purple-500', 'bg-pink-500', 'bg-cyan-500', 'bg-yellow-400', 'bg-emerald-500', 'bg-indigo-500'][i % 6],
+        scale: Math.random() * 0.8 + 0.4,
+        delay: Math.random() * 0.3
+      }));
+      setParticles(list);
+    };
+
+    generateParticles();
+    const interval = setInterval(generateParticles, 4000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-neutral-100 p-5 flex flex-col justify-center items-center gap-4 min-h-[250px] relative overflow-hidden font-sans">
-      {!prefersReduced && particles.map(p => (
+      {particles.map(p => (
         <motion.div
           key={p.id}
           initial={{ opacity: 1, scale: 0, x: 0, y: 0 }}
-          animate={{ opacity: 0, scale: 1.2, x: p.x * 1.5, y: p.y * 1.5 }}
-          transition={{ duration: 1.5, delay: p.delay, repeat: Infinity, repeatDelay: 0.5 }}
-          className={`absolute w-1.5 h-1.5 rounded-full ${p.color} z-0`}
+          animate={{ opacity: 0, scale: p.scale, x: p.x, y: p.y }}
+          transition={{ duration: 1.6, delay: p.delay, ease: "easeOut" }}
+          className={`absolute w-2 h-2 rounded-full ${p.color} z-0 pointer-events-none`}
         />
       ))}
       
-      <div className={cn("w-14 h-14 bg-green-50 rounded-full flex items-center justify-center text-green-500 border border-green-150 shadow-md shadow-green-100 z-10", prefersReduced ? "" : "animate-[pulse_2s_infinite]")}>
-        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
+      <motion.div 
+        initial={{ scale: 0 }}
+        animate={{ scale: [0, 1.2, 1] }}
+        transition={{ duration: 0.5, ease: "backOut" }}
+        className="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-500 border border-emerald-200 shadow-lg shadow-emerald-100 z-10"
+      >
+        <FontAwesomeIcon icon={faCircleCheck} className="w-8 h-8 text-emerald-600" />
+      </motion.div>
       
       <div className="text-center w-full z-10 space-y-1">
-        <h4 className="font-black text-neutral-800 text-base">File Compressed!</h4>
-        <div className="flex items-center justify-center gap-4 text-xs font-bold mt-2">
+        <h4 className="font-extrabold text-neutral-900 text-base">Ready for Download!</h4>
+        <div className="flex items-center justify-center gap-3 text-xs font-extrabold mt-2">
           <span className="text-neutral-400 line-through">2.4 MB</span>
-          <span className="text-neutral-400">→</span>
-          <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded">0.8 MB (66% smaller)</span>
+          <span className="text-purple-600 font-bold">→</span>
+          <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">0.8 MB (66% smaller)</span>
         </div>
       </div>
 
-      <button className={cn("w-full py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black text-xs rounded-xl shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all cursor-pointer z-10 flex items-center justify-center gap-2", prefersReduced ? "" : "animate-[pulse_1.5s_infinite]")}>
-        <FontAwesomeIcon icon={faDownload} className={cn("w-4 h-4", prefersReduced ? "" : "animate-bounce")} /> Download Compressed PDF
-      </button>
+      <motion.button 
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setDownloaded(true)}
+        className={cn(
+          "w-full py-3.5 text-white font-extrabold text-xs rounded-xl shadow-lg transition-all cursor-pointer z-10 flex items-center justify-center gap-2",
+          downloaded
+            ? "bg-purple-700 shadow-purple-500/30"
+            : "bg-gradient-to-r from-emerald-500 to-teal-600 shadow-emerald-500/20 hover:shadow-emerald-500/30"
+        )}
+      >
+        <FontAwesomeIcon icon={downloaded ? faCircleCheck : faDownload} className={cn("w-4 h-4", !downloaded && "animate-bounce")} />
+        {downloaded ? 'Downloaded Successfully!' : 'Download Compressed PDF'}
+      </motion.button>
     </div>
   );
 }
