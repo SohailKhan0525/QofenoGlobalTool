@@ -1367,12 +1367,19 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
   const setField = (key: string, value: any) => setFields((prev) => ({ ...prev, [key]: value }));
 
   const isFileTypeAccepted = (file: File) => {
-    const accepted = acceptText.split(',').map(s => s.trim().toLowerCase());
+    if (!file) return false;
+    const accepted = acceptText.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
     const fname = file.name.toLowerCase();
+    const ftype = (file.type || '').toLowerCase();
+
     return accepted.some(a => {
       if (a.startsWith('.')) return fname.endsWith(a);
-      if (a.includes('*')) return file.type.startsWith(a.replace('*', ''));
-      return file.type === a;
+      if (a === 'image/*') return ftype.startsWith('image/') || fname.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|tiff|avif|heic)$/i);
+      if (a === 'video/*') return ftype.startsWith('video/') || fname.match(/\.(mp4|mov|avi|mkv|webm|flv|wmv|3gp)$/i);
+      if (a === 'audio/*') return ftype.startsWith('audio/') || fname.match(/\.(mp3|wav|ogg|flac|aac|m4a|wma|opus)$/i);
+      if (a === 'application/pdf') return ftype.includes('pdf') || fname.endsWith('.pdf');
+      if (a.includes('*')) return ftype.startsWith(a.replace('*', ''));
+      return ftype === a;
     });
   };
 
@@ -1382,6 +1389,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     const bad = arr.some(f => !isFileTypeAccepted(f));
     if (bad) {
       setWrongType(true);
+      toast.error(`Unsupported file! Only ${acceptedExts || 'supported format'} files are allowed for ${tool.title || tool.slug}.`);
       return;
     }
     const maxFiles = config.maxFiles || (isMultiple ? 20 : 1);

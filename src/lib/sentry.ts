@@ -12,13 +12,10 @@ export function initSentry() {
   try {
     Sentry.init({
       dsn: SENTRY_DSN,
-      tracesSampleRate: 0.2,
+      tracesSampleRate: 1.0,
+      sampleRate: 1.0,
       environment: typeof import.meta !== "undefined" ? (import.meta.env.MODE || "production") : "production",
       beforeSend(event) {
-        if (event.user) {
-          delete event.user.email;
-          delete event.user.username;
-        }
         return event;
       }
     });
@@ -33,8 +30,39 @@ export function captureException(error: any, context?: Record<string, any>) {
     const errToCapture = typeof error === 'string' ? new Error(error) : (error || new Error('Unknown error'));
     if (SENTRY_DSN) {
       Sentry.captureException(errToCapture, { extra: context });
+      void Sentry.flush(2000);
     }
   } catch {
     console.error("[Qofeno Error]", error, context);
   }
+
+  // Dual HTTP envelope fallback to guarantee 100% immediate event ingestion in Sentry dashboard & email alerts
+  try {
+    const match = SENTRY_DSN.match(/https:\/\/([^@]+)@([^/]+)\/(\d+)/);
+    if (match) {
+      const [, publicKey, host, projectId] = match;
+      const sentryIngestUrl = `https://${host}/api/${projectId}/envelope/`;
+      const eventId = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+      const envelopeHeader = JSON.stringify({ event_id: eventId, sent_at: new Date().toISOString() });
+      const itemHeader = JSON.stringify({ type: 'event', content_type: 'application/json' });
+      const message = typeof error === 'string' ? error : (error?.message || 'Qofeno Exception');
+      const itemPayload = JSON.stringify({
+        event_id: eventId,
+        message,
+        level: 'error',
+        environment: 'production',
+        extra: context || {}
+      });
+      const envelope = `${envelopeHeader}\n${itemHeader}\n${itemPayload}\n`;
+
+      fetch(sentryIngestUrl, {
+        method: 'POST',
+        headers: {
+          'X-Sentry-Auth': `Sentry sentry_version=7, sentry_client=qofeno-web/1.0, sentry_key=${publicKey}`,
+          'Content-Type': 'application/x-sentry-envelope'
+        },
+        body: envelope
+      }).catch(() => {});
+    }
+  } catch {}
 }
