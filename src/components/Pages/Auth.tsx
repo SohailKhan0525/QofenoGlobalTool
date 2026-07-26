@@ -66,13 +66,14 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
 
     setIsLoading(true);
     setErrorMessage('');
+    const target = new URLSearchParams(window.location.search).get('redirect') || '/profile';
     try {
       if (isLogin) {
         await login(email.trim(), password);
-        onNavigate(redirectTarget);
+        onNavigate(target);
       } else {
         await signup(name.trim(), email.trim(), password);
-        onNavigate(redirectTarget);
+        onNavigate(target);
       }
     } catch (err) {
       triggerError(err instanceof Error ? err.message : 'Unable to complete authentication.');
@@ -84,8 +85,9 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
   const handleOAuth = async (provider: 'google' | 'github') => {
     setIsLoading(true);
     setErrorMessage('');
+    const target = new URLSearchParams(window.location.search).get('redirect') || '/profile';
     try {
-      await createOAuthSession(provider, redirectTarget);
+      await createOAuthSession(provider, target);
     } catch (err) {
       triggerError(err instanceof Error ? err.message : `${provider} sign-in failed.`);
     } finally {
@@ -288,7 +290,13 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
             onClick={() => {
               const next = !isLogin;
               setIsLogin(next);
-              onNavigate(next ? 'login' : 'signup');
+              const searchStr = window.location.search;
+              const pageName = next ? 'login' : 'signup';
+              if (searchStr) {
+                onNavigate(`/${pageName}${searchStr}`);
+              } else {
+                onNavigate(pageName);
+              }
             }}
             className="text-purple-600 font-bold hover:underline cursor-pointer"
           >
