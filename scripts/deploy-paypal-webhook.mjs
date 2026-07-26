@@ -54,6 +54,48 @@ async function run() {
     filesToTar
   );
 
+  console.log('Updating function permissions & env vars...');
+  try {
+    await functionsApi.update(
+      functionId,
+      'platform-paypal-webhook',
+      'node-18.0',
+      ['any'], // Execute permissions for public webhooks
+      undefined,
+      undefined,
+      15,
+      true,
+      true,
+      'src/main.js',
+      'npm install',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      [
+        { key: 'PAYPAL_MODE', value: process.env.PAYPAL_MODE || 'live' },
+        { key: 'PAYPAL_CLIENT_ID', value: process.env.PAYPAL_CLIENT_ID || '' },
+        { key: 'PAYPAL_CLIENT_SECRET', value: process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET || '' },
+        { key: 'PAYPAL_SECRET', value: process.env.PAYPAL_SECRET || process.env.PAYPAL_CLIENT_SECRET || '' },
+        { key: 'PAYPAL_WEBHOOK_ID', value: process.env.PAYPAL_WEBHOOK_ID || '' },
+        { key: 'DATABASE_ID', value: process.env.DATABASE_ID || 'qofeno_db' },
+        { key: 'RESEND_API_KEY', value: process.env.RESEND_API_KEY || '' },
+        { key: 'EMAIL_FROM_ADDRESS', value: process.env.EMAIL_FROM_ADDRESS || 'hello@qofeno.dev' },
+        { key: 'EMAIL_FROM_NAME', value: process.env.EMAIL_FROM_NAME || 'Qofeno' },
+        { key: 'APP_URL', value: process.env.APP_URL || 'https://qofeno-labs.pages.dev' },
+      ]
+    );
+    console.log('✅ Updated paypal-webhook function permissions to [any] and synced environment variables');
+  } catch (updateErr) {
+    console.warn('⚠️ Warning updating function settings:', updateErr.message);
+  }
+
   console.log('Uploading code.tar.gz deployment...');
   const deployment = await functionsApi.createDeployment(
     functionId,

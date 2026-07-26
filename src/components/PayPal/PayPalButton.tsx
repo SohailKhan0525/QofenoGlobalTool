@@ -116,13 +116,18 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
               toast.error('Please log in first to subscribe.');
               throw new Error('User not logged in');
             }
+            const givenName = user.name?.trim() ? user.name.trim().split(' ')[0] : 'Qofeno';
+            const surname = user.name?.trim() && user.name.trim().split(' ').length > 1 
+              ? user.name.trim().split(' ').slice(1).join(' ') 
+              : 'Subscriber';
+
             return actions.subscription.create({
               plan_id: planId,
               custom_id: user.id, // Used by PayPal webhook to identify the user
               subscriber: {
                 name: {
-                  given_name: user.name?.split(' ')[0] || '',
-                  surname: user.name?.split(' ').slice(1).join(' ') || '',
+                  given_name: givenName,
+                  surname: surname,
                 },
                 email_address: user.email,
               },
@@ -134,7 +139,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
               const now = new Date().toISOString();
 
               if (user) {
-                // 1. Update users_meta.plan = planType (optimistic — webhook will confirm)
+                // 1. Update users_meta.plan = planType (create if missing)
                 try {
                   const docs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
                     Query.equal('user_id', user.id)
@@ -144,6 +149,16 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
                     await databases.updateDocument(DATABASE_ID, 'users_meta', userMeta.$id, {
                       plan: planType,
                       payment_ref: data.subscriptionID || data.orderID || null,
+                      updated_at: now,
+                    });
+                  } else {
+                    await databases.createDocument(DATABASE_ID, 'users_meta', ID.unique(), {
+                      user_id: user.id,
+                      email: user.email,
+                      name: user.name || 'Subscriber',
+                      plan: planType,
+                      payment_ref: data.subscriptionID || data.orderID || null,
+                      created_at: now,
                       updated_at: now,
                     });
                   }
