@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '../../lib/utils';
 import { toast } from 'sonner';
 import { executeJsonFunction, FUNCTION_IDS, storage, fallbackStorage, realtime, databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
+import { trackToolUse, trackFileProcessed, trackDownload } from '../../lib/analytics';
 
 import { ID, Permission, Role } from 'appwrite';
 
@@ -1330,6 +1331,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
   }, [tool.slug]);
 
   const forceDownload = async (url: string, filename: string) => {
+    trackDownload(tool.slug, result?.output_size || 0);
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch file');
@@ -1516,16 +1518,21 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
 
 
 
+      trackToolUse(tool.slug, tool.title || tool.slug, tool.category || 'General', tool.type === 'Pro');
+
       const response = await executeJsonFunction(tool.functionId || config.functionId, payload);
       setProgress(100);
 
       if (!response || response.success === false) {
         const message = String(response?.error || 'The tool could not finish the task. Please try again.');
+        trackFileProcessed(tool.slug, files[0]?.size || 0, 0, false);
         setErrorMsg(message);
         setStage('error');
         toast.error(message);
         return;
       }
+
+      trackFileProcessed(tool.slug, files[0]?.size || 0, response.duration_ms || 1000, true);
 
       // Resolve download URL from file_id if needed
       const ep = (import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
