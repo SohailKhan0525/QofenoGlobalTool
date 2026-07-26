@@ -104,50 +104,45 @@ export function Contact() {
           </div>
 
           <div className="space-y-4 w-full max-w-sm">
-            {import.meta.env.VITE_CONTACT_EMAIL && (
-              <div className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl">
-                <div className="p-3 bg-purple-100 text-purple-705 rounded-xl">
-                  <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">Email Assistance</h4>
-                  <p className="font-bold text-neutral-800 text-sm">{import.meta.env.VITE_CONTACT_EMAIL}</p>
-                </div>
+            <a href="mailto:sohailkhannn.0525@gmail.com" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
+              <div className="p-3 bg-purple-100 text-purple-700 rounded-xl">
+                <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5 text-purple-600" />
               </div>
-            )}
-            {import.meta.env.VITE_GITHUB_URL && (
-              <a href={import.meta.env.VITE_GITHUB_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
-                <div className="p-3 bg-purple-100 text-purple-750 rounded-xl">
-                  <FontAwesomeIcon icon={faGithub} className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">GitHub Profile</h4>
-                  <p className="font-bold text-neutral-800 text-sm">{import.meta.env.VITE_GITHUB_URL.replace('https://', '')}</p>
-                </div>
-              </a>
-            )}
-            {import.meta.env.VITE_TWITTER_URL && (
-              <a href={import.meta.env.VITE_TWITTER_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
-                <div className="p-3 bg-purple-100 text-purple-750 rounded-xl">
-                  <FontAwesomeIcon icon={faTwitter} className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">Twitter / X</h4>
-                  <p className="font-bold text-neutral-800 text-sm">{import.meta.env.VITE_TWITTER_URL.replace('https://', '')}</p>
-                </div>
-              </a>
-            )}
-            {import.meta.env.VITE_LINKEDIN_URL && (
-              <a href={import.meta.env.VITE_LINKEDIN_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
-                <div className="p-3 bg-purple-100 text-purple-750 rounded-xl">
-                  <FontAwesomeIcon icon={faLinkedin} className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">LinkedIn Connection</h4>
-                  <p className="font-bold text-neutral-800 text-sm">{import.meta.env.VITE_LINKEDIN_URL.replace('https://', '')}</p>
-                </div>
-              </a>
-            )}
+              <div>
+                <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">Email Assistance</h4>
+                <p className="font-bold text-neutral-800 text-sm">sohailkhannn.0525@gmail.com</p>
+              </div>
+            </a>
+
+            <a href="https://github.com/SohailKhan0525" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
+              <div className="p-3 bg-purple-100 text-purple-700 rounded-xl">
+                <FontAwesomeIcon icon={faGithub} className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">GitHub Profile</h4>
+                <p className="font-bold text-neutral-800 text-sm">github.com/SohailKhan0525</p>
+              </div>
+            </a>
+
+            <a href="https://x.com/devxlabs2" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
+              <div className="p-3 bg-purple-100 text-purple-700 rounded-xl">
+                <FontAwesomeIcon icon={faTwitter} className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">Twitter / X</h4>
+                <p className="font-bold text-neutral-800 text-sm">x.com/devxlabs2</p>
+              </div>
+            </a>
+
+            <a href="https://www.linkedin.com/company/qofeno" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4.5 bg-[#FAFAFA] border border-neutral-100 rounded-xl hover:border-purple-200 transition-colors block">
+              <div className="p-3 bg-purple-100 text-purple-700 rounded-xl">
+                <FontAwesomeIcon icon={faLinkedin} className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <h4 className="font-bold text-xs text-neutral-400 uppercase tracking-wider">LinkedIn Company</h4>
+                <p className="font-bold text-neutral-800 text-sm">linkedin.com/company/qofeno</p>
+              </div>
+            </a>
           </div>
         </div>
 

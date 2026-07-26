@@ -1419,15 +1419,15 @@ export default function App() {
               Every tool you'll ever need — PDF, image, video, AI, developer, and more. Built by Mohd Zaheer Uddin.
             </p>
             <div className="flex items-center gap-4">
-              <a href="https://github.com/MohdZaheerU" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-white hover:scale-115 transition-all w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+              <a href="https://github.com/SohailKhan0525" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white hover:scale-110 transition-all w-10 h-10 rounded-full bg-white/5 flex items-center justify-center" title="GitHub">
                 <FontAwesomeIcon icon={faGithub} className="w-5 h-5" />
               </a>
-              <button onClick={() => setActiveTab('coming-soon')} className="text-neutral-500 hover:text-[#1DA1F2] hover:scale-115 transition-all w-10 h-10 rounded-full bg-white/5 flex items-center justify-center cursor-pointer">
+              <a href="https://x.com/devxlabs2" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-[#1DA1F2] hover:scale-110 transition-all w-10 h-10 rounded-full bg-white/5 flex items-center justify-center" title="Twitter / X">
                 <FontAwesomeIcon icon={faXTwitter} className="w-5 h-5" />
-              </button>
-              <button onClick={() => setActiveTab('coming-soon')} className="text-neutral-500 hover:text-[#0A66C2] hover:scale-115 transition-all w-10 h-10 rounded-full bg-white/5 flex items-center justify-center cursor-pointer">
+              </a>
+              <a href="https://www.linkedin.com/company/qofeno" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-[#0A66C2] hover:scale-110 transition-all w-10 h-10 rounded-full bg-white/5 flex items-center justify-center" title="LinkedIn">
                 <FontAwesomeIcon icon={faLinkedin} className="w-5 h-5" />
-              </button>
+              </a>
             </div>
           </div>
 
@@ -1502,7 +1502,7 @@ export default function App() {
           <div className="flex items-center gap-4">
             <span>© {new Date().getFullYear()} Qofeno. Built by Mohd Zaheer Uddin.</span>
             <div className="flex items-center gap-3">
-              <a href="https://github.com/MohdZaheerU" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white transition-colors">
+              <a href="https://github.com/SohailKhan0525" target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-white transition-colors">
                 <FontAwesomeIcon icon={faGithub} className="text-base" />
               </a>
             </div>

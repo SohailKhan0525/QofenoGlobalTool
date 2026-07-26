@@ -79,10 +79,10 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
               <p className="text-purple-200/80 mb-8 leading-relaxed">
                 I'm building Qofeno to be the most practical, fastest tool aggregator on the internet. Every tool is hand-picked, built, and tested by me to ensure it actually works.
               </p>
-              <div className="flex gap-6 text-sm font-semibold">
-                <a href="https://github.com/MohdZaheerU" target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 transition-colors">GitHub</a>
-                <span className="hover:text-purple-300 transition-colors cursor-pointer">Twitter</span>
-                <span className="hover:text-purple-300 transition-colors cursor-pointer">LinkedIn</span>
+              <div className="flex flex-wrap gap-6 text-sm font-bold">
+                <a href="https://github.com/SohailKhan0525" target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 transition-colors">GitHub</a>
+                <a href="https://x.com/devxlabs2" target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 transition-colors">Twitter / X</a>
+                <a href="https://www.linkedin.com/company/qofeno" target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 transition-colors">LinkedIn</a>
                 <a href="mailto:sohailkhannn.0525@gmail.com" className="hover:text-purple-300 transition-colors">Email</a>
               </div>
             </div>
