@@ -28,6 +28,18 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup', onNavigat
     return params.get('redirect') || '/profile';
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthErr = params.get('error');
+    if (oauthErr) {
+      if (oauthErr === 'oauth') {
+        setErrorMessage('OAuth authentication callback failed. Please check your credentials or sign in with Email & Password.');
+      } else {
+        setErrorMessage(`Sign-in error: ${oauthErr}`);
+      }
+    }
+  }, []);
+
   const triggerError = (message: string) => {
     setErrorMessage(message);
     setShake(true);

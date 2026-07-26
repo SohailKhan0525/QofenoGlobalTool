@@ -66,16 +66,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshSession = async () => {
     setIsLoading(true);
     try {
-      if (!expectsActiveSession()) {
-        setUser(null);
-        return;
-      }
       const sessionUser = await account.get();
       const plan = await loadPlan(sessionUser.$id);
-      window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
+      }
       setUser(toAuthUser(sessionUser, plan));
     } catch {
-      window.localStorage.removeItem(AUTH_SESSION_MARKER);
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(AUTH_SESSION_MARKER);
+      }
       setUser(null);
     } finally {
       setIsLoading(false);
