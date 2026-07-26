@@ -52,11 +52,30 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
     );
   }
 
+  // ── Unauthenticated Guard ──────────────────────────────────────────────────
+  if (!user) {
+    return (
+      <div className="w-full text-center space-y-3">
+        <button
+          onClick={() => {
+            const currentPlan = planType || 'pro';
+            window.history.pushState({}, '', `/login?redirect=/checkout/pro?plan=${currentPlan}`);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-2xl font-black text-sm hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-purple-600/20"
+        >
+          <span>Log in to Subscribe to {planType.toUpperCase()} →</span>
+        </button>
+        <p className="text-xs text-neutral-400 font-medium">Please sign in first so your subscription links directly to your Qofeno profile.</p>
+      </div>
+    );
+  }
+
   // ── Not configured guards ────────────────────────────────────────────────────
   if (!PAYPAL_CLIENT_ID) {
     return (
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm text-center">
-        PayPal is being configured. Please check back soon.
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm text-center font-bold">
+        PayPal is currently being configured. Please check back shortly.
       </div>
     );
   }
@@ -66,24 +85,13 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
       <div className="space-y-3">
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm text-center">
           <strong>PayPal Subscription Plan not configured.</strong>
-          <p className="mt-1 text-xs">
+          <p className="mt-1 text-xs font-medium">
             The administrator needs to create a PayPal Subscription Plan and add the Plan ID to the environment.
           </p>
           <p className="mt-2 text-xs font-mono bg-amber-100 px-2 py-1 rounded">
             VITE_PAYPAL_PLAN_ID_{isYearly ? 'YEARLY' : 'MONTHLY'}
           </p>
         </div>
-        <p className="text-xs text-center text-neutral-400">
-          Create a plan at{' '}
-          <a
-            href="https://developer.paypal.com/dashboard/products"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline text-purple-500"
-          >
-            PayPal Developer Dashboard
-          </a>
-        </p>
       </div>
     );
   }
@@ -97,7 +105,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
           </svg>
-          Activating your PRO subscription…
+          Activating your {planType.toUpperCase()} subscription…
         </div>
       )}
 
@@ -112,14 +120,10 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
           style={{ layout: 'vertical', shape: 'rect', color: 'blue', label: 'subscribe' }}
           disabled={processing}
           createSubscription={(_data, actions) => {
-            if (!user) {
-              toast.error('Please log in first to subscribe.');
-              throw new Error('User not logged in');
-            }
-            const givenName = user.name?.trim() ? user.name.trim().split(' ')[0] : 'Qofeno';
+            const givenName = user.name?.trim() ? user.name.trim().split(' ')[0] : 'Subscriber';
             const surname = user.name?.trim() && user.name.trim().split(' ').length > 1 
               ? user.name.trim().split(' ').slice(1).join(' ') 
-              : 'Subscriber';
+              : 'Qofeno';
 
             return actions.subscription.create({
               plan_id: planId,
@@ -163,7 +167,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
                     });
                   }
                 } catch (_) {
-                  // PayPal webhook will handle this as backup
+                  // Webhook backup handles this
                 }
 
                 // 2. Create / update subscriptions record
@@ -191,7 +195,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
                     });
                   }
                 } catch (_) {
-                  // Non-fatal — webhook backup handles this
+                  // Non-fatal
                 }
               }
 
@@ -204,8 +208,10 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
             }
           }}
           onError={(err) => {
-            toast.error('PayPal payment failed. Please try again or contact support.');
-            if (PAYPAL_MODE !== 'live') console.error('PayPal Error:', err);
+            const errStr = String(err?.message || err || '');
+            if (errStr.includes('cancel')) return;
+            toast.error('PayPal checkout error. Please check your card or try again.');
+            console.error('PayPal Error:', err);
           }}
           onCancel={() => {
             toast.info('Payment cancelled. You can try again anytime.');
