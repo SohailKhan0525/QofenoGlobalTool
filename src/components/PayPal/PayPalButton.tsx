@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../context/AuthContext';
 import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
 import { ID, Query } from 'appwrite';
@@ -18,7 +20,7 @@ type PayPalButtonProps = {
 };
 
 export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButtonProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [success, setSuccess] = useState(false);
   const [processing, setProcessing] = useState(false);
 
@@ -52,7 +54,18 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
     );
   }
 
-  // ── Unauthenticated Guard ──────────────────────────────────────────────────
+  // ── Auth loading guard — show spinner while session is being verified ────────
+  // This prevents the login gate from flashing right after OAuth redirect.
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center gap-3 py-6 text-neutral-500">
+        <FontAwesomeIcon icon={faSpinner} className="h-5 w-5 animate-spin text-purple-500" />
+        <span className="text-sm font-semibold">Verifying your session…</span>
+      </div>
+    );
+  }
+
+  // ── Unauthenticated Guard — only shown once isLoading is false ────────────────
   if (!user) {
     return (
       <div className="w-full text-center space-y-3">
@@ -64,7 +77,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
           }}
           className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-2xl font-black text-sm hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-purple-600/20"
         >
-          <span>Log in to Subscribe to {planType.toUpperCase()} →</span>
+          <span>Sign In to Subscribe to {planType.toUpperCase()} →</span>
         </button>
         <p className="text-xs text-neutral-400 font-medium">Please sign in first so your subscription links directly to your Qofeno profile.</p>
       </div>
