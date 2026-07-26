@@ -6,27 +6,54 @@ import { SEO } from '../../components/SEO';
 import { getRedirectTarget } from '../../lib/appRouter';
 import { useAuth } from '../../context/AuthContext';
 
+/** Retry refreshSession up to `maxTries` times with increasing delays.
+ *  Appwrite may need a brief moment to finalize the session cookie after OAuth redirect. */
+async function retryRefreshSession(
+  refreshSession: () => Promise<import('../../context/AuthContext').AuthUser | null>,
+  maxTries = 5,
+  baseDelayMs = 600,
+) {
+  for (let attempt = 1; attempt <= maxTries; attempt++) {
+    const user = await refreshSession();
+    if (user) return user;
+    if (attempt < maxTries) {
+      // Wait longer on each retry: 600ms, 1200ms, 1800ms, 2400ms…
+      await new Promise(r => setTimeout(r, baseDelayMs * attempt));
+    }
+  }
+  return null;
+}
+
 export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { refreshSession } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const run = async () => {
-      const resolvedUser = await refreshSession();
+      // Small initial delay to allow the Appwrite session cookie to be committed
+      // after the OAuth provider redirect. Without this, account.get() can fire
+      // before the cookie is readable by the browser.
+      await new Promise(r => setTimeout(r, 300));
+
+      const resolvedUser = await retryRefreshSession(
+        refreshSession,
+        5,
+        600,
+      );
 
       if (!resolvedUser) {
-        // refreshSession never throws — if user is null, session genuinely failed.
-        // Do NOT navigate to checkout; show the error so the user can retry login.
         setStatus('error');
         setError(
-          'We couldn\'t verify your account session. This usually means the sign-in didn\'t complete successfully. Please sign in again.'
+          'We couldn\'t verify your session after sign-in. ' +
+          'This usually means the OAuth provider redirect didn\'t complete correctly. ' +
+          'Please try signing in again — if the problem persists, use email & password.'
         );
         return;
       }
 
       setStatus('success');
-      // Brief delay so the user sees the success state before navigating.
       setTimeout(() => {
         onNavigate(getRedirectTarget(window.location.search));
       }, 600);
@@ -53,7 +80,9 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
               </div>
             </div>
             <h1 className="text-xl font-black text-[#0F0A1E]">Signing you in…</h1>
-            <p className="mt-2 text-sm text-neutral-500">Verifying your session. This only takes a moment.</p>
+            <p className="mt-2 text-sm text-neutral-500">
+              Verifying your session with Appwrite.
+            </p>
           </>
         )}
 
