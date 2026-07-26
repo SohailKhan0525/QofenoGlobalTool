@@ -95,8 +95,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (name: string, email: string, password: string) => {
     await account.create(ID.unique(), email, password, name);
     await account.createEmailPasswordSession(email, password);
-    window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
-    await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
+    }
+    try {
+      await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
+    } catch (verificationErr) {
+      console.warn('Verification email notice (non-fatal):', verificationErr);
+    }
     await refreshSession();
   };
 
