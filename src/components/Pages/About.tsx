@@ -86,12 +86,11 @@ export function About({ onNavigate }: { onNavigate?: (p: string) => void }) {
                 <a href="mailto:sohailkhannn.0525@gmail.com" className="hover:text-purple-300 transition-colors">Email</a>
               </div>
             </div>
-            <div className="md:w-2/5 aspect-square bg-[#352565] flex items-center justify-center relative overflow-hidden">
-               <img 
-                 src="/qofeno.png" 
-                 alt="Mohd Zaheer Uddin" 
-                 className="w-40 h-40 rounded-full border-4 border-purple-200/20 shadow-2xl object-cover bg-white relative z-10"
-               />
+            <div className="md:w-2/5 aspect-square bg-[#352565] flex items-center justify-center relative overflow-hidden p-8">
+               <div className="w-40 h-40 rounded-full border-4 border-purple-200/20 shadow-2xl bg-gradient-to-tr from-purple-700 via-purple-600 to-fuchsia-500 flex flex-col items-center justify-center text-white relative z-10 p-4">
+                 <span className="font-display font-black text-4xl tracking-wider">MZ</span>
+                 <span className="text-xs font-bold text-purple-200 mt-1">Founder</span>
+               </div>
                <div className="absolute inset-0 bg-[radial-gradient(#ffffff20_1px,transparent_1px)] [background-size:24px_24px] opacity-10" />
             </div>
           </div>

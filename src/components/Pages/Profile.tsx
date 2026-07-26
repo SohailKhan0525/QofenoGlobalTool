@@ -9,6 +9,7 @@ import { account, databases, DATABASE_ID, storage } from '../../lib/qofeno-appwr
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
+import { PlanBadge } from '../../components/PlanBadge';
 import { ID, Query } from 'appwrite';
 
 export function Profile() {
@@ -358,15 +359,7 @@ export function Profile() {
             <div>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
                 <h1 className="text-2xl font-black text-[#0F0A1E]">{user.name}</h1>
-                <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-black uppercase tracking-widest text-purple-700 flex items-center gap-1 shadow-sm">
-                  {user.plan === 'pro' ? (
-                    <>Pro <FontAwesomeIcon icon={faStar} className="w-3 h-3 text-amber-500 fill-amber-500" /></>
-                  ) : (user.plan as string) === 'teams' ? (
-                    <>Teams <FontAwesomeIcon icon={faStar} className="w-3 h-3 text-cyan-500 fill-cyan-500" /></>
-                  ) : (
-                    'Free'
-                  )}
-                </span>
+                <PlanBadge plan={user.plan} />
               </div>
               <p className="text-neutral-500 text-sm mt-1">{user.email}</p>
               {memberSince && (

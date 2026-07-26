@@ -60,6 +60,7 @@ import { Query } from 'appwrite';
 
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
+import { PlanBadge } from './components/PlanBadge';
 
 
 // @ts-expect-error - Vite raw import support
@@ -1127,7 +1128,7 @@ export default function App() {
               >
                 <div className="w-6 h-6 rounded-md bg-purple-600 flex items-center justify-center text-white text-[10px] font-bold">{(user?.name || 'User').slice(0, 2).toUpperCase()}</div>
                 <span className="text-sm font-bold text-[#0F0A1E]">{user?.name || 'User'}</span>
-                <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-purple-700">{user?.plan === 'pro' ? 'Pro' : 'Free'}</span>
+                <PlanBadge plan={user?.plan || 'free'} />
                 <FontAwesomeIcon icon={faChevronDown} className="w-3 h-3 text-neutral-500" />
               </button>
               
