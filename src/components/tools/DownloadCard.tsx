@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faDownload, faRotateLeft, faLock } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faDownload, faRotateLeft, faLock, faClock } from '@fortawesome/free-solid-svg-icons';
 import { trackDownload } from '../../lib/analytics';
+import { usePlan } from '../../hooks/usePlan';
 
 function formatBytes(bytes: number, decimals = 2) {
   if (!bytes) return '0 Bytes';
@@ -26,6 +27,7 @@ export function DownloadCard({
   onReset: () => void;
 }) {
   const [clicked, setClicked] = useState(false);
+  const { isPro, isTeams } = usePlan();
 
   const handleDownload = () => {
     setClicked(true);
@@ -36,12 +38,10 @@ export function DownloadCard({
   };
 
   return (
-    <div className="w-full mt-5 p-5 md:p-6 rounded-3xl
-                    bg-green-50 border-2 border-green-200">
+    <div className="w-full mt-5 p-5 md:p-6 rounded-3xl bg-green-50 border-2 border-green-200 shadow-sm">
       {/* Success header */}
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-11 h-11 rounded-full bg-green-500
-                        flex items-center justify-center flex-shrink-0">
+        <div className="w-11 h-11 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
           <FontAwesomeIcon icon={faCheck} className="text-white text-lg" />
         </div>
         <div>
@@ -81,18 +81,21 @@ export function DownloadCard({
       <button
         type="button"
         onClick={onReset}
-        className="w-full py-2.5 text-sm text-purple-600 font-medium cursor-pointer
-                   hover:text-purple-800 transition-colors"
+        className="w-full py-2.5 text-sm text-purple-600 font-bold cursor-pointer hover:text-purple-800 transition-colors"
       >
         <FontAwesomeIcon icon={faRotateLeft} className="mr-1.5" />
         Process another file
       </button>
 
-      {/* Privacy note */}
-      <p className="text-xs text-center text-gray-400 mt-3">
-        <FontAwesomeIcon icon={faLock} className="mr-1 text-green-400" />
-        Your file is processed securely on our servers
-      </p>
+      {/* Retention policy note */}
+      <div className="mt-3 pt-3 border-t border-green-200/60 flex items-center justify-center text-xs text-green-800 font-medium gap-1.5">
+        <FontAwesomeIcon icon={faClock} className={isPro || isTeams ? "text-purple-600" : "text-amber-600"} />
+        {isPro || isTeams ? (
+          <span><strong>Pro Retention:</strong> Input kept for 6 days • Result kept for 7 days</span>
+        ) : (
+          <span><strong>Free Plan:</strong> Result auto-deleted after download</span>
+        )}
+      </div>
     </div>
   );
 }

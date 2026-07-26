@@ -516,12 +516,18 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 <FileToolWorkspace tool={tool} userId={currentUserId} />
 
                 <div className="mt-6 pt-6 border-t border-neutral-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400">
-                    <FontAwesomeIcon icon={faShieldHalved} className="w-4 h-4 text-green-500" />
-                    Result auto-deletes in 30 mins
+                  <div className="flex items-center gap-2 text-xs font-semibold text-neutral-500">
+                    <FontAwesomeIcon icon={faShieldHalved} className={cn("w-4 h-4", user?.plan === 'pro' || user?.plan === 'teams' ? "text-emerald-500" : "text-amber-500")} />
+                    {user?.plan === 'pro' || user?.plan === 'teams'
+                      ? "Pro Retention: Inputs kept 6 days • Results kept 7 days"
+                      : "Free Plan: Results auto-deleted after download"}
                   </div>
                   <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                      setIsModalOpen(true);
+                      const el = document.getElementById('how-it-works-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
                     className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
                   >
                     <FontAwesomeIcon icon={faCirclePlay} className="w-4 h-4" /> How it works
@@ -898,14 +904,20 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
             )}
 
             <div className="mt-8 pt-6 border-t border-neutral-100 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-semibold text-neutral-400">
-                  <FontAwesomeIcon icon={faShieldHalved} className="w-4 h-4 text-green-500" />
-                  Result auto-deletes in 30 mins
+                <div className="flex items-center gap-2 text-xs font-semibold text-neutral-500">
+                  <FontAwesomeIcon icon={faShieldHalved} className={cn("w-4 h-4", user?.plan === 'pro' || user?.plan === 'teams' ? "text-emerald-500" : "text-amber-500")} />
+                  {user?.plan === 'pro' || user?.plan === 'teams'
+                    ? "Pro Retention: Inputs kept 6 days • Results kept 7 days"
+                    : "Free Plan: Results auto-deleted after download"}
                 </div>
                 <Tooltip>
                   <TooltipTrigger
                     className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors flex items-center gap-1 cursor-pointer relative"
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                      setIsModalOpen(true);
+                      const el = document.getElementById('how-it-works-section');
+                      if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    }}
                   >
                     <FontAwesomeIcon icon={faCirclePlay} className="w-4 h-4" /> How it works
                   </TooltipTrigger>
@@ -971,7 +983,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
         </div>
 
         {/* Documentation & FAQs with Live Filtering Search Input */}
-        <div className="mt-16 bg-white border border-neutral-200/80 rounded-3xl p-5 md:p-10 shadow-sm">
+        <div id="how-it-works-section" className="mt-16 bg-white border border-neutral-200/80 rounded-3xl p-5 md:p-10 shadow-sm scroll-mt-28">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 pb-6 border-b border-neutral-100">
             <div className="flex items-center gap-3">
               <FontAwesomeIcon icon={faCircleQuestion} className="w-6 h-6 text-[#0F0A1E]" />
