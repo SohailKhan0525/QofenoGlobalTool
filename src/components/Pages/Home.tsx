@@ -9,6 +9,8 @@ import {
 import { useToolCatalog, FALLBACK_TOOLS } from '../../lib/toolCatalog';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
+import { Query } from 'appwrite';
 
 interface HomeProps {
   onNavigate: (page: string) => void;
@@ -178,7 +180,6 @@ function UploadProgressDemo() {
       <div className="w-full border-2 border-dashed border-neutral-200 rounded-xl p-6 flex flex-col items-center justify-center relative bg-neutral-50/50">
         {stage === 'uploading' ? (
           <>
-            {/* Floating File Icon */}
             <motion.div
               initial={prefersReduced ? { y: 0, opacity: 1 } : { y: -20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -200,7 +201,6 @@ function UploadProgressDemo() {
           </>
         ) : (
           <div className="flex flex-col items-center py-4 text-center">
-            {/* Spinning Gears */}
             <div className="relative w-12 h-12 mb-4 flex items-center justify-center">
               <FontAwesomeIcon icon={faGear} className={cn("text-purple-650 w-10 h-10", prefersReduced ? "" : "animate-spin")} />
               <FontAwesomeIcon icon={faGear} className={cn("text-pink-500 w-5 h-5 absolute -bottom-1 -right-1", prefersReduced ? "" : "animate-[spin_2s_linear_infinite_reverse]")} />
@@ -276,6 +276,33 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [pricingYearly, setPricingYearly] = useState(false);
 
+  // Dynamic Real-time Most Used Tools
+  const [liveTopTools, setLiveTopTools] = useState<any[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchTopUsedTools() {
+      try {
+        const resp = await databases.listDocuments(DATABASE_ID, 'tool_views', [
+          Query.orderDesc('count'),
+          Query.limit(8)
+        ]);
+        if (cancelled || !resp?.documents?.length) return;
+        const topSlugs = resp.documents.map((d: any) => d.tool_slug);
+        const matched = topSlugs.map(slug => tools.find(t => t.slug === slug || t.id === slug)).filter(Boolean);
+        if (matched.length > 0) {
+          setLiveTopTools(matched);
+        }
+      } catch {
+        // Keep fallback
+      }
+    }
+    void fetchTopUsedTools();
+    return () => { cancelled = true; };
+  }, [tools]);
+
+  const displayFeatured = liveTopTools.length > 0 ? liveTopTools : featuredTools;
+
   // Persona loading state
   const [studentTools, setStudentTools] = useState<any[]>([]);
   const [devTools, setDevTools] = useState<any[]>([]);
@@ -299,7 +326,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
     setEveryoneTools(tools.filter(t => t.type === 'Free').slice(0, 3));
   }, [tools]);
 
-  // Automatic step cycler
+  // Automatic step cycler for How It Works Interactive Demo
   useEffect(() => {
     if (isHovered) return;
     const interval = setInterval(() => {
@@ -308,7 +335,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
     return () => clearInterval(interval);
   }, [isHovered]);
 
-  // Entrance animations
+  // Entrance animations via GSAP
   useEffect(() => {
     let ctx: any;
     import('gsap').then(({ default: gsap }) => {
@@ -340,7 +367,6 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
     };
   }, []);
 
-
   const filteredCategories = categoryCards.filter(c => c.name !== 'All Tools').slice(0, 4);
 
   return (
@@ -355,7 +381,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
           <div className="absolute top-[30%] -right-[10%] w-[55%] h-[55%] rounded-full bg-purple-400/15 blur-[120px]" />
         </div>
 
-        {/* Floating chips (decorative) */}
+        {/* Floating chips */}
         <div className="hidden lg:block absolute inset-0 pointer-events-none z-10">
           <FloatingHeroChip text="✂️ Crop Image" top="20%" left="12%" rotate="-12" speed="3.2" />
           <FloatingHeroChip text="⚙️ JSON Formatter" top="28%" right="10%" rotate="8" speed="2.8" />
@@ -366,11 +392,16 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
         {/* Main Content Box */}
         <div className="max-w-4xl flex flex-col items-center relative z-10">
           
-          <div className="inline-flex items-center gap-2 bg-purple-50 border border-purple-100 px-4 py-2 rounded-full text-purple-700 font-extrabold text-xs uppercase mb-8 shadow-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="inline-flex items-center gap-2 bg-purple-50 border border-purple-100 px-4 py-2 rounded-full text-purple-700 font-extrabold text-xs uppercase mb-8 shadow-sm"
+          >
             <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse" /> Free & Server-Processed
-          </div>
+          </motion.div>
 
-          {/* Cinematic Headline */}
+          {/* Headline */}
           <h1 ref={headlineRef} className="font-display text-5xl md:text-8xl font-black tracking-tight leading-none text-[#0F0A1E] mb-8 select-none">
             <span className="inline-block overflow-hidden py-1">
               <span className="word-reveal inline-block origin-bottom-left">Every</span>
@@ -499,7 +530,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
         </div>
       </section>
 
-      {/* SECTION 3 — CATEGORIES SHOWCASE */}
+      {/* SECTION 3 — CATEGORIES SHOWCASE ("Tools for every kind of task") */}
       <section id="tools-showcase" className="py-28 px-6 md:px-12 bg-white relative z-20">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-3xl mx-auto mb-20">
@@ -513,13 +544,18 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
               const IconComp = meta.icon;
               const catTools = tools.filter(t => t.category === cat.name).slice(0, 3);
               return (
-                <div
+                <motion.div
                   key={idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.1 }}
+                  whileHover={{ y: -8, scale: 1.02 }}
                   onClick={() => {
                     localStorage.setItem('selected_category_filter', cat.name);
                     onNavigate('tools');
                   }}
-                  className="group relative bg-[#FAFAFA] border border-neutral-100 hover:border-purple-200/60 p-6 rounded-3xl cursor-pointer hover:bg-white transition-all duration-300 hover:-translate-y-2 hover:shadow-xl hover:shadow-purple-500/5"
+                  className="group relative bg-[#FAFAFA] border border-neutral-100 hover:border-purple-200/60 p-6 rounded-3xl cursor-pointer hover:bg-white transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/5"
                 >
                   <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300", meta.color)}>
                     <FontAwesomeIcon icon={IconComp} className="w-7 h-7" />
@@ -531,7 +567,6 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   </div>
                   <h3 className="font-display text-xl font-bold text-[#0F0A1E] mb-2">{cat.name}</h3>
                   
-                  {/* Popular tools previews */}
                   <div className="mt-4 flex flex-col gap-2">
                     <span className="text-xs text-neutral-400 uppercase font-black tracking-wider">Top Tools</span>
                     <div className="flex flex-wrap gap-1.5">
@@ -546,7 +581,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                   <div className="mt-6 flex items-center text-purple-600 font-bold text-sm group-hover:translate-x-1 transition-transform">
                     Explore inside <FontAwesomeIcon icon={faChevronRight} className="w-4 h-4" />
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -564,25 +599,25 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
           {/* Interactive Steps Left */}
           <div className="flex flex-col justify-center select-none">
             <div className="inline-flex items-center gap-2 bg-purple-50 border border-purple-100 px-3 py-1.5 rounded-full text-purple-700 font-bold text-xs uppercase mb-6 w-fit">
-              <FontAwesomeIcon icon={faBolt} className="w-3.5 h-3.5 text-pink-500 fill-pink-500 animate-pulse" /> Let's get things done
+              <FontAwesomeIcon icon={faBolt} className="w-3.5 h-3.5 text-pink-500 fill-pink-500 animate-pulse" /> Interactive Demo
             </div>
-            <h2 className="font-display text-3xl md:text-6xl font-black text-[#0F0A1E] tracking-tight mb-6">How Qofeno Works</h2>
+            <h2 className="font-display text-3xl md:text-6xl font-black text-[#0F0A1E] tracking-tight mb-6">Experience Qofeno</h2>
             <p className="text-lg text-neutral-500 max-w-md mb-8 font-medium">
-              We focus on removing complexity. Click any step to inspect the interactive mockup.
+              Click any step to inspect the real-time mockup in action.
             </p>
 
             <div className="relative border-l-2 border-neutral-200 pl-6 flex flex-col gap-6">
               {[
-                { step: 1 as const, icon: faMagnifyingGlass, title: "Find your tool", desc: "Search by name or browse by category" },
-                { step: 2 as const, icon: faUpload, title: "Upload your file", desc: "Drop your file — processed on our servers" },
-                { step: 3 as const, icon: faDownload, title: "Download your result", desc: "Ready in seconds. File deleted after download." }
+                { step: 1 as const, icon: faMagnifyingGlass, title: "1. Find your tool", desc: "Search by name or browse by category" },
+                { step: 2 as const, icon: faUpload, title: "2. Upload & Process", desc: "Drop your file — server processes in seconds" },
+                { step: 3 as const, icon: faDownload, title: "3. Download Result", desc: "Ready instantly. File deleted after download." }
               ].map(item => (
                 <div 
                   key={item.step}
                   onClick={() => { setActiveStep(item.step); setIsHovered(true); }}
                   className={cn(
                     "relative pl-6 py-4 rounded-2xl cursor-pointer transition-all duration-300 flex items-start gap-4",
-                    activeStep === item.step ? "bg-white border-l-4 border-purple-650 shadow-sm" : "bg-transparent border-l-4 border-transparent hover:bg-neutral-100/50"
+                    activeStep === item.step ? "bg-white border-l-4 border-purple-600 shadow-md" : "bg-transparent border-l-4 border-transparent hover:bg-neutral-100/50"
                   )}
                 >
                   <div className={cn(
@@ -650,13 +685,13 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
         </div>
       </section>
 
-      {/* SECTION 5 — HORIZONTAL CARDS */}
+      {/* SECTION 5 — THIS WEEK'S MOST-USED TOOLS */}
       <section className="py-28 px-6 md:px-12 bg-white relative z-20 border-b border-purple-50 overflow-hidden select-none">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
             <div>
               <h2 className="font-display text-3xl md:text-6xl font-black text-[#0F0A1E]">This week's most-used tools</h2>
-              <p className="text-lg text-neutral-500 mt-2 font-medium">The standard benchmarks used millions of times daily. Try for free.</p>
+              <p className="text-lg text-neutral-500 mt-2 font-medium">Dynamically updated live from processing metrics & active user usage.</p>
             </div>
             <button 
               onClick={() => onNavigate('tools')}
@@ -667,16 +702,20 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
           </div>
 
           <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scrollbar-thin">
-            {featuredTools.map((tool, index) => {
-              const ToolIcon = tool.icon;
+            {displayFeatured.map((tool, index) => {
+              const ToolIcon = tool.icon || faWandMagicSparkles;
               return (
-                <div key={index} className="w-[320px] shrink-0 bg-[#FAFAFA] border border-neutral-100 hover:border-purple-200 hover:bg-white p-6 rounded-3xl snap-start flex flex-col justify-between transition-all duration-300">
+                <motion.div 
+                  key={index} 
+                  whileHover={{ y: -6, scale: 1.02 }}
+                  className="w-[320px] shrink-0 bg-[#FAFAFA] border border-neutral-100 hover:border-purple-200 hover:bg-white p-6 rounded-3xl snap-start flex flex-col justify-between transition-all duration-300 shadow-sm"
+                >
                   <div>
                     <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center mb-6">
                       <FontAwesomeIcon icon={ToolIcon} className="w-6 h-6 text-purple-600 animate-pulse" />
                     </div>
                     <span className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 bg-neutral-100 py-1 px-2.5 rounded-full inline-block mb-3">
-                      {tool.category}
+                      {tool.category || 'General'}
                     </span>
                     <h3 className="text-lg font-bold text-[#0F0A1E] mb-2">{tool.name}</h3>
                     <p className="text-sm text-neutral-500 mb-6 leading-relaxed font-semibold">{tool.desc}</p>
@@ -692,14 +731,14 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                       Try Free →
                     </button>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* SECTION 6 — PERSONAS */}
+      {/* SECTION 6 — PERSONAS ("Built for everyone") */}
       <section className="py-28 px-6 md:px-12 bg-[#FAFAFA] relative z-20 font-medium select-none">
         <div className="max-w-7xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-16">
@@ -734,12 +773,18 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                                   : everyoneTools;
                                   
               return (
-                <div key={p.id} className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <motion.div 
+                  key={p.id} 
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.4 }}
+                  className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+                >
                   <div>
                     <h3 className="font-display text-2xl md:text-4xl font-extrabold text-[#0F0A1E] mb-4">{p.title}</h3>
                     <p className="text-lg text-neutral-500 leading-relaxed mb-8 font-medium">{p.desc}</p>
                     
-                    {/* Real tools previews */}
                     <div className="mb-8 border-t border-neutral-100 pt-6">
                       <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest block mb-3">Popular tools in this segment:</span>
                       <div className="flex flex-wrap gap-2">
@@ -775,7 +820,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                     <div className="absolute inset-0 bg-[radial-gradient(black_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.03] pointer-events-none" />
                     {p.icon && <FontAwesomeIcon icon={p.icon} className={cn("w-28 h-28 opacity-60 hover:scale-110 transition-transform duration-700", p.iconColor)} />}
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -791,23 +836,31 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
           </div>
 
           {/* Pricing Toggle */}
-          <div className="flex justify-center items-center gap-3.5 mb-16">
-            <span className={cn("text-xs font-black uppercase tracking-wider", !pricingYearly ? "text-neutral-900" : "text-neutral-400")}>Monthly</span>
+          <div className="flex justify-center items-center gap-3.5 mb-16 select-none">
+            <span className={cn("text-xs font-black uppercase tracking-wider transition-colors", !pricingYearly ? "text-purple-600" : "text-neutral-400")}>Monthly</span>
             <button 
               type="button"
               onClick={() => setPricingYearly(!pricingYearly)}
-              className="w-12 h-6 rounded-full bg-purple-650 relative transition-all duration-300 cursor-pointer"
+              className="w-14 h-7 rounded-full bg-purple-600 relative transition-all duration-300 cursor-pointer shadow-inner p-1"
             >
-              <div className={cn("w-4 h-4 bg-white rounded-full absolute top-1 transition-transform duration-300", pricingYearly ? "translate-x-7" : "translate-x-1")} />
+              <motion.div 
+                layout
+                className="w-5 h-5 bg-white rounded-full shadow-md"
+                animate={{ x: pricingYearly ? 28 : 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              />
             </button>
-            <span className={cn("text-xs font-black uppercase tracking-wider flex items-center gap-1", pricingYearly ? "text-neutral-900" : "text-neutral-400")}>
-              Yearly <span className="bg-pink-100 text-pink-700 text-[8px] font-black px-2 py-0.5 rounded">Save 40%</span>
+            <span className={cn("text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors", pricingYearly ? "text-purple-600" : "text-neutral-400")}>
+              Yearly <span className="bg-pink-100 text-pink-700 text-[9px] font-black px-2.5 py-0.5 rounded-full border border-pink-200">Save 40%</span>
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch select-none font-medium">
             {/* FREE PLAN */}
-            <div className="border border-neutral-250 bg-white p-8 rounded-3xl flex flex-col justify-between shadow-sm">
+            <motion.div 
+              whileHover={{ y: -6 }}
+              className="border border-neutral-250 bg-white p-8 rounded-3xl flex flex-col justify-between shadow-sm"
+            >
               <div>
                 <h3 className="font-display text-xl font-bold mb-2">Free</h3>
                 <p className="text-xs text-neutral-400 mb-6 font-semibold">Always free for basic converting processes.</p>
@@ -815,16 +868,19 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                 <ul className="space-y-4 mb-8 text-sm text-neutral-600">
                   <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600 bg-purple-50 p-0.5 rounded" /> Access to {freeCount} Free tools</li>
                   <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600 bg-purple-50 p-0.5 rounded" /> File uploads up to 50MB</li>
-                  <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600 bg-purple-50 p-0.5 rounded" /> Secure cache processing</li>
+                  <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4 h-4 text-purple-600 bg-purple-50 p-0.5 rounded" /> Auto-deletes after download</li>
                 </ul>
               </div>
               <button onClick={() => onNavigate('tools')} className="w-full py-3.5 rounded-xl border border-purple-200 text-purple-700 font-extrabold text-xs uppercase tracking-wider hover:bg-purple-50 transition-colors cursor-pointer">
                 Start for Free
               </button>
-            </div>
+            </motion.div>
 
             {/* PRO PLAN */}
-            <div className="relative group rounded-3xl transform scale-105 shadow-2xl shadow-purple-500/10">
+            <motion.div 
+              whileHover={{ y: -8 }}
+              className="relative group rounded-3xl transform scale-105 shadow-2xl shadow-purple-500/10"
+            >
               <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 via-pink-500 to-purple-650 rounded-[26px] opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 blur-[2px]"></div>
               <div className="relative border border-purple-200 bg-white p-8 rounded-3xl flex flex-col justify-between h-full shadow-sm">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-pink-500 text-white text-[10px] font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-md">
@@ -832,22 +888,26 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                 </div>
                 <div>
                   <h3 className="font-display text-xl font-black mb-2 text-purple-900">Pro</h3>
-                  <p className="text-xs text-neutral-400 mb-6 font-semibold">Billed for individual utility volume creators.</p>
+                  <p className="text-xs text-neutral-400 mb-6 font-semibold">Billed for individual utility creators.</p>
                   <div className="text-4xl font-black text-[#0F0A1E] mb-6">${pricingYearly ? "6.60" : "11.00"}<span className="text-xs text-neutral-450 font-black uppercase tracking-wider ml-1">/ mo</span></div>
                   <ul className="space-y-4 mb-8 text-sm text-[#0F0A1E]">
                     <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> Everything in Free</li>
                     <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> All tools unlocked ({totalCount} tools)</li>
-                    <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> Files up to 500MB + priority</li>
+                    <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> Files up to 500MB + Priority Queue</li>
+                    <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-purple-700 bg-purple-50 p-0.5 rounded" /> Inputs kept 6d • Results kept 7d</li>
                   </ul>
                 </div>
                 <button onClick={() => onNavigate('pricing')} className="w-full py-3.5 rounded-xl bg-purple-600 text-white font-extrabold text-xs uppercase tracking-wider hover:bg-purple-700 transition-colors shadow-md shadow-purple-500/10 cursor-pointer">
                   Get Pro
                 </button>
               </div>
-            </div>
+            </motion.div>
 
             {/* TEAMS PLAN */}
-            <div className="border border-neutral-800 bg-[#0F0A1E] text-white p-8 rounded-3xl flex flex-col justify-between shadow-sm">
+            <motion.div 
+              whileHover={{ y: -6 }}
+              className="border border-neutral-800 bg-[#0F0A1E] text-white p-8 rounded-3xl flex flex-col justify-between shadow-sm"
+            >
               <div>
                 <h3 className="font-display text-xl font-bold mb-2">Teams</h3>
                 <p className="text-xs text-neutral-450 mb-6 font-semibold">Shared logs & priority seats for workgroups.</p>
@@ -855,7 +915,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
                 <ul className="space-y-4 mb-8 text-sm text-neutral-300">
                   <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-green-400 bg-green-950/20 p-0.5 rounded" /> Up to 5 team members</li>
                   <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-green-400 bg-green-950/20 p-0.5 rounded" /> Files up to 1GB per session</li>
-                  <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-green-400 bg-green-950/20 p-0.5 rounded" /> Shared tool history</li>
+                  <li className="flex items-center gap-2.5"><FontAwesomeIcon icon={faCircleCheck} className="w-4.5 h-4.5 text-green-400 bg-green-950/20 p-0.5 rounded" /> Shared tool history & retention</li>
                 </ul>
               </div>
               <button 
@@ -866,7 +926,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
               >
                 Start Teams Plan
               </button>
-            </div>
+            </motion.div>
           </div>
           <div className="text-center mt-12">
             <button onClick={() => onNavigate('pricing')} className="text-purple-650 font-bold hover:text-purple-800 hover:underline cursor-pointer">
@@ -876,48 +936,65 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
         </div>
       </section>
 
-      {/* SECTION 8 — BUILT BY */}
+      {/* SECTION 8 — BUILT BY ("Built with care, one tool at a time") */}
       <section className="py-28 px-6 md:px-12 bg-[#FAFAFA] relative z-20 border-t border-purple-50">
         <div className="max-w-4xl mx-auto text-center font-medium">
-          <div className="w-20 h-20 bg-purple-100 text-purple-700 rounded-full font-black text-2xl flex items-center justify-center mx-auto mb-6">MZ</div>
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            className="w-20 h-20 bg-gradient-to-tr from-purple-700 via-purple-600 to-fuchsia-500 text-white rounded-full font-black text-2xl flex flex-col items-center justify-center mx-auto mb-6 shadow-xl shadow-purple-500/20"
+          >
+            <span>MZ</span>
+            <span className="text-[9px] text-purple-200 uppercase tracking-widest font-bold">Founder</span>
+          </motion.div>
           <h2 className="font-display text-3xl md:text-5xl font-black text-[#0F0A1E] mb-6">Built with care, one tool at a time</h2>
           <p className="text-lg md:text-xl text-neutral-500 leading-relaxed mb-10 max-w-2xl mx-auto font-medium">
             Qofeno is designed and developed by Mohd Zaheer Uddin. Every tool is tested and built to actually work. If you have a suggestion or found something broken, I'd love to hear from you.
           </p>
           <button 
             onClick={() => onNavigate('contact')}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-[#0F0A1E] text-white font-bold rounded-2xl hover:bg-neutral-800 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-[#0F0A1E] text-white font-bold rounded-2xl hover:bg-neutral-800 transition-colors cursor-pointer shadow-lg"
           >
             Say hello <FontAwesomeIcon icon={faArrowRight} className="w-5 h-5" />
           </button>
         </div>
       </section>
 
-      {/* SECTION 9 — TOOL GROWTH TRACKER */}
+      {/* SECTION 9 — TOOL GROWTH TRACKER ("We're building something big") */}
       <section className="py-24 bg-[#140F26] text-white text-center relative z-20 border-t border-purple-950/20">
         <div className="max-w-4xl mx-auto px-6 font-medium">
           <h2 className="font-display text-3xl md:text-5xl font-black mb-4 tracking-tight">We're building something big.</h2>
           <p className="text-purple-300 font-bold mb-12 text-lg">New tools are added every week. Here's where we are.</p>
           
           <div className="w-full max-w-xl mx-auto bg-neutral-800 h-4 rounded-full overflow-hidden mb-6 relative">
-            <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full w-[25%]" />
+            <motion.div 
+              initial={{ width: 0 }}
+              whileInView={{ width: `${Math.min(100, Math.round((tools.length / 544) * 100))}%` }}
+              viewport={{ once: true }}
+              transition={{ duration: 1.2, ease: "easeOut" }}
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 rounded-full" 
+            />
           </div>
           <div className="flex justify-between max-w-xl mx-auto text-neutral-400 text-sm font-semibold mb-12">
-            <span>Currently: {tools.length} tools</span>
-            <span>Goal: 500 tools by end of year</span>
+            <span>Currently: {tools.length} active tools</span>
+            <span>Goal: 500+ tools benchmark</span>
           </div>
 
           <button 
-            onClick={() => onNavigate('contact')}
-            className="px-8 py-4 bg-purple-650 hover:bg-purple-500 active:scale-95 transition-transform text-white rounded-2xl font-bold cursor-pointer"
+            onClick={() => {
+              if (onRequestTool) onRequestTool();
+              else onNavigate('contact');
+            }}
+            className="px-8 py-4 bg-purple-600 hover:bg-purple-500 active:scale-95 transition-transform text-white rounded-2xl font-bold cursor-pointer shadow-lg shadow-purple-600/30"
           >
             Request a tool →
           </button>
         </div>
       </section>
 
-      {/* SECTION 10 — CTA BANNER */}
-      <section className="py-28 bg-gradient-to-br from-purple-900 to-[#2B1B54] text-white relative z-20 overflow-hidden border-t border-purple-950/20">
+      {/* SECTION 10 — CTA BANNER ("Start using Qofeno today") */}
+      <section className="py-28 bg-gradient-to-br from-purple-900 via-purple-950 to-[#2B1B54] text-white relative z-20 overflow-hidden border-t border-purple-950/20">
         <div className="absolute inset-0 pointer-events-none -z-10">
            <FontAwesomeIcon icon={faFileLines} className="absolute top-10 left-[10%] w-24 h-24 text-white opacity-5" />
            <FontAwesomeIcon icon={faImage} className="absolute bottom-10 right-[15%] w-32 h-32 text-white opacity-5" />
@@ -928,7 +1005,7 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button 
               onClick={() => onNavigate('tools')}
-              className="px-8 py-4 bg-white text-purple-900 font-bold text-lg rounded-2xl hover:bg-purple-100 transition-colors cursor-pointer"
+              className="px-8 py-4 bg-white text-purple-900 font-bold text-lg rounded-2xl hover:bg-purple-100 transition-colors cursor-pointer shadow-xl"
             >
               Explore All Tools
             </button>
