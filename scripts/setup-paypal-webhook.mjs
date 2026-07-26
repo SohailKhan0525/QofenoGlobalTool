@@ -87,10 +87,25 @@ async function main() {
     }),
   });
 
-  const data = await res.json();
+  let data = await res.json();
   if (!data.id) {
-    console.error('❌ Failed to create webhook:', JSON.stringify(data, null, 2));
-    process.exit(1);
+    if (data.name === 'WEBHOOK_URL_ALREADY_EXISTS') {
+      console.log('ℹ️ Webhook URL already exists on PayPal. Fetching existing webhooks...');
+      const listRes = await fetch(`${BASE}/v1/notifications/webhooks`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const listData = await listRes.json();
+      const existing = listData.webhooks?.find(w => w.url === webhookUrl) || listData.webhooks?.[0];
+      if (existing) {
+        data = existing;
+      } else {
+        console.error('❌ Could not find existing webhook:', JSON.stringify(listData, null, 2));
+        process.exit(1);
+      }
+    } else {
+      console.error('❌ Failed to create webhook:', JSON.stringify(data, null, 2));
+      process.exit(1);
+    }
   }
 
   await updateEnv({ PAYPAL_WEBHOOK_ID: data.id });
