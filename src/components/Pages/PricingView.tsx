@@ -26,15 +26,14 @@ const PLAN_FEATURES = [
   { name: "Access to free tools", free: true, pro: true, teams: true },
   { name: "Server-side processing", free: true, pro: true, teams: true },
   { name: "No login required", free: true, pro: true, teams: false },
-  { name: "Files deleted after processing", free: true, pro: true, teams: true },
+  { name: "File Retention Policy", free: "Auto-Deleted after Download", pro: "Input 6 days • Result 7 days", teams: "Input 6 days • Result 7 days" },
   { name: "Maximum Upload Limit", free: "50 MB", pro: "500 MB", teams: "1 GB" },
-  { name: "All tools unlocked", free: false, pro: true, teams: true },
-  { name: "Saved processing history", free: false, pro: true, teams: true },
-  { name: "Priority server processing", free: false, pro: true, teams: true },
-  { name: "No ads", free: false, pro: true, teams: true },
+  { name: "All 540+ tools unlocked", free: false, pro: true, teams: true },
+  { name: "Processing History", free: false, pro: "Personal Log", teams: "Shared Team Log" },
+  { name: "Queue Priority", free: "Standard Queue", pro: "Priority Speed", teams: "Dedicated Priority Node" },
+  { name: "No ads or popups", free: false, pro: true, teams: true },
   { name: "Early access to new tools", free: false, pro: true, teams: true },
   { name: "Multi-user seats", free: false, pro: false, teams: "Up to 5 seats" },
-  { name: "Shared team history", free: false, pro: false, teams: true },
   { name: "Priority developer support", free: false, pro: false, teams: true },
 ];
 
@@ -42,8 +41,15 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
   const { isAuthenticated } = useAuth();
   const [isYearly, setIsYearly] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [faqQuery, setFaqQuery] = useState('');
   const [showConfetti, setShowConfetti] = useState(false);
   const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const filteredFaqs = useMemo(() => {
+    if (!faqQuery.trim()) return FAQ_ITEMS;
+    const q = faqQuery.toLowerCase();
+    return FAQ_ITEMS.filter(item => item.q.toLowerCase().includes(q) || item.a.toLowerCase().includes(q));
+  }, [faqQuery]);
 
   const [counts, setCounts] = useState({ free: 0, total: 0 });
 
@@ -291,37 +297,59 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
 
         {/* ACCORDION FAQ SECTION */}
         <div className="w-full max-w-3xl">
-          <h2 className="font-display text-3xl font-black text-[#0F0A1E] text-center mb-12">Frequently Asked Questions</h2>
+          <div className="text-center mb-8">
+            <span className="text-xs font-black uppercase tracking-widest text-purple-600 bg-purple-100 px-3 py-1 rounded-full inline-block mb-3">
+              Got Questions?
+            </span>
+            <h2 className="font-display text-3xl font-black text-[#0F0A1E]">Frequently Asked Questions</h2>
+          </div>
+
+          <div className="mb-8 relative">
+            <input 
+              type="text" 
+              placeholder="Search pricing FAQs (e.g. retention, free, refund, limits)..."
+              value={faqQuery}
+              onChange={(e) => setFaqQuery(e.target.value)}
+              className="w-full bg-neutral-50 border border-neutral-200 focus:border-purple-600 focus:ring-4 focus:ring-purple-100 rounded-2xl py-3.5 px-5 outline-none text-neutral-800 text-sm font-medium transition-all shadow-inner"
+            />
+          </div>
+
           <div className="space-y-4">
-            {FAQ_ITEMS.map((faq, idx) => {
-              const isOpen = activeFaq === idx;
-              return (
-                <div key={idx} className="border border-neutral-250 bg-[#FAFAFA] rounded-2xl overflow-hidden transition-all duration-300">
-                  <button
-                    type="button"
-                    onClick={() => setActiveFaq(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between p-6 text-left font-bold text-[#0F0A1E] hover:bg-neutral-100 transition-colors cursor-pointer"
-                  >
-                    <span>{faq.q}</span>
-                    <FontAwesomeIcon icon={faChevronDown} className={cn("w-5 h-5 text-purple-600 transition-transform duration-300", isOpen ? "rotate-180" : "")} />
-                  </button>
-                  <AnimatePresence initial={false}>
-                    {isOpen && (
-                      <motion.div
-                        initial={prefersReduced ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={prefersReduced ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
-                        transition={{ duration: prefersReduced ? 0 : 0.3 }}
-                      >
-                        <div className="p-6 pt-0 text-sm text-neutral-500 leading-relaxed border-t border-neutral-200/50 bg-white">
-                          {faq.a}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
+            {filteredFaqs.length > 0 ? (
+              filteredFaqs.map((faq, idx) => {
+                const isOpen = activeFaq === idx;
+                return (
+                  <div key={idx} className="border border-neutral-200 bg-[#FAFAFA] rounded-2xl overflow-hidden transition-all duration-300">
+                    <button
+                      type="button"
+                      onClick={() => setActiveFaq(isOpen ? null : idx)}
+                      className="w-full flex items-center justify-between p-6 text-left font-bold text-[#0F0A1E] hover:bg-neutral-100 transition-colors cursor-pointer"
+                    >
+                      <span>{faq.q}</span>
+                      <FontAwesomeIcon icon={faChevronDown} className={cn("w-5 h-5 text-purple-600 transition-transform duration-300", isOpen ? "rotate-180" : "")} />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          initial={prefersReduced ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={prefersReduced ? { height: 'auto', opacity: 1 } : { height: 0, opacity: 0 }}
+                          transition={{ duration: prefersReduced ? 0 : 0.3 }}
+                        >
+                          <div className="p-6 pt-0 text-sm text-neutral-600 font-medium leading-relaxed border-t border-neutral-200/50 bg-white">
+                            {faq.a}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-neutral-400 font-bold text-sm bg-neutral-50 rounded-2xl border border-neutral-200">
+                No matching FAQs found for "{faqQuery}". Try searching for "retention" or "free".
+              </div>
+            )}
           </div>
         </div>
 
