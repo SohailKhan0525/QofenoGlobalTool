@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTriangleExclamation, faHouse, faRotateLeft } from '@fortawesome/free-solid-svg-icons';
 import { SEO } from './SEO';
+import { captureException } from '../lib/sentry';
 
 interface Props {
   children: ReactNode;
@@ -25,6 +26,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
+    captureException(error, { componentStack: errorInfo.componentStack });
   }
 
   public render() {
