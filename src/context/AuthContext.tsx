@@ -65,6 +65,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshSession = useCallback(async (): Promise<AuthUser | null> => {
     setIsLoading(true);
     try {
+      if (typeof window !== 'undefined') {
+        const searchParams = new URLSearchParams(window.location.search);
+        let hashParams = new URLSearchParams();
+        if (window.location.hash && window.location.hash.includes('=')) {
+          const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+          hashParams = new URLSearchParams(rawHash);
+        }
+
+        const secret = searchParams.get('secret') || hashParams.get('secret');
+        const userId = searchParams.get('userId') || searchParams.get('user_id') || hashParams.get('userId') || hashParams.get('user_id');
+
+        if (secret && userId) {
+          try {
+            await account.createSession(userId, secret);
+          } catch (sessionErr) {
+            console.warn('createSession from URL params warning:', sessionErr);
+          }
+        }
+      }
+
       const raw = await account.get();
       const plan = await loadPlan(raw.$id);
       window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
