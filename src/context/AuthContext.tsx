@@ -16,12 +16,19 @@ type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  /** Returns the resolved user (or null if no session). Never throws. */
+  /** Never throws. Returns null when no active session. */
   refreshSession: () => Promise<AuthUser | null>;
+  /**
+   * Called only from AuthCallback after an OAuth redirect.
+   * Exchanges the one-time ?userId+secret from the URL into a
+   * real session, then loads the user. Returns null on failure.
+   */
+  exchangeOAuthToken: () => Promise<AuthUser | null>;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   sendPasswordRecovery: (email: string) => Promise<void>;
+  /** Triggers a full-page redirect — nothing after this runs. */
   createOAuthSession: (provider: 'google' | 'github', redirect?: string) => void;
 };
 
@@ -52,60 +59,41 @@ function toAuthUser(raw: any, plan: AuthPlan): AuthUser {
   };
 }
 
-/**
- * Try to exchange a one-time OAuth/verification token from URL params.
- *
- * When using createOAuth2Token (the cross-domain safe method), Appwrite
- * appends `userId` and `secret` to the success URL query string.
- * We must call account.createSession(userId, secret) to finalise the
- * session before account.get() will work.
- *
- * Returns true if a session was created from URL params.
- */
-async function tryCreateSessionFromUrl(): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
-
+/** Extract ?userId and ?secret from the current URL (set by Appwrite after createOAuth2Token). */
+function getTokenFromUrl(): { userId: string; secret: string } | null {
+  if (typeof window === 'undefined') return null;
   const sp = new URLSearchParams(window.location.search);
-  // Also check hash params (some Appwrite versions use hash)
-  let hp = new URLSearchParams();
-  if (window.location.hash && window.location.hash.includes('=')) {
-    hp = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  }
+  const hp = window.location.hash.includes('=')
+    ? new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    : new URLSearchParams();
 
   const secret = sp.get('secret') || hp.get('secret');
   const userId  = sp.get('userId')  || sp.get('user_id')  || hp.get('userId')  || hp.get('user_id');
+  if (!secret || !userId) return null;
+  return { userId, secret };
+}
 
-  if (!secret || !userId) return false;
-
-  try {
-    await account.createSession(userId, secret);
-    // Clean up the URL so the token can't be replayed on the next refresh
-    const clean = new URL(window.location.href);
-    clean.searchParams.delete('secret');
-    clean.searchParams.delete('userId');
-    clean.searchParams.delete('user_id');
-    window.history.replaceState({}, '', clean.toString());
-    return true;
-  } catch (err) {
-    console.warn('[Auth] createSession from URL token failed:', err);
-    return false;
-  }
+/** Remove one-time token params from the URL bar (prevents replay on refresh). */
+function cleanTokenFromUrl() {
+  if (typeof window === 'undefined') return;
+  const clean = new URL(window.location.href);
+  clean.searchParams.delete('secret');
+  clean.searchParams.delete('userId');
+  clean.searchParams.delete('user_id');
+  window.history.replaceState({}, '', clean.toString());
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser]       = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Stable ref to setUser — avoids stale closure in useCallback with [] deps
   const setUserRef = useRef(setUser);
   setUserRef.current = setUser;
 
+  /** Load the currently signed-in user from Appwrite (no token exchange). */
   const refreshSession = useCallback(async (): Promise<AuthUser | null> => {
     setIsLoading(true);
     try {
-      // Exchange OAuth/verification URL token → session (cross-domain safe)
-      await tryCreateSessionFromUrl();
-
       const raw  = await account.get();
       const plan = await loadPlan(raw.$id);
       const resolved = toAuthUser(raw, plan);
@@ -119,7 +107,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Run once on mount to restore an existing session
+  /**
+   * Called exclusively from AuthCallback.
+   * Reads ?userId+?secret from the URL (put there by Appwrite after createOAuth2Token),
+   * exchanges them for a session via account.createSession(), then calls account.get().
+   *
+   * Separation from refreshSession prevents the race condition where AuthContext's
+   * own initial refreshSession() consumes the one-time token before AuthCallback does.
+   */
+  const exchangeOAuthToken = useCallback(async (): Promise<AuthUser | null> => {
+    setIsLoading(true);
+    try {
+      const token = getTokenFromUrl();
+      if (token) {
+        // Exchange the one-time token for a persistent session.
+        // This stores the session in localStorage (cookieFallback) via the SDK,
+        // so subsequent account.get() calls work cross-domain.
+        await account.createSession(token.userId, token.secret);
+        cleanTokenFromUrl();
+      }
+      // Whether or not we had a token, try to load the user.
+      // (For email/password or existing session flows landing on /auth/callback)
+      const raw  = await account.get();
+      const plan = await loadPlan(raw.$id);
+      const resolved = toAuthUser(raw, plan);
+      setUserRef.current(resolved);
+      return resolved;
+    } catch (err) {
+      console.warn('[Auth] exchangeOAuthToken failed:', err);
+      setUserRef.current(null);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial session restore on app load (no token exchange — just account.get())
   useEffect(() => {
     void refreshSession();
   }, [refreshSession]);
@@ -133,7 +156,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await account.create(ID.unique(), email, password, name);
     await account.createEmailPasswordSession(email, password);
     try {
-      // Non-fatal — only works if SMTP is configured in Appwrite
       await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
     } catch (e) {
       console.warn('[Auth] Verification email skipped (non-fatal):', e);
@@ -157,23 +179,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Initiate OAuth sign-in via the TOKEN flow (createOAuth2Token).
-   *
-   * IMPORTANT: We use createOAuth2Token instead of createOAuth2Session
-   * because the site (qofeno-labs.pages.dev) and the Appwrite endpoint
-   * (fra.cloud.appwrite.io) are on different domains. Modern browsers
-   * (Chrome 115+, Safari, Firefox) block cross-origin cookies by default,
-   * which breaks createOAuth2Session completely.
-   *
-   * createOAuth2Token appends `userId` and `secret` to the success URL.
-   * AuthCallback calls refreshSession() which calls tryCreateSessionFromUrl()
-   * to exchange those for a real session stored in localStorage.
+   * Use createOAuth2Token (not createOAuth2Session) so that Appwrite appends
+   * ?userId and ?secret to the success URL instead of relying on a cross-domain
+   * cookie that modern browsers block (Chrome 115+, Safari, Firefox).
    */
   const createOAuthSession = useCallback((provider: 'google' | 'github', redirect = '/profile') => {
     const success = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
     const failure = `${window.location.origin}/login?error=oauth&redirect=${encodeURIComponent(redirect)}`;
     const oauthProvider = provider === 'google' ? OAuthProvider.Google : OAuthProvider.Github;
-    // This synchronously redirects the browser — nothing after runs
+    // Synchronous redirect — nothing after this executes
     account.createOAuth2Token(oauthProvider, success, failure);
   }, []);
 
@@ -182,6 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: Boolean(user),
     isLoading,
     refreshSession,
+    exchangeOAuthToken,
     login,
     signup,
     logout,

@@ -7,25 +7,26 @@ import { getRedirectTarget } from '../../lib/appRouter';
 import { useAuth } from '../../context/AuthContext';
 
 export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { refreshSession } = useAuth();
+  const { exchangeOAuthToken } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError]   = useState('');
-  const ranRef = useRef(false); // guard against React StrictMode double-invoke
+  // Prevent double-invocation in React StrictMode
+  const ranRef = useRef(false);
 
   useEffect(() => {
     if (ranRef.current) return;
     ranRef.current = true;
 
     const run = async () => {
-      // refreshSession internally calls tryCreateSessionFromUrl() which
-      // exchanges the ?userId&secret token that Appwrite appends to the
-      // success URL (createOAuth2Token flow). Then calls account.get().
-      const resolvedUser = await refreshSession();
+      // exchangeOAuthToken: reads ?userId+?secret from URL, calls createSession,
+      // cleans URL, then calls account.get(). Separated from the initial AuthContext
+      // refreshSession to avoid consuming the one-time token in a race condition.
+      const resolvedUser = await exchangeOAuthToken();
 
       if (!resolvedUser) {
         setStatus('error');
         setError(
-          'Sign-in could not be verified. This can happen if the link expired or was already used. ' +
+          'Sign-in could not be verified. The session token may have expired. ' +
           'Please try signing in again.'
         );
         return;
@@ -39,7 +40,8 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
     };
 
     void run();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F5F3FF] via-white to-[#EEF2FF] flex items-center justify-center px-4 pt-28 pb-10">
@@ -59,7 +61,7 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
               </div>
             </div>
             <h1 className="text-xl font-black text-[#0F0A1E]">Signing you in…</h1>
-            <p className="mt-2 text-sm text-neutral-500">Verifying your session with Appwrite.</p>
+            <p className="mt-2 text-sm text-neutral-500">Verifying your session — just a moment.</p>
           </>
         )}
 
