@@ -31,7 +31,10 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const APPWRITE_ENDPOINT   = 'https://fra.cloud.appwrite.io/v1';
+const ENDPOINTS = [
+  'https://cloud.appwrite.io/v1',
+  'https://fra.cloud.appwrite.io/v1',
+];
 const APPWRITE_PROJECT_ID = '69c58725000ef2b43f18';
 
 async function loadPlan(userId: string): Promise<AuthPlan> {
@@ -105,66 +108,73 @@ function cleanTokenFromUrl() {
 
 /**
  * Direct fetch to Appwrite /account/sessions/token using credentials: 'omit'.
- * This avoids browser third-party cookie blocking (TypeError: Failed to fetch)
- * when calling from a cross-origin domain like qofeno-labs.pages.dev.
+ * Tries both cloud.appwrite.io and fra.cloud.appwrite.io to ensure network resilience.
  */
 async function directCreateSession(userId: string, secret: string): Promise<any> {
-  const res = await fetch(`${APPWRITE_ENDPOINT}/account/sessions/token`, {
-    method: 'POST',
-    credentials: 'omit',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Appwrite-Project': APPWRITE_PROJECT_ID,
-    },
-    body: JSON.stringify({ userId, secret }),
-  });
-
-  const text = await res.text();
-  if (!res.ok) {
-    let msg = text;
+  let lastErr: any = null;
+  for (const ep of ENDPOINTS) {
     try {
-      const parsed = JSON.parse(text);
-      msg = parsed.message || parsed.type || text;
-    } catch {}
-    throw new Error(`[${res.status}] ${msg}`);
-  }
+      const res = await fetch(`${ep}/account/sessions/token`, {
+        method: 'POST',
+        credentials: 'omit',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+        },
+        body: JSON.stringify({ userId, secret }),
+      });
 
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error('Invalid JSON response from Appwrite createSession');
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text;
+        try {
+          const parsed = JSON.parse(text);
+          msg = parsed.message || parsed.type || text;
+        } catch {}
+        throw new Error(`[${res.status} ${ep}] ${msg}`);
+      }
+
+      return JSON.parse(text);
+    } catch (err: any) {
+      lastErr = err;
+    }
   }
+  throw lastErr || new Error('All Appwrite endpoints failed for createSession');
 }
 
 /**
  * Direct fetch to Appwrite /account using X-Appwrite-Session header and credentials: 'omit'.
  */
 async function directGetAccount(sessionSecret: string): Promise<any> {
-  const res = await fetch(`${APPWRITE_ENDPOINT}/account`, {
-    method: 'GET',
-    credentials: 'omit',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Appwrite-Project': APPWRITE_PROJECT_ID,
-      'X-Appwrite-Session': sessionSecret,
-    },
-  });
-
-  const text = await res.text();
-  if (!res.ok) {
-    let msg = text;
+  let lastErr: any = null;
+  for (const ep of ENDPOINTS) {
     try {
-      const parsed = JSON.parse(text);
-      msg = parsed.message || parsed.type || text;
-    } catch {}
-    throw new Error(`[${res.status}] ${msg}`);
-  }
+      const res = await fetch(`${ep}/account`, {
+        method: 'GET',
+        credentials: 'omit',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+          'X-Appwrite-Session': sessionSecret,
+        },
+      });
 
-  try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error('Invalid JSON response from Appwrite getAccount');
+      const text = await res.text();
+      if (!res.ok) {
+        let msg = text;
+        try {
+          const parsed = JSON.parse(text);
+          msg = parsed.message || parsed.type || text;
+        } catch {}
+        throw new Error(`[${res.status} ${ep}] ${msg}`);
+      }
+
+      return JSON.parse(text);
+    } catch (err: any) {
+      lastErr = err;
+    }
   }
+  throw lastErr || new Error('All Appwrite endpoints failed for getAccount');
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -191,7 +201,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Called exclusively from AuthCallback after an OAuth redirect.
-   * Uses direct fetch with credentials: 'omit' to prevent browser third-party cookie blocks.
    */
   const exchangeOAuthToken = useCallback(async (): Promise<OAuthExchangeResult> => {
     setIsLoading(true);
@@ -214,11 +223,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // Step 1: Exchange the one-time OAuth token for a session via direct fetch
+      // Step 1: Exchange the one-time OAuth token for a session
       let session: any = null;
       let errDetail = '';
 
-      // Try 1A: Direct fetch with raw token string
+      // Try 1A: Direct fetch with raw token string across all endpoints
       try {
         session = await directCreateSession(token.userId, token.secret);
       } catch (e1: any) {
@@ -259,7 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Step 3: Clean token params from URL bar
       cleanTokenFromUrl();
 
-      // Step 4: Verify session with direct getAccount call
+      // Step 4: Verify session with direct getAccount call across all endpoints
       try {
         const raw  = await directGetAccount(sessionSecret);
         const plan = await loadPlan(raw.$id);
