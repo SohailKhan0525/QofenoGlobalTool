@@ -268,6 +268,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
         clientId: PAYPAL_CLIENT_ID,
         currency: 'USD',
         intent: 'subscription',
+        vault: true,
       }}>
         <InternalPayPalButtons
           planId={planId}
