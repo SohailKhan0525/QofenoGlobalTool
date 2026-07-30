@@ -136,7 +136,6 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
         clientId: PAYPAL_CLIENT_ID,
         currency: 'USD',
         intent: 'subscription',
-        vault: true,
       }}>
         <PayPalButtons
           style={{ layout: 'vertical', shape: 'rect', color: 'blue', label: 'subscribe' }}
@@ -144,7 +143,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
           createSubscription={(_data, actions) => {
             return actions.subscription.create({
               plan_id: planId,
-              custom_id: user.id,
+              ...(user?.id ? { custom_id: user.id } : {}),
             });
           }}
           onApprove={async (data) => {
