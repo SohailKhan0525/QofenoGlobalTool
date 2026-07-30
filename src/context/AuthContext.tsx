@@ -68,11 +68,6 @@ function getTokenFromUrl(): { userId: string; secret: string } | null {
   return { userId, secret };
 }
 
-/**
- * Appwrite passes a JWT string containing the session secret in the URL parameter.
- * This extracts the 64-char session secret from the JWT payload, or returns the raw secret
- * if it's already a plain secret.
- */
 function extractSessionSecret(rawSecret: string): string {
   if (!rawSecret) return '';
   if (rawSecret.includes('.')) {
@@ -131,10 +126,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Called exclusively from AuthCallback after an OAuth redirect.
    *
    * Flow:
-   * 1. Read ?userId + ?secret (JWT or raw) from URL
-   * 2. Extract the actual 64-char session secret from the JWT payload
-   * 3. Call persistSession(sessionSecret) to set client.setSession() & save to localStorage
-   * 4. Call account.get() to load user profile
+   * 1. Read ?userId + ?secret from URL
+   * 2. Call account.createSession(userId, secret) to exchange the one-time token
+   * 3. Call persistSession(session.secret) to set client session header & save to localStorage
+   * 4. Clean URL bar
+   * 5. Call account.get() to load user profile
    */
   const exchangeOAuthToken = useCallback(async (): Promise<OAuthExchangeResult> => {
     setIsLoading(true);
@@ -142,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = getTokenFromUrl();
 
       if (!token) {
-        // No URL params — check if user already has an active session
+        // No URL params — check if user already has an active session saved
         try {
           const raw  = await account.get();
           const plan = await loadPlan(raw.$id);
@@ -153,18 +149,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {
           ok: false,
           reason: 'no_token',
-          detail: `URL search: "${window.location.search}" | hash: "${window.location.hash}"`,
+          detail: `No OAuth parameters in URL (search: "${window.location.search}")`,
         };
       }
 
-      // Extract the true 64-char session secret from the JWT string (or use raw)
-      const sessionSecret = extractSessionSecret(token.secret);
+      // Step 1: Exchange the one-time token for an active session
+      let session: any = null;
+      let errDetail = '';
 
-      // Persist to localStorage & set client session header
+      try {
+        session = await account.createSession(token.userId, token.secret);
+      } catch (e1: any) {
+        errDetail = String(e1?.message || e1);
+        // Fallback: If raw token failed and it contains a JWT payload with an inner secret, try that
+        const cleanSecret = extractSessionSecret(token.secret);
+        if (cleanSecret && cleanSecret !== token.secret) {
+          try {
+            session = await account.createSession(token.userId, cleanSecret);
+          } catch (e2: any) {
+            errDetail += ` | jwt_fallback_err: ${e2?.message || e2}`;
+          }
+        }
+      }
+
+      if (!session) {
+        return {
+          ok: false,
+          reason: 'create_session_failed',
+          detail: errDetail || 'Appwrite createSession returned null/empty',
+        };
+      }
+
+      // Step 2: Persist the returned session secret (sets X-Appwrite-Session header & saves to localStorage)
+      const sessionSecret = session.secret || extractSessionSecret(token.secret) || token.secret;
       persistSession(sessionSecret);
+
+      // Step 3: Clean token params from URL bar
       cleanTokenFromUrl();
 
-      // Attempt 1: Try account.get() directly using the session secret
+      // Step 4: Verify session with account.get()
       try {
         const raw  = await account.get();
         const plan = await loadPlan(raw.$id);
@@ -172,39 +195,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserRef.current(resolved);
         return { ok: true, user: resolved };
       } catch (getErr: any) {
-        console.warn('[Auth] account.get() direct session test failed, trying createSession fallback:', getErr);
-
-        // Attempt 2: Fallback to account.createSession in case Appwrite expects token exchange
-        try {
-          const session = await account.createSession(token.userId, sessionSecret);
-          const finalSecret = session?.secret || sessionSecret;
-          persistSession(finalSecret);
-
-          const raw  = await account.get();
-          const plan = await loadPlan(raw.$id);
-          const resolved = toAuthUser(raw, plan);
-          setUserRef.current(resolved);
-          return { ok: true, user: resolved };
-        } catch (createErr: any) {
-          // If that also failed, try with raw token
-          try {
-            const session2 = await account.createSession(token.userId, token.secret);
-            const finalSecret2 = session2?.secret || token.secret;
-            persistSession(finalSecret2);
-
-            const raw  = await account.get();
-            const plan = await loadPlan(raw.$id);
-            const resolved = toAuthUser(raw, plan);
-            setUserRef.current(resolved);
-            return { ok: true, user: resolved };
-          } catch (createErr2: any) {
-            return {
-              ok: false,
-              reason: 'create_session_failed',
-              detail: `get: ${getErr?.message || getErr} | create1: ${createErr?.message || createErr} | create2: ${createErr2?.message || createErr2}`,
-            };
-          }
-        }
+        return {
+          ok: false,
+          reason: 'get_account_failed',
+          detail: String(getErr?.message || getErr),
+        };
       }
     } finally {
       setIsLoading(false);
