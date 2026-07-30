@@ -16,17 +16,16 @@ type AuthContextValue = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  // Returns the resolved user (or null if no session). Never throws.
+  /** Returns the resolved user (or null if no session). Never throws. */
   refreshSession: () => Promise<AuthUser | null>;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   sendPasswordRecovery: (email: string) => Promise<void>;
-  createOAuthSession: (provider: 'google' | 'github', redirect?: string) => Promise<void>;
+  createOAuthSession: (provider: 'google' | 'github', redirect?: string) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const AUTH_SESSION_MARKER = 'qofeno_auth_expected';
 
 async function loadPlan(userId: string): Promise<AuthPlan> {
   try {
@@ -53,46 +52,66 @@ function toAuthUser(raw: any, plan: AuthPlan): AuthUser {
   };
 }
 
+/**
+ * Try to exchange a one-time OAuth/verification token from URL params.
+ *
+ * When using createOAuth2Token (the cross-domain safe method), Appwrite
+ * appends `userId` and `secret` to the success URL query string.
+ * We must call account.createSession(userId, secret) to finalise the
+ * session before account.get() will work.
+ *
+ * Returns true if a session was created from URL params.
+ */
+async function tryCreateSessionFromUrl(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+
+  const sp = new URLSearchParams(window.location.search);
+  // Also check hash params (some Appwrite versions use hash)
+  let hp = new URLSearchParams();
+  if (window.location.hash && window.location.hash.includes('=')) {
+    hp = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  }
+
+  const secret = sp.get('secret') || hp.get('secret');
+  const userId  = sp.get('userId')  || sp.get('user_id')  || hp.get('userId')  || hp.get('user_id');
+
+  if (!secret || !userId) return false;
+
+  try {
+    await account.createSession(userId, secret);
+    // Clean up the URL so the token can't be replayed on the next refresh
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete('secret');
+    clean.searchParams.delete('userId');
+    clean.searchParams.delete('user_id');
+    window.history.replaceState({}, '', clean.toString());
+    return true;
+  } catch (err) {
+    console.warn('[Auth] createSession from URL token failed:', err);
+    return false;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Use a ref so refreshSession always has access to the current setter without
-  // needing to be re-declared (avoids stale-closure in login/signup callbacks).
+  // Stable ref to setUser — avoids stale closure in useCallback with [] deps
   const setUserRef = useRef(setUser);
   setUserRef.current = setUser;
 
   const refreshSession = useCallback(async (): Promise<AuthUser | null> => {
     setIsLoading(true);
     try {
-      if (typeof window !== 'undefined') {
-        const searchParams = new URLSearchParams(window.location.search);
-        let hashParams = new URLSearchParams();
-        if (window.location.hash && window.location.hash.includes('=')) {
-          const rawHash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
-          hashParams = new URLSearchParams(rawHash);
-        }
+      // Exchange OAuth/verification URL token → session (cross-domain safe)
+      await tryCreateSessionFromUrl();
 
-        const secret = searchParams.get('secret') || hashParams.get('secret');
-        const userId = searchParams.get('userId') || searchParams.get('user_id') || hashParams.get('userId') || hashParams.get('user_id');
-
-        if (secret && userId) {
-          try {
-            await account.createSession(userId, secret);
-          } catch (sessionErr) {
-            console.warn('createSession from URL params warning:', sessionErr);
-          }
-        }
-      }
-
-      const raw = await account.get();
+      const raw  = await account.get();
       const plan = await loadPlan(raw.$id);
-      window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
       const resolved = toAuthUser(raw, plan);
       setUserRef.current(resolved);
       return resolved;
     } catch {
-      window.localStorage.removeItem(AUTH_SESSION_MARKER);
       setUserRef.current(null);
       return null;
     } finally {
@@ -100,25 +119,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Run once on mount to restore an existing session
   useEffect(() => {
     void refreshSession();
   }, [refreshSession]);
 
   const login = useCallback(async (email: string, password: string) => {
     await account.createEmailPasswordSession(email, password);
-    window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
     await refreshSession();
   }, [refreshSession]);
 
   const signup = useCallback(async (name: string, email: string, password: string) => {
     await account.create(ID.unique(), email, password, name);
     await account.createEmailPasswordSession(email, password);
-    window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
-    // Non-fatal: verification email may fail if SMTP not configured yet
     try {
+      // Non-fatal — only works if SMTP is configured in Appwrite
       await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
     } catch (e) {
-      console.warn('Verification email skipped (non-fatal):', e);
+      console.warn('[Auth] Verification email skipped (non-fatal):', e);
     }
     await refreshSession();
   }, [refreshSession]);
@@ -126,9 +144,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     try {
       await account.deleteSession('current');
+    } catch (e) {
+      console.warn('[Auth] Logout error (non-fatal):', e);
     } finally {
-      window.localStorage.removeItem(AUTH_SESSION_MARKER);
-      setUser(null);
+      setUserRef.current(null);
       setIsLoading(false);
     }
   }, []);
@@ -137,13 +156,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await account.createRecovery(email, `${window.location.origin}/reset-password`);
   }, []);
 
-  const createOAuthSession = useCallback(async (provider: 'google' | 'github', redirect = '/profile') => {
+  /**
+   * Initiate OAuth sign-in via the TOKEN flow (createOAuth2Token).
+   *
+   * IMPORTANT: We use createOAuth2Token instead of createOAuth2Session
+   * because the site (qofeno-labs.pages.dev) and the Appwrite endpoint
+   * (fra.cloud.appwrite.io) are on different domains. Modern browsers
+   * (Chrome 115+, Safari, Firefox) block cross-origin cookies by default,
+   * which breaks createOAuth2Session completely.
+   *
+   * createOAuth2Token appends `userId` and `secret` to the success URL.
+   * AuthCallback calls refreshSession() which calls tryCreateSessionFromUrl()
+   * to exchange those for a real session stored in localStorage.
+   */
+  const createOAuthSession = useCallback((provider: 'google' | 'github', redirect = '/profile') => {
     const success = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
     const failure = `${window.location.origin}/login?error=oauth&redirect=${encodeURIComponent(redirect)}`;
-    window.localStorage.setItem(AUTH_SESSION_MARKER, 'true');
     const oauthProvider = provider === 'google' ? OAuthProvider.Google : OAuthProvider.Github;
-    // This triggers a full browser redirect — nothing after this line runs.
-    await account.createOAuth2Session(oauthProvider, success, failure);
+    // This synchronously redirects the browser — nothing after runs
+    account.createOAuth2Token(oauthProvider, success, failure);
   }, []);
 
   const value: AuthContextValue = {
@@ -162,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 }

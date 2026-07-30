@@ -1,66 +1,45 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner, faCircleXmark, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { SEO } from '../../components/SEO';
 import { getRedirectTarget } from '../../lib/appRouter';
 import { useAuth } from '../../context/AuthContext';
 
-/** Retry refreshSession up to `maxTries` times with increasing delays.
- *  Appwrite may need a brief moment to finalize the session cookie after OAuth redirect. */
-async function retryRefreshSession(
-  refreshSession: () => Promise<import('../../context/AuthContext').AuthUser | null>,
-  maxTries = 5,
-  baseDelayMs = 600,
-) {
-  for (let attempt = 1; attempt <= maxTries; attempt++) {
-    const user = await refreshSession();
-    if (user) return user;
-    if (attempt < maxTries) {
-      // Wait longer on each retry: 600ms, 1200ms, 1800ms, 2400ms…
-      await new Promise(r => setTimeout(r, baseDelayMs * attempt));
-    }
-  }
-  return null;
-}
-
 export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => void }) {
   const { refreshSession } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [attempt, setAttempt] = useState(0);
-  const [error, setError] = useState('');
+  const [error, setError]   = useState('');
+  const ranRef = useRef(false); // guard against React StrictMode double-invoke
 
   useEffect(() => {
-    const run = async () => {
-      // Small initial delay to allow the Appwrite session cookie to be committed
-      // after the OAuth provider redirect. Without this, account.get() can fire
-      // before the cookie is readable by the browser.
-      await new Promise(r => setTimeout(r, 300));
+    if (ranRef.current) return;
+    ranRef.current = true;
 
-      const resolvedUser = await retryRefreshSession(
-        refreshSession,
-        5,
-        600,
-      );
+    const run = async () => {
+      // refreshSession internally calls tryCreateSessionFromUrl() which
+      // exchanges the ?userId&secret token that Appwrite appends to the
+      // success URL (createOAuth2Token flow). Then calls account.get().
+      const resolvedUser = await refreshSession();
 
       if (!resolvedUser) {
         setStatus('error');
         setError(
-          'We couldn\'t verify your session after sign-in. ' +
-          'This usually means the OAuth provider redirect didn\'t complete correctly. ' +
-          'Please try signing in again — if the problem persists, use email & password.'
+          'Sign-in could not be verified. This can happen if the link expired or was already used. ' +
+          'Please try signing in again.'
         );
         return;
       }
 
       setStatus('success');
       setTimeout(() => {
-        onNavigate(getRedirectTarget(window.location.search));
-      }, 600);
+        const target = getRedirectTarget(window.location.search);
+        onNavigate(target);
+      }, 500);
     };
 
     void run();
-  }, []); // run once on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F5F3FF] via-white to-[#EEF2FF] flex items-center justify-center px-4 pt-28 pb-10">
@@ -80,9 +59,7 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
               </div>
             </div>
             <h1 className="text-xl font-black text-[#0F0A1E]">Signing you in…</h1>
-            <p className="mt-2 text-sm text-neutral-500">
-              Verifying your session with Appwrite.
-            </p>
+            <p className="mt-2 text-sm text-neutral-500">Verifying your session with Appwrite.</p>
           </>
         )}
 
