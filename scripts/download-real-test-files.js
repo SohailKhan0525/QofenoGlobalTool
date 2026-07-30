@@ -24,42 +24,33 @@ Object.values(FOLDERS).forEach(f => mkdirSync(f, { recursive: true }));
 
 const SOURCES = {
   pdf: [
-    { url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf", label: "dummy_pdf", size: "small", ext: "pdf" },
+    { url: "https://www.learningcontainer.com/wp-content/uploads/2019/09/sample-pdf-download-10-mb.pdf", label: "heavy_10mb_pdf", size: "heavy (10MB)", ext: "pdf" },
   ],
 
   image: [
-    { url: "https://raw.githubusercontent.com/mathiasbynens/small/master/png-transparent.png", label: "small_png", size: "small", ext: "png" },
-    { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/images-in-html/dinosaur.jpg", label: "dinosaur_jpg", size: "medium", ext: "jpg" },
+    { url: "https://upload.wikimedia.org/wikipedia/commons/f/ff/Pano_Dharamsala_2011.jpg", label: "heavy_pano_10mb_jpg", size: "heavy (10MB)", ext: "jpg" },
+    { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/images-in-html/dinosaur.jpg", label: "dinosaur_jpg", size: "medium (55KB)", ext: "jpg" },
   ],
 
   video: [
-    { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4", label: "rabbit_mp4", size: "small", ext: "mp4" },
-    { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/video-and-audio-content/rabbit320.webm", label: "rabbit_webm", size: "small", ext: "webm" },
+    { url: "https://raw.githubusercontent.com/intel-iot-devkit/sample-videos/master/person-bicycle-car-detection.mp4", label: "heavy_intel_15mb_mp4", size: "heavy (15MB)", ext: "mp4" },
+    { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4", label: "rabbit_mp4", size: "medium (815KB)", ext: "mp4" },
   ],
 
   audio: [
-    { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/video-and-audio-content/viper.mp3", label: "viper_mp3", size: "small", ext: "mp3" },
-    { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/video-and-audio-content/viper.ogg", label: "viper_ogg", size: "small", ext: "ogg" },
+    { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/video-and-audio-content/viper.mp3", label: "viper_mp3", size: "medium (1.25MB)", ext: "mp3" },
   ],
 
   csv: [
-    { url: "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv", label: "titanic", size: "small", ext: "csv" },
+    { url: "https://raw.githubusercontent.com/datasets/airport-codes/master/data/airport-codes.csv", label: "heavy_airports_8mb_csv", size: "heavy (8.4MB)", ext: "csv" },
   ],
 
   json: [
     { url: "https://jsonplaceholder.typicode.com/posts", label: "posts_100", size: "small", ext: "json" },
   ],
 
-  xml: [
-    { url: "https://www.w3schools.com/xml/cd_catalog.xml", label: "cd_catalog", size: "small", ext: "xml" },
-  ],
-
-  html: [
-    { url: "https://example.com", label: "example_com", size: "small", ext: "html" },
-  ],
-
   txt: [
-    { url: "https://www.gutenberg.org/files/11/11-0.txt", label: "alice_wonderland", size: "small", ext: "txt" },
+    { url: "https://www.gutenberg.org/files/11/11-0.txt", label: "alice_wonderland", size: "medium (147KB)", ext: "txt" },
   ],
 };
 
@@ -67,13 +58,13 @@ async function downloadFile(url, destPath, retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000);
+      const timeout = setTimeout(() => controller.abort(), 120000);
 
       const res = await fetch(url, {
         signal: controller.signal,
         redirect: "follow",
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; Qofeno-Test/1.0)",
+          "User-Agent": "Mozilla/5.0 (compatible; Qofeno-Heavy-Test/1.0)",
           "Accept": "*/*"
         }
       });
@@ -95,7 +86,7 @@ async function downloadFile(url, destPath, retries = 3) {
 
     } catch (err) {
       if (attempt === retries) return { success: false, error: err.message, attempts: attempt };
-      await new Promise(r => setTimeout(r, 1000 * attempt));
+      await new Promise(r => setTimeout(r, 2000 * attempt));
     }
   }
 }
@@ -113,7 +104,6 @@ function verifyFile(filePath, expectedType) {
     pdf:  b => b.slice(0,4).toString("ascii") === "%PDF",
     jpg:  b => b[0] === 0xFF && b[1] === 0xD8,
     png:  b => b[0] === 0x89 && b[1] === 0x50,
-    webp: b => b.slice(8,12).toString("ascii") === "WEBP",
     mp4:  b => b.slice(4,8).toString("ascii") === "ftyp" || b.slice(0,4).toString("ascii") === "ftyp" || b.length > 50,
     mp3:  b => (b[0] === 0xFF && (b[1] & 0xE0) === 0xE0) || b.slice(0,3).toString("ascii") === "ID3" || b.length > 50,
   };
@@ -143,8 +133,8 @@ async function main() {
   let totalFailed = 0;
   let totalBytes = 0;
 
-  console.log("\n🔽 QOFENO — REAL FILE DOWNLOADER\n");
-  console.log("Downloading real files from public web sources...\n");
+  console.log("\n🔽 QOFENO — HEAVY FILE DOWNLOADER (~10MB - 50MB+)\n");
+  console.log("Downloading real heavy files from public web sources...\n");
 
   for (const [type, sources] of Object.entries(SOURCES)) {
     console.log(`📁 ${type.toUpperCase()} FILES`);
@@ -158,7 +148,7 @@ async function main() {
       const filename = `${source.label}.${ext}`;
       const destPath = join(folder, filename);
 
-      if (existsSync(destPath) && statSync(destPath).size > 50) {
+      if (existsSync(destPath) && statSync(destPath).size > 50000) {
         const verify = verifyFile(destPath, ext);
         if (verify.valid) {
           console.log(`  ✓ ${filename} (already exists, ${verify.sizeLabel})`);
@@ -196,7 +186,7 @@ async function main() {
         totalFailed++;
       }
 
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 500));
     }
 
     manifest.stats[type] = { downloaded: typeDownloaded, total: sources.length };
@@ -215,9 +205,9 @@ async function main() {
   writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
 
   console.log("═══════════════════════════════");
-  console.log("📊 DOWNLOAD SUMMARY");
+  console.log("📊 HEAVY DOWNLOAD SUMMARY");
   console.log("═══════════════════════════════");
-  console.log(`✅ Downloaded: ${totalDownloaded} files`);
+  console.log(`✅ Downloaded: ${totalDownloaded} heavy files`);
   console.log(`❌ Failed:     ${totalFailed} files`);
   console.log(`💾 Total size: ${formatBytes(totalBytes)}`);
   console.log(`📄 Manifest:   ${MANIFEST_PATH}`);

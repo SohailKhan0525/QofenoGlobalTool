@@ -1,4 +1,4 @@
-import { Client, Functions, Storage, Databases, ID, Query, Permission, Role } from "node-appwrite";
+import { Client, Functions, Storage, ID, Permission, Role } from "node-appwrite";
 import { InputFile } from "node-appwrite/file";
 import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync } from "fs";
 import { join, extname } from "path";
@@ -27,17 +27,17 @@ mkdirSync(RESULTS_DIR, { recursive: true });
 
 const results = [];
 
-function getTestFile(slug) {
+function getHeavyTestFile(slug) {
   const fileMap = {
-    "pdf-compressor": "test-data/pdf/dummy_pdf.pdf",
-    "pdf-merger": "test-data/pdf/dummy_pdf.pdf",
-    "image-resizer": "test-data/image/dinosaur_jpg.jpg",
-    "image-compressor": "test-data/image/dinosaur_jpg.jpg",
-    "video-compressor": "test-data/video/rabbit_mp4.mp4",
+    "pdf-compressor": "test-data/pdf/heavy_10mb_pdf.pdf",
+    "pdf-merger": "test-data/pdf/heavy_10mb_pdf.pdf",
+    "csv-to-json": "test-data/csv/heavy_airports_8mb_csv.csv",
+    "video-compressor": "test-data/video/heavy_intel_15mb_mp4.mp4",
     "audio-compressor": "test-data/audio/viper_mp3.mp3",
+    "image-resizer": "test-data/image/dinosaur_jpg.jpg",
   };
 
-  const p = fileMap[slug] || "test-data/pdf/dummy_pdf.pdf";
+  const p = fileMap[slug] || "test-data/pdf/heavy_10mb_pdf.pdf";
   return (existsSync(p) && statSync(p).size > 20) ? p : null;
 }
 
@@ -76,12 +76,15 @@ async function testTool(tool) {
     return testTextTool(tool, start);
   }
 
-  const testFilePath = getTestFile(tool.slug);
+  const testFilePath = getHeavyTestFile(tool.slug);
   if (!testFilePath) {
     return { slug: tool.slug, status: "SKIP_NO_FILE", reason: `No test file found for ${tool.slug}` };
   }
 
+  const inputSizeMB = (statSync(testFilePath).size / 1048576).toFixed(2);
+
   try {
+    process.stdout.write(`Upload [${inputSizeMB}MB] ... `);
     const file = InputFile.fromPath(testFilePath, tool.slug + extname(testFilePath));
     const uploaded = await storage.createFile(
       bucketInputs,
@@ -91,6 +94,7 @@ async function testTool(tool) {
     );
     uploadedFileId = uploaded.$id;
 
+    process.stdout.write(`Execute ... `);
     const body = JSON.stringify({
       tool: tool.slug,
       bucket_id: bucketInputs,
@@ -98,8 +102,6 @@ async function testTool(tool) {
       input_filename: tool.slug + extname(testFilePath),
       compression_level: "Medium",
       quality: 85,
-      width: 800,
-      height: 600,
     });
 
     const execution = await funcs.createExecution(tool.funcId, body, false);
@@ -110,7 +112,7 @@ async function testTool(tool) {
       return {
         slug: tool.slug, status: "❌ FAIL",
         reason: response.error || execution.errors || "Execution failed",
-        duration, testFile: testFilePath
+        duration, testFile: testFilePath, inputSizeMB
       };
     }
 
@@ -118,7 +120,7 @@ async function testTool(tool) {
       return {
         slug: tool.slug, status: "❌ FAIL",
         reason: "No download_url in response",
-        duration, testFile: testFilePath
+        duration, testFile: testFilePath, inputSizeMB
       };
     }
 
@@ -129,7 +131,7 @@ async function testTool(tool) {
       return {
         slug: tool.slug, status: "❌ INVALID OUTPUT",
         reason: verification.reason,
-        duration, testFile: testFilePath,
+        duration, testFile: testFilePath, inputSizeMB,
         downloadUrl: response.download_url
       };
     }
@@ -138,6 +140,7 @@ async function testTool(tool) {
       slug: tool.slug, status: "✅ PASS",
       duration,
       inputFile: testFilePath,
+      inputSizeMB,
       outputSize: verification.size,
       outputSizeMB: verification.sizeMB,
       outputPath: verification.outputPath,
@@ -150,7 +153,7 @@ async function testTool(tool) {
       slug: tool.slug, status: "❌ ERROR",
       reason: err.message,
       duration: Date.now() - start,
-      testFile: testFilePath
+      testFile: testFilePath, inputSizeMB
     };
   } finally {
     if (uploadedFileId) {
@@ -161,9 +164,9 @@ async function testTool(tool) {
 
 async function testTextTool(tool, start) {
   const textBodies = {
-    "json-formatter":  { tool: tool.slug, input_text: '{"hello":"world"}', action: "format" },
-    "word-counter": { tool: tool.slug, input_text: "The quick brown fox jumps over the lazy dog." },
-    "base64-encoder": { tool: tool.slug, input_text: "Hello Qofeno!", mode: "encode" },
+    "json-formatter":  { tool: tool.slug, input_text: '{"heavy_test": true, "items": [1,2,3,4,5]}', action: "format" },
+    "word-counter": { tool: tool.slug, input_text: "The quick brown fox jumps over the lazy dog. ".repeat(500) },
+    "base64-encoder": { tool: tool.slug, input_text: "Qofeno heavy payload string ".repeat(1000), mode: "encode" },
   };
   const body = textBodies[tool.slug] || { tool: tool.slug, input_text: "test" };
 
@@ -181,7 +184,7 @@ async function testTextTool(tool, start) {
 }
 
 async function main() {
-  console.log("\n🧪 QOFENO — REAL TOOL TESTING\n");
+  console.log("\n🐘 QOFENO — REAL HEAVY FILE TOOL TESTING (~10MB - 50MB+)\n");
 
   const toolsToTest = [
     { slug: "pdf-compressor", funcId: "qofeno-pdf", outputExt: "pdf" },
@@ -190,18 +193,19 @@ async function main() {
     { slug: "word-counter", funcId: "qofeno-text", isText: true },
   ];
 
-  console.log(`Testing ${toolsToTest.length} tool functions...\n`);
-  console.log("─".repeat(70));
+  console.log(`Testing ${toolsToTest.length} tool functions against heavy real files...\n`);
+  console.log("─".repeat(75));
 
   let passed = 0, failed = 0, skipped = 0;
 
   for (const tool of toolsToTest) {
-    process.stdout.write(`Testing: ${tool.slug.padEnd(40)} `);
+    process.stdout.write(`Testing: ${tool.slug.padEnd(30)} `);
     const result = await testTool(tool);
     results.push(result);
 
     if (result.status.includes("PASS")) {
-      console.log(`${result.status} ${result.duration}ms`);
+      const extra = result.inputSizeMB ? ` [In: ${result.inputSizeMB}MB -> Out: ${result.outputSizeMB}MB]` : "";
+      console.log(`${result.status} ${result.duration}ms${extra}`);
       passed++;
     } else if (result.status.includes("SKIP")) {
       console.log(`⏭️  SKIP — ${result.reason}`);
@@ -220,9 +224,9 @@ async function main() {
 
   writeFileSync(join(RESULTS_DIR, "test-report.json"), JSON.stringify(report, null, 2));
 
-  console.log("\n" + "═".repeat(70));
-  console.log("📊 TEST RESULTS");
-  console.log("═".repeat(70));
+  console.log("\n" + "═".repeat(75));
+  console.log("📊 HEAVY TEST RESULTS SUMMARY");
+  console.log("═".repeat(75));
   console.log(`✅ Passed:  ${passed}`);
   console.log(`❌ Failed:  ${failed}`);
   console.log(`⏭️  Skipped: ${skipped}`);
@@ -234,9 +238,8 @@ async function main() {
     report.failures.forEach(f => {
       console.log(`   ${f.slug}: ${f.reason}`);
     });
+    process.exit(1);
   }
-
-  if (failed > 0) process.exit(1);
 }
 
 main().catch(console.error);
