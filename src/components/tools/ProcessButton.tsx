@@ -1,33 +1,33 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBolt } from '@fortawesome/free-solid-svg-icons';
+import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 
-export function ProcessButton({
-  label,
-  onClick,
-  isDisabled = false
-}: {
-  label: string;
+type ProcessButtonProps = {
   onClick: () => void;
-  isDisabled?: boolean;
-}) {
+  label?: string;
+  icon?: IconDefinition;
+  disabled?: boolean;
+};
+
+export function ProcessButton({ onClick, label = 'Process File Now', icon = faBolt, disabled = false }: ProcessButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={isDisabled}
+      disabled={disabled}
       className={`
-        w-full mt-5 py-4 md:py-5 px-6 cursor-pointer
+        w-full mt-5 py-4 sm:py-5
         flex items-center justify-center gap-3
-        text-white font-bold text-lg md:text-xl rounded-2xl
-        transition-all duration-200 active:scale-[0.98]
-        ${isDisabled
-          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-          : "bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 shadow-lg shadow-purple-200"
-        }
+        bg-gradient-to-r from-purple-600 to-purple-500
+        hover:from-purple-700 hover:to-purple-600
+        text-white font-bold text-lg sm:text-xl
+        rounded-2xl shadow-lg shadow-purple-200/60
+        transition-all duration-150 active:scale-[0.98]
+        cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
       `}
     >
-      <FontAwesomeIcon icon={faBolt} className="text-lg" />
+      <FontAwesomeIcon icon={icon} />
       {label}
     </button>
   );

@@ -1,0 +1,3810 @@
+[
+  {
+    "slug": "aac-converter",
+    "name": "Aac Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\aac-converter.js"
+  },
+  {
+    "slug": "audio-compressor",
+    "name": "Audio Compressor",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-compressor.js"
+  },
+  {
+    "slug": "audio-metadata-viewer",
+    "name": "Audio Metadata Viewer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-metadata-viewer.js"
+  },
+  {
+    "slug": "audio-reverser",
+    "name": "Audio Reverser",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-reverser.js"
+  },
+  {
+    "slug": "avi-converter",
+    "name": "AVI Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\avi-converter.js"
+  },
+  {
+    "slug": "background-noise-remover",
+    "name": "Background Noise Remover",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\background-noise-remover.js"
+  },
+  {
+    "slug": "base64-encoder",
+    "name": "Base64 Native Encoder",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-developer\\src\\handlers\\base64-encoder.js"
+  },
+  {
+    "slug": "bass-booster",
+    "name": "Bass Booster",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\bass-booster.js"
+  },
+  {
+    "slug": "batch-compress-pdfs",
+    "name": "Batch Compress PDFs",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\batch-compress-pdfs.js"
+  },
+  {
+    "slug": "batch-convert-pdfs",
+    "name": "Batch Convert PDFs",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\batch-convert-pdfs.js"
+  },
+  {
+    "slug": "batch-merge-pdfs",
+    "name": "Batch Merge PDFs",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\batch-merge-pdfs.js"
+  },
+  {
+    "slug": "blur-image",
+    "name": "Blur Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\blur-image.js"
+  },
+  {
+    "slug": "brightness-adjust",
+    "name": "Brightness Adjust",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-security\\src\\handlers\\brightness-adjust.js"
+  },
+  {
+    "slug": "change-pitch",
+    "name": "Change Pitch",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\change-pitch.js"
+  },
+  {
+    "slug": "change-speed",
+    "name": "Change Speed",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\change-speed.js"
+  },
+  {
+    "slug": "contrast-adjust",
+    "name": "Contrast Adjust",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\contrast-adjust.js"
+  },
+  {
+    "slug": "crop-image",
+    "name": "Crop Image",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\crop-image.js"
+  },
+  {
+    "slug": "excel-to-pdf",
+    "name": "Excel to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\excel-to-pdf.js"
+  },
+  {
+    "slug": "extract-audio",
+    "name": "Extract Audio",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\extract-audio.js"
+  },
+  {
+    "slug": "fade-in",
+    "name": "Fade In",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\fade-in.js"
+  },
+  {
+    "slug": "fade-out",
+    "name": "Fade Out",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\fade-out.js"
+  },
+  {
+    "slug": "flac-converter",
+    "name": "Flac Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\flac-converter.js"
+  },
+  {
+    "slug": "flip-image",
+    "name": "Flip Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\flip-image.js"
+  },
+  {
+    "slug": "gif-maker-video",
+    "name": "Gif Maker Video",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\gif-maker-video.js"
+  },
+  {
+    "slug": "image-bg-remover",
+    "name": "Background Remover",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-bg-remover.js"
+  },
+  {
+    "slug": "image-compressor",
+    "name": "Image Compressor",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-compressor.js"
+  },
+  {
+    "slug": "image-converter",
+    "name": "Image Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-converter.js"
+  },
+  {
+    "slug": "image-resizer",
+    "name": "Image Resizer",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-resizer.js"
+  },
+  {
+    "slug": "jpg-to-pdf",
+    "name": "JPG to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\jpg-to-pdf.js"
+  },
+  {
+    "slug": "json-formatter",
+    "name": "JSON Parser & Formatter",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-developer\\src\\handlers\\json-formatter.js"
+  },
+  {
+    "slug": "merge-audio",
+    "name": "Merge Audio",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\merge-audio.js"
+  },
+  {
+    "slug": "merge-videos",
+    "name": "Merge Videos",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\merge-videos.js"
+  },
+  {
+    "slug": "mov-converter",
+    "name": "MOV Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\mov-converter.js"
+  },
+  {
+    "slug": "mp3-converter",
+    "name": "Mp3 Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\mp3-converter.js"
+  },
+  {
+    "slug": "mp4-converter",
+    "name": "MP4 Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\mp4-converter.js"
+  },
+  {
+    "slug": "ogg-converter",
+    "name": "Ogg Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\ogg-converter.js"
+  },
+  {
+    "slug": "pdf-booklet-creator",
+    "name": "PDF Booklet Creator",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-booklet-creator.js"
+  },
+  {
+    "slug": "pdf-color-converter",
+    "name": "PDF Color Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-color-converter.js"
+  },
+  {
+    "slug": "pdf-compare",
+    "name": "Compare PDFs",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-compare.js"
+  },
+  {
+    "slug": "pdf-compressor",
+    "name": "PDF Compressor",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-compressor.js"
+  },
+  {
+    "slug": "pdf-crop",
+    "name": "Crop PDF",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-crop.js"
+  },
+  {
+    "slug": "pdf-delete-pages",
+    "name": "Delete Pages",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-delete-pages.js"
+  },
+  {
+    "slug": "pdf-extract-pages",
+    "name": "Extract Pages",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-extract-pages.js"
+  },
+  {
+    "slug": "pdf-flatten",
+    "name": "Flatten PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-flatten.js"
+  },
+  {
+    "slug": "pdf-form-creator",
+    "name": "PDF Form Creator",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-form-creator.js"
+  },
+  {
+    "slug": "pdf-form-filler",
+    "name": "PDF Form Filler",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-form-filler.js"
+  },
+  {
+    "slug": "pdf-grayscale",
+    "name": "PDF Grayscale",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-grayscale.js"
+  },
+  {
+    "slug": "pdf-header-footer",
+    "name": "PDF Header Footer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-header-footer.js"
+  },
+  {
+    "slug": "pdf-merger",
+    "name": "PDF Merger",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-merger.js"
+  },
+  {
+    "slug": "pdf-metadata-editor",
+    "name": "PDF Metadata Editor",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-metadata-editor.js"
+  },
+  {
+    "slug": "pdf-metadata-viewer",
+    "name": "View PDF Metadata",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-metadata-viewer.js"
+  },
+  {
+    "slug": "pdf-ocr",
+    "name": "OCR PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-ocr.js"
+  },
+  {
+    "slug": "pdf-page-extractor-bulk",
+    "name": "PDF Page Extractor Bulk",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-page-extractor-bulk.js"
+  },
+  {
+    "slug": "pdf-page-number-customizer",
+    "name": "PDF Page Number Customizer",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-page-number-customizer.js"
+  },
+  {
+    "slug": "pdf-page-numbers",
+    "name": "Add Page Numbers",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-page-numbers.js"
+  },
+  {
+    "slug": "pdf-portfolio-creator",
+    "name": "PDF Portfolio Creator",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-portfolio-creator.js"
+  },
+  {
+    "slug": "pdf-protect",
+    "name": "Protect PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-protect.js"
+  },
+  {
+    "slug": "pdf-redact",
+    "name": "Redact PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-redact.js"
+  },
+  {
+    "slug": "pdf-reorder-pages",
+    "name": "PDF Reorder Pages",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-reorder-pages.js"
+  },
+  {
+    "slug": "pdf-repair",
+    "name": "Repair PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-repair.js"
+  },
+  {
+    "slug": "pdf-resize",
+    "name": "Resize PDF Pages",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-resize.js"
+  },
+  {
+    "slug": "pdf-rotate",
+    "name": "Rotate PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-rotate.js"
+  },
+  {
+    "slug": "pdf-sign",
+    "name": "Sign PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-sign.js"
+  },
+  {
+    "slug": "pdf-splitter",
+    "name": "PDF Splitter",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-splitter.js"
+  },
+  {
+    "slug": "pdf-thumbnail",
+    "name": "PDF Thumbnail",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-thumbnail.js"
+  },
+  {
+    "slug": "pdf-to-excel",
+    "name": "PDF to Excel (.xlsx)",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-excel.js"
+  },
+  {
+    "slug": "pdf-to-html",
+    "name": "PDF to HTML",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-html.js"
+  },
+  {
+    "slug": "pdf-to-jpg",
+    "name": "PDF to JPG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-jpg.js"
+  },
+  {
+    "slug": "pdf-to-powerpoint",
+    "name": "PDF to PowerPoint",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-powerpoint.js"
+  },
+  {
+    "slug": "pdf-to-text",
+    "name": "PDF To Text",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-text.js"
+  },
+  {
+    "slug": "pdf-to-word",
+    "name": "PDF to Word (.docx)",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-word.js"
+  },
+  {
+    "slug": "pdf-unlock",
+    "name": "Unlock PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-unlock.js"
+  },
+  {
+    "slug": "pdf-watermark",
+    "name": "PDF Watermark",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-watermark.js"
+  },
+  {
+    "slug": "pdf-word-count",
+    "name": "PDF Word Count",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-word-count.js"
+  },
+  {
+    "slug": "powerpoint-to-pdf",
+    "name": "Powerpoint To PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\powerpoint-to-pdf.js"
+  },
+  {
+    "slug": "remove-audio",
+    "name": "Remove Audio",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\remove-audio.js"
+  },
+  {
+    "slug": "ringtone-maker",
+    "name": "Ringtone Maker",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\ringtone-maker.js"
+  },
+  {
+    "slug": "rotate-image",
+    "name": "Rotate Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\rotate-image.js"
+  },
+  {
+    "slug": "rotate-video",
+    "name": "Rotate Video",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\rotate-video.js"
+  },
+  {
+    "slug": "sharpen-image",
+    "name": "Sharpen Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\sharpen-image.js"
+  },
+  {
+    "slug": "silence-remover",
+    "name": "Silence Remover",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\silence-remover.js"
+  },
+  {
+    "slug": "speed-changer-video",
+    "name": "Speed Changer Video",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\speed-changer-video.js"
+  },
+  {
+    "slug": "text-case-converter",
+    "name": "Text Case Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-text\\src\\handlers\\text-case-converter.js"
+  },
+  {
+    "slug": "trim-audio",
+    "name": "Trim Audio",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\trim-audio.js"
+  },
+  {
+    "slug": "video-compressor",
+    "name": "Video Compressor",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-compressor.js"
+  },
+  {
+    "slug": "video-trimmer",
+    "name": "Video Trimmer",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-trimmer.js"
+  },
+  {
+    "slug": "volume-booster",
+    "name": "Volume Booster",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\volume-booster.js"
+  },
+  {
+    "slug": "watermark-image",
+    "name": "Watermark Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\watermark-image.js"
+  },
+  {
+    "slug": "wav-converter",
+    "name": "Wav Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\wav-converter.js"
+  },
+  {
+    "slug": "webm-converter",
+    "name": "WebM Converter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\webm-converter.js"
+  },
+  {
+    "slug": "word-counter",
+    "name": "Text Word & Character Counter",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-text\\src\\handlers\\word-counter.js"
+  },
+  {
+    "slug": "word-to-pdf",
+    "name": "Word to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\word-to-pdf.js"
+  },
+  {
+    "slug": "jpg-to-png",
+    "name": "JPG to PNG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\jpg-to-png.js"
+  },
+  {
+    "slug": "png-to-webp",
+    "name": "PNG to WebP",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\png-to-webp.js"
+  },
+  {
+    "slug": "pdf-merge",
+    "name": "Merge PDF",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-merge.js"
+  },
+  {
+    "slug": "pdf-split",
+    "name": "Split PDF",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-split.js"
+  },
+  {
+    "slug": "pdf-compress",
+    "name": "Compress PDF",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-compress.js"
+  },
+  {
+    "slug": "pdf-to-png",
+    "name": "PDF to PNG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-png.js"
+  },
+  {
+    "slug": "pdf-to-txt",
+    "name": "PDF to TXT",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-txt.js"
+  },
+  {
+    "slug": "pdf-to-webp",
+    "name": "PDF to WebP",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-webp.js"
+  },
+  {
+    "slug": "png-to-pdf",
+    "name": "PNG to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\png-to-pdf.js"
+  },
+  {
+    "slug": "pdf-rearrange-pages",
+    "name": "Rearrange Pages",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-rearrange-pages.js"
+  },
+  {
+    "slug": "pdf-duplicate-pages",
+    "name": "Duplicate Pages",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-duplicate-pages.js"
+  },
+  {
+    "slug": "pdf-insert-blank",
+    "name": "Insert Blank Page",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-insert-blank.js"
+  },
+  {
+    "slug": "pdf-reverse-pages",
+    "name": "Reverse Page Order",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-reverse-pages.js"
+  },
+  {
+    "slug": "pdf-sort-pages",
+    "name": "Sort Pages",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-sort-pages.js"
+  },
+  {
+    "slug": "pdf-remove-blank-pages",
+    "name": "Remove Blank Pages",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-remove-blank-pages.js"
+  },
+  {
+    "slug": "pdf-extract-text",
+    "name": "Extract Text from PDF",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-extract-text.js"
+  },
+  {
+    "slug": "pdf-to-markdown",
+    "name": "PDF to Markdown",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-markdown.js"
+  },
+  {
+    "slug": "pdf-to-csv",
+    "name": "PDF to CSV",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-csv.js"
+  },
+  {
+    "slug": "txt-to-pdf",
+    "name": "TXT to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\txt-to-pdf.js"
+  },
+  {
+    "slug": "markdown-to-pdf",
+    "name": "Markdown to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\markdown-to-pdf.js"
+  },
+  {
+    "slug": "csv-to-pdf",
+    "name": "CSV to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\csv-to-pdf.js"
+  },
+  {
+    "slug": "pdf-to-tiff",
+    "name": "PDF to TIFF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-tiff.js"
+  },
+  {
+    "slug": "pdf-to-svg",
+    "name": "PDF to SVG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-svg.js"
+  },
+  {
+    "slug": "pdf-to-rtf",
+    "name": "PDF to RTF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-rtf.js"
+  },
+  {
+    "slug": "pdf-to-odt",
+    "name": "PDF to ODT",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-odt.js"
+  },
+  {
+    "slug": "pdf-to-epub",
+    "name": "PDF to EPUB",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-epub.js"
+  },
+  {
+    "slug": "pdf-to-json",
+    "name": "PDF to JSON",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-json.js"
+  },
+  {
+    "slug": "pdf-to-xml",
+    "name": "PDF to XML",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-xml.js"
+  },
+  {
+    "slug": "ppt-to-pdf",
+    "name": "PPT to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\ppt-to-pdf.js"
+  },
+  {
+    "slug": "jpg-to-pdf-adv",
+    "name": "JPG to PDF (Advanced)",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\jpg-to-pdf-adv.js"
+  },
+  {
+    "slug": "tiff-to-pdf",
+    "name": "TIFF to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\tiff-to-pdf.js"
+  },
+  {
+    "slug": "svg-to-pdf",
+    "name": "SVG to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\svg-to-pdf.js"
+  },
+  {
+    "slug": "html-to-pdf",
+    "name": "HTML to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\html-to-pdf.js"
+  },
+  {
+    "slug": "epub-to-pdf",
+    "name": "EPUB to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\epub-to-pdf.js"
+  },
+  {
+    "slug": "rtf-to-pdf",
+    "name": "RTF to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\rtf-to-pdf.js"
+  },
+  {
+    "slug": "odt-to-pdf",
+    "name": "ODT to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\odt-to-pdf.js"
+  },
+  {
+    "slug": "doc-to-pdf",
+    "name": "DOC to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\doc-to-pdf.js"
+  },
+  {
+    "slug": "webp-to-pdf",
+    "name": "WebP to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\webp-to-pdf.js"
+  },
+  {
+    "slug": "json-to-pdf",
+    "name": "JSON to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\json-to-pdf.js"
+  },
+  {
+    "slug": "xml-to-pdf",
+    "name": "XML to PDF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\xml-to-pdf.js"
+  },
+  {
+    "slug": "pdf-optimize",
+    "name": "Optimize PDF",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-optimize.js"
+  },
+  {
+    "slug": "pdf-linearize",
+    "name": "Linearize PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-linearize.js"
+  },
+  {
+    "slug": "pdf-remove-password",
+    "name": "Remove Password",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-remove-password.js"
+  },
+  {
+    "slug": "pdf-change-password",
+    "name": "Change Password",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-change-password.js"
+  },
+  {
+    "slug": "pdf-encrypt",
+    "name": "Encrypt PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-encrypt.js"
+  },
+  {
+    "slug": "pdf-decrypt",
+    "name": "Decrypt PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-decrypt.js"
+  },
+  {
+    "slug": "pdf-add-signature",
+    "name": "Add Digital Signature",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-signature.js"
+  },
+  {
+    "slug": "pdf-verify-signature",
+    "name": "Verify Digital Signature",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-verify-signature.js"
+  },
+  {
+    "slug": "pdf-remove-signature",
+    "name": "Remove Digital Signature",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-remove-signature.js"
+  },
+  {
+    "slug": "pdf-add-watermark",
+    "name": "Add Watermark",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-watermark.js"
+  },
+  {
+    "slug": "pdf-remove-watermark",
+    "name": "Remove Watermark",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-remove-watermark.js"
+  },
+  {
+    "slug": "pdf-add-header",
+    "name": "Add Header",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-header.js"
+  },
+  {
+    "slug": "pdf-add-footer",
+    "name": "Add Footer",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-footer.js"
+  },
+  {
+    "slug": "pdf-remove-page-numbers",
+    "name": "Remove Page Numbers",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-remove-page-numbers.js"
+  },
+  {
+    "slug": "pdf-add-bookmarks",
+    "name": "Add Bookmarks",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-bookmarks.js"
+  },
+  {
+    "slug": "pdf-create-form",
+    "name": "Create PDF Form",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-create-form.js"
+  },
+  {
+    "slug": "pdf-fill-form",
+    "name": "Fill PDF Form",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-fill-form.js"
+  },
+  {
+    "slug": "pdf-edit-form",
+    "name": "Edit PDF Form",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-edit-form.js"
+  },
+  {
+    "slug": "pdf-flatten-form",
+    "name": "Flatten PDF Form",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-flatten-form.js"
+  },
+  {
+    "slug": "pdf-extract-form-data",
+    "name": "Extract Form Data",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-extract-form-data.js"
+  },
+  {
+    "slug": "pdf-extract-images",
+    "name": "Extract Images",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-extract-images.js"
+  },
+  {
+    "slug": "pdf-replace-images",
+    "name": "Replace Images",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-replace-images.js"
+  },
+  {
+    "slug": "pdf-compress-images",
+    "name": "Compress Images in PDF",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-compress-images.js"
+  },
+  {
+    "slug": "pdf-remove-images",
+    "name": "Remove Images",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-remove-images.js"
+  },
+  {
+    "slug": "pdf-to-grayscale",
+    "name": "Convert to Grayscale",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-grayscale.js"
+  },
+  {
+    "slug": "pdf-extract-page-png",
+    "name": "Extract Page as PNG",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-extract-page-png.js"
+  },
+  {
+    "slug": "pdf-extract-page-jpg",
+    "name": "Extract Page as JPG",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-extract-page-jpg.js"
+  },
+  {
+    "slug": "pdf-search",
+    "name": "Search PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-search.js"
+  },
+  {
+    "slug": "pdf-searchable",
+    "name": "Create Searchable PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-searchable.js"
+  },
+  {
+    "slug": "pdf-analyze-fonts",
+    "name": "Analyze Fonts",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-analyze-fonts.js"
+  },
+  {
+    "slug": "pdf-embed-fonts",
+    "name": "Embed Fonts",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-embed-fonts.js"
+  },
+  {
+    "slug": "pdf-remove-fonts",
+    "name": "Remove Embedded Fonts",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-remove-fonts.js"
+  },
+  {
+    "slug": "pdf-extract-tables",
+    "name": "Extract Tables",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-extract-tables.js"
+  },
+  {
+    "slug": "pdf-table-to-excel",
+    "name": "PDF Table to Excel",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-table-to-excel.js"
+  },
+  {
+    "slug": "pdf-table-to-csv",
+    "name": "PDF Table to CSV",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-table-to-csv.js"
+  },
+  {
+    "slug": "pdf-edit-metadata",
+    "name": "Edit PDF Metadata",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-edit-metadata.js"
+  },
+  {
+    "slug": "pdf-remove-metadata",
+    "name": "Remove PDF Metadata",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-remove-metadata.js"
+  },
+  {
+    "slug": "pdf-compare-text",
+    "name": "Compare PDF Text",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-compare-text.js"
+  },
+  {
+    "slug": "pdf-to-bw",
+    "name": "Convert to Black & White",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-to-bw.js"
+  },
+  {
+    "slug": "pdf-adjust-brightness",
+    "name": "Adjust Brightness",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-adjust-brightness.js"
+  },
+  {
+    "slug": "pdf-adjust-contrast",
+    "name": "Adjust Contrast",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-adjust-contrast.js"
+  },
+  {
+    "slug": "pdf-reduce-resolution",
+    "name": "Reduce Resolution",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-reduce-resolution.js"
+  },
+  {
+    "slug": "pdf-change-paper-size",
+    "name": "Change Paper Size",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-change-paper-size.js"
+  },
+  {
+    "slug": "pdf-a4-to-letter",
+    "name": "A4 to Letter",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-a4-to-letter.js"
+  },
+  {
+    "slug": "pdf-letter-to-a4",
+    "name": "Letter to A4",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-letter-to-a4.js"
+  },
+  {
+    "slug": "pdf-bookmark-manager",
+    "name": "Bookmark Manager",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-bookmark-manager.js"
+  },
+  {
+    "slug": "pdf-generate-toc",
+    "name": "Generate Table of Contents",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-generate-toc.js"
+  },
+  {
+    "slug": "pdf-manage-page-labels",
+    "name": "Manage Page Labels",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-manage-page-labels.js"
+  },
+  {
+    "slug": "pdf-n-up",
+    "name": "N-Up PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-n-up.js"
+  },
+  {
+    "slug": "pdf-images-to-pdf",
+    "name": "Images to PDF (Multi)",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-images-to-pdf.js"
+  },
+  {
+    "slug": "pdf-highlight",
+    "name": "Highlight PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-highlight.js"
+  },
+  {
+    "slug": "pdf-underline",
+    "name": "Underline Text",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-underline.js"
+  },
+  {
+    "slug": "pdf-strikeout",
+    "name": "Strikeout Text",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-strikeout.js"
+  },
+  {
+    "slug": "pdf-add-shapes",
+    "name": "Add Shapes",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-shapes.js"
+  },
+  {
+    "slug": "pdf-add-comments",
+    "name": "Add Comments",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-comments.js"
+  },
+  {
+    "slug": "pdf-add-sticky-notes",
+    "name": "Add Sticky Notes",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-sticky-notes.js"
+  },
+  {
+    "slug": "pdf-add-hyperlinks",
+    "name": "Add Hyperlinks",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-hyperlinks.js"
+  },
+  {
+    "slug": "pdf-insert-pages",
+    "name": "Insert PDF Pages",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-insert-pages.js"
+  },
+  {
+    "slug": "pdf-replace-pages",
+    "name": "Replace Pages",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-replace-pages.js"
+  },
+  {
+    "slug": "pdf-rename-pages",
+    "name": "Rename Pages",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-rename-pages.js"
+  },
+  {
+    "slug": "pdf-print-ready",
+    "name": "Print-Ready PDF",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-print-ready.js"
+  },
+  {
+    "slug": "pdf-cmyk",
+    "name": "CMYK PDF Conversion",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-cmyk.js"
+  },
+  {
+    "slug": "pdf-add-bleed",
+    "name": "Add Bleed Settings",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-bleed.js"
+  },
+  {
+    "slug": "pdf-add-cropmarks",
+    "name": "Add Crop Marks",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-add-cropmarks.js"
+  },
+  {
+    "slug": "pdf-batch-merge",
+    "name": "Batch Merge PDFs",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-batch-merge.js"
+  },
+  {
+    "slug": "pdf-batch-split",
+    "name": "Batch Split PDFs",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-batch-split.js"
+  },
+  {
+    "slug": "pdf-batch-compress",
+    "name": "Batch Compress PDFs",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-batch-compress.js"
+  },
+  {
+    "slug": "pdf-batch-convert",
+    "name": "Batch Convert PDFs",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-batch-convert.js"
+  },
+  {
+    "slug": "pdf-batch-ocr",
+    "name": "Batch OCR PDFs",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-batch-ocr.js"
+  },
+  {
+    "slug": "pdf-batch-watermark",
+    "name": "Batch Watermark PDFs",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-batch-watermark.js"
+  },
+  {
+    "slug": "pdf-batch-rotate",
+    "name": "Batch Rotate PDFs",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-batch-rotate.js"
+  },
+  {
+    "slug": "pdf-batch-encrypt",
+    "name": "Batch Encrypt PDFs",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-batch-encrypt.js"
+  },
+  {
+    "slug": "pdf-batch-decrypt",
+    "name": "Batch Decrypt PDFs",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-pdf\\src\\handlers\\pdf-batch-decrypt.js"
+  },
+  {
+    "slug": "pdf-ai-chat",
+    "name": "AI PDF Chat",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-summary",
+    "name": "AI PDF Summary",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-translate",
+    "name": "AI PDF Translation",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-rewrite",
+    "name": "AI PDF Rewrite",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-explain",
+    "name": "AI PDF Explanation",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-qa",
+    "name": "AI PDF Q&A",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-table",
+    "name": "AI Table Extraction",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-invoice",
+    "name": "AI Invoice Extraction",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-contract",
+    "name": "AI Contract Analysis",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-resume",
+    "name": "AI Resume Parser",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-extract",
+    "name": "AI Data Extraction",
+    "category": "Separators",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-classify",
+    "name": "AI Document Classification",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-ocr",
+    "name": "AI OCR",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-ai-keywords",
+    "name": "AI Keyword Extraction",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-cloud-storage",
+    "name": "Cloud PDF Storage",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-sharing",
+    "name": "PDF Sharing",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-team-workspace",
+    "name": "Team PDF Workspace",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-version-history",
+    "name": "PDF Version History",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-api",
+    "name": "PDF API",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-webhooks",
+    "name": "PDF Webhooks",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-file-sync",
+    "name": "File Sync",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-scheduled-processing",
+    "name": "Scheduled PDF Processing",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-draw",
+    "name": "Draw PDF",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-booklet",
+    "name": "Booklet PDF",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-imposition",
+    "name": "PDF Imposition",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-portfolio",
+    "name": "PDF Portfolio",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-compare-images",
+    "name": "Compare PDF Images",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-compare-layout",
+    "name": "Compare PDF Layout",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-invert-colors",
+    "name": "Invert PDF Colors",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-increase-resolution",
+    "name": "Increase PDF Resolution",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-rgb-conversion",
+    "name": "RGB PDF Conversion",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-print-preview",
+    "name": "PDF Print Preview",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-batch-rename",
+    "name": "Batch Rename PDFs",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-find-replace",
+    "name": "PDF Find & Replace",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-remove-text",
+    "name": "Remove Text from PDF",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-add-text",
+    "name": "Add Text to PDF",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-import-form-data",
+    "name": "Import PDF Form Data",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "pdf-export-form-data",
+    "name": "Export PDF Form Data",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-resize",
+    "name": "Resize Image",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-resize.js"
+  },
+  {
+    "slug": "image-crop",
+    "name": "Crop Image",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-crop.js"
+  },
+  {
+    "slug": "image-compress",
+    "name": "Compress Image",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-compress.js"
+  },
+  {
+    "slug": "image-rotate",
+    "name": "Rotate Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-rotate.js"
+  },
+  {
+    "slug": "image-flip",
+    "name": "Flip Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-flip.js"
+  },
+  {
+    "slug": "image-mirror",
+    "name": "Mirror Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-mirror.js"
+  },
+  {
+    "slug": "image-blur",
+    "name": "Blur Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-blur.js"
+  },
+  {
+    "slug": "image-sharpen",
+    "name": "Sharpen Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-sharpen.js"
+  },
+  {
+    "slug": "image-grayscale",
+    "name": "Grayscale Converter",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-grayscale.js"
+  },
+  {
+    "slug": "image-bw",
+    "name": "Black & White Converter",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-bw.js"
+  },
+  {
+    "slug": "image-sepia",
+    "name": "Sepia Filter",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-sepia.js"
+  },
+  {
+    "slug": "image-negative",
+    "name": "Negative Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-negative.js"
+  },
+  {
+    "slug": "image-invert",
+    "name": "Image Inverter",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-invert.js"
+  },
+  {
+    "slug": "image-brightness",
+    "name": "Brightness Adjuster",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-brightness.js"
+  },
+  {
+    "slug": "image-contrast",
+    "name": "Contrast Adjuster",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-contrast.js"
+  },
+  {
+    "slug": "image-saturation",
+    "name": "Saturation Adjuster",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-saturation.js"
+  },
+  {
+    "slug": "image-gamma",
+    "name": "Gamma Correction",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-gamma.js"
+  },
+  {
+    "slug": "image-metadata",
+    "name": "Image Metadata Viewer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-metadata.js"
+  },
+  {
+    "slug": "image-remove-metadata",
+    "name": "Remove Metadata/EXIF",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-remove-metadata.js"
+  },
+  {
+    "slug": "png-to-jpg",
+    "name": "PNG to JPG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\png-to-jpg.js"
+  },
+  {
+    "slug": "jpg-to-webp",
+    "name": "JPG to WebP",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\jpg-to-webp.js"
+  },
+  {
+    "slug": "gif-to-png",
+    "name": "GIF to PNG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\gif-to-png.js"
+  },
+  {
+    "slug": "jpg-to-bmp",
+    "name": "JPG to BMP",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\jpg-to-bmp.js"
+  },
+  {
+    "slug": "webp-to-jpg",
+    "name": "WebP to JPG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\webp-to-jpg.js"
+  },
+  {
+    "slug": "bmp-to-jpg",
+    "name": "BMP to JPG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\bmp-to-jpg.js"
+  },
+  {
+    "slug": "jpg-to-avif",
+    "name": "JPG to AVIF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\jpg-to-avif.js"
+  },
+  {
+    "slug": "jpg-to-tiff",
+    "name": "JPG to TIFF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\jpg-to-tiff.js"
+  },
+  {
+    "slug": "tiff-to-jpg",
+    "name": "TIFF to JPG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\tiff-to-jpg.js"
+  },
+  {
+    "slug": "image-to-pdf-simple",
+    "name": "Image to PDF",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "svg-to-png",
+    "name": "SVG to PNG",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "heic-to-jpg",
+    "name": "HEIC to JPG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\heic-to-jpg.js"
+  },
+  {
+    "slug": "pdf-to-image-simple",
+    "name": "PDF to Image",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "avif-to-jpg",
+    "name": "AVIF to JPG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\avif-to-jpg.js"
+  },
+  {
+    "slug": "webp-to-png",
+    "name": "WebP to PNG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\webp-to-png.js"
+  },
+  {
+    "slug": "png-to-gif",
+    "name": "PNG to GIF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\png-to-gif.js"
+  },
+  {
+    "slug": "image-round-corners",
+    "name": "Round Corners",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-round-corners.js"
+  },
+  {
+    "slug": "color-picker",
+    "name": "Color Picker",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "dominant-color",
+    "name": "Dominant Color Extractor",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-add-border",
+    "name": "Add Border",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-add-border.js"
+  },
+  {
+    "slug": "favicon-generator",
+    "name": "Favicon Generator",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-pixelate",
+    "name": "Pixelate Image",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-pixelate.js"
+  },
+  {
+    "slug": "image-histogram",
+    "name": "Histogram Viewer",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-histogram.js"
+  },
+  {
+    "slug": "ico-generator",
+    "name": "ICO Generator",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-resolution-changer",
+    "name": "Resolution Changer",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "thumbnail-creator",
+    "name": "Thumbnail Creator",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-aspect-ratio",
+    "name": "Aspect Ratio Converter",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-aspect-ratio.js"
+  },
+  {
+    "slug": "qr-on-image",
+    "name": "QR Code on Image",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-dpi-changer",
+    "name": "DPI Changer",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-dpi-changer.js"
+  },
+  {
+    "slug": "image-remove-watermark",
+    "name": "Remove Watermark",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-watermark",
+    "name": "Watermark Image",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-add-text",
+    "name": "Add Text to Image",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-add-text.js"
+  },
+  {
+    "slug": "image-exif-editor",
+    "name": "EXIF Editor",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-add-logo",
+    "name": "Add Logo to Image",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-add-logo.js"
+  },
+  {
+    "slug": "image-color-palette",
+    "name": "Color Palette Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-noise-reduction",
+    "name": "Noise Reduction",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-color-balance",
+    "name": "Color Balance",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-hue",
+    "name": "Hue Adjuster",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-splitter",
+    "name": "Image Splitter",
+    "category": "Separators",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-smart-crop",
+    "name": "Smart Crop",
+    "category": "Resizers",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-face-crop",
+    "name": "Face Crop",
+    "category": "Resizers",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-upscale",
+    "name": "Image Upscaler (2x)",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-exposure",
+    "name": "Exposure Adjuster",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-auto-crop",
+    "name": "Auto Crop",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-comparison",
+    "name": "Image Comparison",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-comparison.js"
+  },
+  {
+    "slug": "image-merger",
+    "name": "Image Merger",
+    "category": "Combiners",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-collage",
+    "name": "Collage Maker",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-meme",
+    "name": "Meme Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-instagram",
+    "name": "Instagram Post Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-social-post",
+    "name": "Social Media Image Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-fb-cover",
+    "name": "Facebook Cover Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-yt-thumbnail",
+    "name": "YouTube Thumbnail Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-linkedin-banner",
+    "name": "LinkedIn Banner Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-gif-maker",
+    "name": "GIF Maker",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-gif-optimizer",
+    "name": "GIF Optimizer",
+    "category": "Compressors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-gif-speed",
+    "name": "GIF Speed Changer",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-twitter-header",
+    "name": "Twitter Header Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-sprite-sheet",
+    "name": "Sprite Sheet Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-animated-webp",
+    "name": "Animated WebP Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-sketch",
+    "name": "Sketch Effect",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-contact-sheet",
+    "name": "Contact Sheet Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-vintage",
+    "name": "Vintage Filter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-raw-to-jpg",
+    "name": "RAW to JPG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-raw-to-jpg.js"
+  },
+  {
+    "slug": "image-frame-extractor",
+    "name": "Image Frame Extractor",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-oil-painting",
+    "name": "Oil Painting Effect",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-psd-to-png",
+    "name": "PSD to PNG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-psd-to-png.js"
+  },
+  {
+    "slug": "image-screenshot-editor",
+    "name": "Screenshot Editor",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-edge-detection",
+    "name": "Edge Detection",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-svg-optimizer",
+    "name": "SVG Optimizer",
+    "category": "Compressors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-annotation",
+    "name": "Image Annotation Tool",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-mosaic",
+    "name": "Mosaic Effect",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-lossless",
+    "name": "Lossless Compression",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-cartoon",
+    "name": "Cartoon Effect",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-multi-export",
+    "name": "Multi-format Export",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-large-processing",
+    "name": "Large Image Processing",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "brand-kit",
+    "name": "Brand Kit Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "jpg-to-heic",
+    "name": "JPG to HEIC",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "png-to-svg",
+    "name": "PNG to SVG",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\png-to-svg.js"
+  },
+  {
+    "slug": "og-image",
+    "name": "OG Image Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-preview",
+    "name": "Image Preview Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-batch-optimize",
+    "name": "Batch Optimization",
+    "category": "Compressors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-batch-resize",
+    "name": "Batch Resize",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-batch-resize.js"
+  },
+  {
+    "slug": "image-batch-convert",
+    "name": "Batch Convert",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-batch-convert.js"
+  },
+  {
+    "slug": "image-batch-compress",
+    "name": "Batch Compress",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-batch-compress.js"
+  },
+  {
+    "slug": "image-batch-rename",
+    "name": "Batch Rename Images",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-batch-rename.js"
+  },
+  {
+    "slug": "image-duplicate-finder",
+    "name": "Duplicate Image Finder",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-batch-watermark",
+    "name": "Batch Watermark",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-image\\src\\handlers\\image-batch-watermark.js"
+  },
+  {
+    "slug": "image-ai-object-remove",
+    "name": "AI Object Removal",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-bg-remove",
+    "name": "AI Background Removal",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-upscaler",
+    "name": "AI Image Upscaler",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-portrait",
+    "name": "AI Portrait Enhancer",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-colorizer",
+    "name": "AI Image Colorizer",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-face-restore",
+    "name": "AI Face Restoration",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-outpaint",
+    "name": "AI Outpainting",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-generate",
+    "name": "AI Image Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-inpaint",
+    "name": "AI Inpainting",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-logo",
+    "name": "AI Logo Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-fashion",
+    "name": "AI Fashion Model Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-watermark-remove",
+    "name": "AI Watermark Removal",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-product-photo",
+    "name": "AI Product Photo Generator",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-denoiser",
+    "name": "AI Image Denoiser",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-relight",
+    "name": "AI Relighting",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-ai-banner",
+    "name": "AI Banner Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-api",
+    "name": "Image API",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-cloud-storage",
+    "name": "Cloud Image Storage",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-psd-preview",
+    "name": "PSD Preview",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-version-history",
+    "name": "Image Version History",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-trim",
+    "name": "Trim Video",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-trim.js"
+  },
+  {
+    "slug": "image-priority-processing",
+    "name": "Image Priority Processing",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "image-raw-viewer",
+    "name": "RAW Image Viewer",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-flip",
+    "name": "Flip Video",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-flip.js"
+  },
+  {
+    "slug": "video-reverse",
+    "name": "Reverse Video",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-reverse.js"
+  },
+  {
+    "slug": "video-compress",
+    "name": "Compress Video",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-compress.js"
+  },
+  {
+    "slug": "video-crop",
+    "name": "Crop Video",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-crop.js"
+  },
+  {
+    "slug": "video-remove-audio",
+    "name": "Remove Audio",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-rotate",
+    "name": "Rotate Video",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-rotate.js"
+  },
+  {
+    "slug": "video-resolution",
+    "name": "Resolution Changer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-resolution.js"
+  },
+  {
+    "slug": "video-speed",
+    "name": "Video Speed Changer",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-mute",
+    "name": "Mute Video",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-mute.js"
+  },
+  {
+    "slug": "video-loop",
+    "name": "Loop Video",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-loop.js"
+  },
+  {
+    "slug": "video-slow-motion",
+    "name": "Slow Motion Video",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-slow-motion.js"
+  },
+  {
+    "slug": "video-fps",
+    "name": "FPS Changer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-fps.js"
+  },
+  {
+    "slug": "video-thumbnail",
+    "name": "Thumbnail Extractor",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-thumbnail.js"
+  },
+  {
+    "slug": "video-fast-motion",
+    "name": "Fast Motion Video",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-metadata",
+    "name": "Video Metadata Viewer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-metadata.js"
+  },
+  {
+    "slug": "video-to-aac",
+    "name": "Video to AAC",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-to-gif",
+    "name": "Video to GIF",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-to-gif.js"
+  },
+  {
+    "slug": "video-to-mp3",
+    "name": "Video to MP3",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-frame-extractor",
+    "name": "Frame Extractor",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-frame-extractor.js"
+  },
+  {
+    "slug": "mkv-converter",
+    "name": "MKV Converter",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-to-wav",
+    "name": "Video to WAV",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-extract-audio",
+    "name": "Extract Audio",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-extract-audio.js"
+  },
+  {
+    "slug": "images-to-video",
+    "name": "Images to Video",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-to-images",
+    "name": "Video to Images",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-merge",
+    "name": "Merge Videos",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-merge.js"
+  },
+  {
+    "slug": "video-square",
+    "name": "Square Video Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-split",
+    "name": "Split Video",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-split.js"
+  },
+  {
+    "slug": "video-brightness",
+    "name": "Brightness Adjustment",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-contrast",
+    "name": "Contrast Adjustment",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-color-correction",
+    "name": "Color Correction",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-vertical",
+    "name": "Vertical Video Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-horizontal",
+    "name": "Horizontal Video Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-saturation",
+    "name": "Saturation Adjustment",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "gif-to-video",
+    "name": "GIF to Video",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-watermark",
+    "name": "Watermark Video",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-remove-watermark",
+    "name": "Remove Watermark",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-add-text",
+    "name": "Add Text to Video",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-add-logo",
+    "name": "Add Logo to Video",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-add-outro",
+    "name": "Add Outro",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-add-intro",
+    "name": "Add Intro",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-sharpen",
+    "name": "Video Sharpening",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-add-music",
+    "name": "Add Background Music",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-fade-out",
+    "name": "Fade Out",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-fade-out.js"
+  },
+  {
+    "slug": "video-blur-effect",
+    "name": "Blur Video",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-fade-in",
+    "name": "Fade In",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-fade-in.js"
+  },
+  {
+    "slug": "video-bitrate",
+    "name": "Bitrate Changer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-bitrate.js"
+  },
+  {
+    "slug": "video-stabilize",
+    "name": "Video Stabilization",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-replace-audio",
+    "name": "Replace Audio",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-denoiser",
+    "name": "Video Denoiser",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-subtitle-embed",
+    "name": "Subtitle Embedder",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-aspect-ratio",
+    "name": "Aspect Ratio Converter",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-aspect-ratio.js"
+  },
+  {
+    "slug": "video-subtitle-extract",
+    "name": "Subtitle Extractor",
+    "category": "Separators",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-subtitle-convert",
+    "name": "Subtitle Converter",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-hardcode-subtitles",
+    "name": "Hardcode Subtitles",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-metadata-edit",
+    "name": "Video Metadata Editor",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-metadata-edit.js"
+  },
+  {
+    "slug": "video-chapter",
+    "name": "Chapter Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-audio-sync",
+    "name": "Audio Sync Tool",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-audio-sync.js"
+  },
+  {
+    "slug": "video-contact-sheet",
+    "name": "Contact Sheet Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-preview",
+    "name": "Video Preview Generator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-flv-converter",
+    "name": "FLV Converter",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-wmv-converter",
+    "name": "WMV Converter",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-mpeg-converter",
+    "name": "MPEG Converter",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-m4v-converter",
+    "name": "M4V Converter",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-comparison",
+    "name": "Video Comparison",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-animated-webp",
+    "name": "Animated WebP Creator",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-3gp-converter",
+    "name": "3GP Converter",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-social-tiktok",
+    "name": "TikTok Video Exporter",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-social-youtube",
+    "name": "YouTube Video Exporter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-social-instagram",
+    "name": "Instagram Reel Exporter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-batch-compress",
+    "name": "Batch Compression",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-batch-compress.js"
+  },
+  {
+    "slug": "video-social-facebook",
+    "name": "Facebook Video Exporter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-batch-convert",
+    "name": "Batch Video Conversion",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-batch-convert.js"
+  },
+  {
+    "slug": "video-social-linkedin",
+    "name": "LinkedIn Video Exporter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-batch-trim",
+    "name": "Batch Trimming",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-batch-trim.js"
+  },
+  {
+    "slug": "video-faster-encoding",
+    "name": "Faster Encoding",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-large-processing",
+    "name": "Large Video Processing",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-joiner",
+    "name": "Video Joiner Advanced",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-joiner.js"
+  },
+  {
+    "slug": "video-batch-watermark",
+    "name": "Batch Watermarking",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-batch-watermark.js"
+  },
+  {
+    "slug": "video-multi-export",
+    "name": "Multi-format Export",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-batch-merge",
+    "name": "Batch Video Merging",
+    "category": "Combiners",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-batch-split",
+    "name": "Batch Video Splitting",
+    "category": "Separators",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-multi-audio",
+    "name": "Multi-track Audio Support",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-splitter-bulk",
+    "name": "Video Splitter Bulk",
+    "category": "Separators",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-multi-subtitle",
+    "name": "Multi-track Subtitle",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-cloud-render",
+    "name": "Cloud Rendering",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-hardware-accel",
+    "name": "Hardware Acceleration",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-version-history",
+    "name": "Video Version History",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-team-workspace",
+    "name": "Team Workspace",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-soft-subtitles",
+    "name": "Video Soft Subtitles",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-api",
+    "name": "Video API",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "video-priority-processing",
+    "name": "Video Priority Processing",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\video-priority-processing.js"
+  },
+  {
+    "slug": "video-cloud-queue",
+    "name": "Cloud Queue",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-aac",
+    "name": "AAC Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-mp3",
+    "name": "MP3 Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-ogg",
+    "name": "OGG Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-trim",
+    "name": "Trim Audio",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-trim.js"
+  },
+  {
+    "slug": "audio-m4a",
+    "name": "M4A Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-wav",
+    "name": "WAV Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-wma",
+    "name": "WMA Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-amr",
+    "name": "AMR Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-opus",
+    "name": "OPUS Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-merge",
+    "name": "Merge Audio",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-merge.js"
+  },
+  {
+    "slug": "audio-flac",
+    "name": "FLAC Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-normalize",
+    "name": "Audio Normalizer",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-cut",
+    "name": "Cut Audio",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-cut.js"
+  },
+  {
+    "slug": "audio-split",
+    "name": "Split Audio",
+    "category": "Separators",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-speed",
+    "name": "Change Speed",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-speed.js"
+  },
+  {
+    "slug": "audio-volume",
+    "name": "Volume Booster",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-volume.js"
+  },
+  {
+    "slug": "audio-compress",
+    "name": "Audio Compressor",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-compress.js"
+  },
+  {
+    "slug": "audio-pitch",
+    "name": "Change Pitch",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-pitch.js"
+  },
+  {
+    "slug": "audio-aiff",
+    "name": "AIFF Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-fade-out",
+    "name": "Fade Out",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-fade-out.js"
+  },
+  {
+    "slug": "audio-stereo",
+    "name": "Stereo Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-metadata",
+    "name": "Audio Metadata Viewer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-metadata.js"
+  },
+  {
+    "slug": "audio-reverse",
+    "name": "Audio Reverser",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-reverse.js"
+  },
+  {
+    "slug": "audio-silence-remover",
+    "name": "Silence Remover",
+    "category": "Editors",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-mono",
+    "name": "Mono Converter",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-preview",
+    "name": "Audio Preview Generator",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-preview.js"
+  },
+  {
+    "slug": "audio-bass-booster",
+    "name": "Bass Booster",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-bass-booster.js"
+  },
+  {
+    "slug": "audio-treble-booster",
+    "name": "Treble Booster",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-treble-booster.js"
+  },
+  {
+    "slug": "audio-waveform",
+    "name": "Waveform Generator",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-waveform.js"
+  },
+  {
+    "slug": "audio-noise-reduction",
+    "name": "Noise Reduction",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-noise-reduction.js"
+  },
+  {
+    "slug": "audio-echo-removal",
+    "name": "Echo Removal",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\audio-echo-removal.js"
+  },
+  {
+    "slug": "audio-format-pack",
+    "name": "Audio Format Pack",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-format-pack.js"
+  },
+  {
+    "slug": "audio-reverb",
+    "name": "Reverb Effect",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-reverb.js"
+  },
+  {
+    "slug": "audio-replace-in-video",
+    "name": "Replace Audio in Video",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\audio-replace-in-video.js"
+  },
+  {
+    "slug": "audio-voice-changer",
+    "name": "Voice Changer",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-voice-changer.js"
+  },
+  {
+    "slug": "audio-metadata-edit",
+    "name": "Audio Metadata Editor",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-metadata-edit.js"
+  },
+  {
+    "slug": "audio-cover-art",
+    "name": "Cover Art Editor",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-cover-art.js"
+  },
+  {
+    "slug": "audio-batch-tags",
+    "name": "Batch Tag Editor",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-batch-tags.js"
+  },
+  {
+    "slug": "audio-ringtone",
+    "name": "Ringtone Maker",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-ringtone.js"
+  },
+  {
+    "slug": "audio-frequency",
+    "name": "Frequency Analyzer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-frequency.js"
+  },
+  {
+    "slug": "audio-spectrogram",
+    "name": "Spectrogram Generator",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-spectrogram.js"
+  },
+  {
+    "slug": "audio-bpm",
+    "name": "BPM Detector",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-bpm.js"
+  },
+  {
+    "slug": "audio-loudness",
+    "name": "Loudness Analyzer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-loudness.js"
+  },
+  {
+    "slug": "audio-channel-mixer",
+    "name": "Channel Mixer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-channel-mixer.js"
+  },
+  {
+    "slug": "audio-equalizer",
+    "name": "Audio Equalizer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-equalizer.js"
+  },
+  {
+    "slug": "audio-remove-metadata",
+    "name": "Remove Metadata",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\audio-remove-metadata.js"
+  },
+  {
+    "slug": "audio-extract-from-video",
+    "name": "Extract Audio from Video",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\audio-extract-from-video.js"
+  },
+  {
+    "slug": "audio-balance",
+    "name": "Balance Adjuster",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-balance.js"
+  },
+  {
+    "slug": "audio-fade-in",
+    "name": "Fade In",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-fade-in.js"
+  },
+  {
+    "slug": "audio-vocal-isolation",
+    "name": "Vocal Isolation",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-vocal-isolation.js"
+  },
+  {
+    "slug": "audio-comparison",
+    "name": "Audio Comparison",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-comparison.js"
+  },
+  {
+    "slug": "audio-instrument-remove",
+    "name": "Instrument Removal",
+    "category": "Editors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-video\\src\\handlers\\audio-instrument-remove.js"
+  },
+  {
+    "slug": "audio-watermark",
+    "name": "Audio Watermarking",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-watermark.js"
+  },
+  {
+    "slug": "audio-karaoke",
+    "name": "Karaoke Maker",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-karaoke.js"
+  },
+  {
+    "slug": "audio-enhancer",
+    "name": "Audio Enhancer",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-enhancer.js"
+  },
+  {
+    "slug": "audio-podcast-cleaner",
+    "name": "Podcast Cleaner",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-podcast-cleaner.js"
+  },
+  {
+    "slug": "audio-joiner",
+    "name": "Audio Joiner Advanced",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-joiner.js"
+  },
+  {
+    "slug": "audio-batch-convert",
+    "name": "Batch Audio Conversion",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-batch-convert.js"
+  },
+  {
+    "slug": "audio-batch-compress",
+    "name": "Batch Compression",
+    "category": "Compressors",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-batch-compress.js"
+  },
+  {
+    "slug": "audio-key-detector",
+    "name": "Key Detector",
+    "category": "Converters",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-key-detector.js"
+  },
+  {
+    "slug": "audio-large-processing",
+    "name": "Large Audio Processing",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-large-processing.js"
+  },
+  {
+    "slug": "audio-batch-trim",
+    "name": "Batch Trimming",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-batch-trim.js"
+  },
+  {
+    "slug": "audio-batch-cut",
+    "name": "Batch Audio Cutter",
+    "category": "Resizers",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-batch-cut.js"
+  },
+  {
+    "slug": "audio-splitter-bulk",
+    "name": "Audio Splitter Bulk",
+    "category": "Separators",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-splitter-bulk.js"
+  },
+  {
+    "slug": "audio-batch-volume",
+    "name": "Batch Volume Adjustment",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-batch-volume.js"
+  },
+  {
+    "slug": "audio-batch-metadata",
+    "name": "Batch Metadata Editing",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-batch-metadata.js"
+  },
+  {
+    "slug": "audio-batch-normalize",
+    "name": "Batch Normalization",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-batch-normalize.js"
+  },
+  {
+    "slug": "audio-batch-join",
+    "name": "Batch Audio Joiner",
+    "category": "Combiners",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-batch-join.js"
+  },
+  {
+    "slug": "audio-multi-export",
+    "name": "Multi-format Export",
+    "category": "Utilities",
+    "status": "has_handler",
+    "handlerPath": "functions\\qofeno-audio\\src\\handlers\\audio-multi-export.js"
+  },
+  {
+    "slug": "audio-music-separation",
+    "name": "Audio Music Separation",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-duplicate-finder",
+    "name": "Duplicate Audio Finder",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-team-workspace",
+    "name": "Team Workspace",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-cloud-queue",
+    "name": "Cloud Queue",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-cloud-processing",
+    "name": "Cloud Audio Processing",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-voice-recorder",
+    "name": "Audio Voice Recorder",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-api",
+    "name": "Audio API",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-priority-processing",
+    "name": "Audio Priority Processing",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-version-history",
+    "name": "Audio Version History",
+    "category": "Converters",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-fingerprinting",
+    "name": "Audio Fingerprinting",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  },
+  {
+    "slug": "audio-recorder",
+    "name": "Audio Recorder",
+    "category": "Utilities",
+    "status": "missing_handler",
+    "handlerPath": null
+  }
+]
