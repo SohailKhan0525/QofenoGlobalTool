@@ -1,20 +1,23 @@
 export default async ({ req, res, log, error }) => {
   try {
-    const raw = req.body || req.payload || '{}'
-    const body = (typeof raw === 'string') ? JSON.parse(raw) : raw
-    const { json = '', action = 'format' } = body
-    if (typeof json !== 'string') return res.json({ success: false, error: 'json must be string' }, 400)
+    const raw = req.body || req.payload || '{}';
+    const body = (typeof raw === 'string') ? JSON.parse(raw) : raw;
+    const jsonInput = body.json || body.input_text || body.input || '';
 
-    if (action === 'minify') {
-      const parsed = JSON.parse(json)
-      return res.json({ success: true, result: JSON.stringify(parsed) })
+    if (!jsonInput) {
+      return res.json({ success: false, error: 'JSON input string is required' }, 400);
     }
 
-    // default: format
-    const parsed = JSON.parse(json)
-    return res.json({ success: true, result: JSON.stringify(parsed, null, 2) })
+    const parsed = (typeof jsonInput === 'object') ? jsonInput : JSON.parse(String(jsonInput));
+    const action = body.action || 'format';
+
+    if (action === 'minify') {
+      return res.json({ success: true, result: JSON.stringify(parsed) });
+    }
+
+    return res.json({ success: true, result: JSON.stringify(parsed, null, 2) });
   } catch (err) {
-    error(err.message)
-    return res.json({ success: false, error: err.message }, 400)
+    if (error) error(err.message);
+    return res.json({ success: false, error: err.message }, 400);
   }
-}
+};

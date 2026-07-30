@@ -101,7 +101,7 @@ export async function saveExecutionLog(client, executionId, toolSlug, status, me
 async function universalFallback(context, body, storage, client) {
   const { res } = context;
   const tool = (body.tool || '').toLowerCase();
-  const textInput = body.text || body.json || body.csv || body.input || body.code || '';
+  const textInput = body.text || body.json || body.csv || body.input || body.code || body.input_text || body.text_input || '';
   let responseObj = null;
 
   // 1. Password Generator

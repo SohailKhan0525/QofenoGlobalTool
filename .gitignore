@@ -1,7 +1,5 @@
 node_modules/
 build/
-node_modules/
-build/
 dist/
 coverage/
 .DS_Store
@@ -9,3 +7,10 @@ coverage/
 .env*
 !.env.example
 .agent/
+
+# Test data & outputs
+test-data/
+test-results/
+
+# Keep scripts
+!scripts/
