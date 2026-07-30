@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { PayPalScriptProvider, PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../../context/AuthContext';
@@ -7,16 +7,148 @@ import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
 import { ID, Query } from 'appwrite';
 import { toast } from 'sonner';
 
-const PAYPAL_CLIENT_ID    = import.meta.env.VITE_PAYPAL_CLIENT_ID    || '';
-const PLAN_ID_MONTHLY     = import.meta.env.VITE_PAYPAL_PLAN_ID_MONTHLY || '';
-const PLAN_ID_YEARLY      = import.meta.env.VITE_PAYPAL_PLAN_ID_YEARLY  || '';
-const TEAMS_PLAN_ID_MONTHLY = import.meta.env.VITE_PAYPAL_TEAMS_PLAN_ID_MONTHLY || '';
-const TEAMS_PLAN_ID_YEARLY  = import.meta.env.VITE_PAYPAL_TEAMS_PLAN_ID_YEARLY  || '';
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || 'AaVoX-loRQ3UBfoES-x2DRMHs6RxMzJMMBY67Hf4mPKDIbjcSVPEAB0tk1rJQ4E2Jq2iT1Q6YGCu5FS5';
+const PLAN_ID_MONTHLY = import.meta.env.VITE_PAYPAL_PLAN_ID_MONTHLY || 'P-7XR864862M906071PNJS4E6A';
+const PLAN_ID_YEARLY = import.meta.env.VITE_PAYPAL_PLAN_ID_YEARLY || 'P-99F30697V20545548NJS4E6I';
+const TEAMS_PLAN_ID_MONTHLY = import.meta.env.VITE_PAYPAL_TEAMS_PLAN_ID_MONTHLY || 'P-9GC44038T57284513NJS4E7I';
+const TEAMS_PLAN_ID_YEARLY = import.meta.env.VITE_PAYPAL_TEAMS_PLAN_ID_YEARLY || 'P-6PP250850N582284JNJS4E7I';
 
 type PayPalButtonProps = {
   isYearly?: boolean;
   planType?: 'pro' | 'teams';
 };
+
+function InternalPayPalButtons({
+  planId,
+  planType,
+  isYearly,
+  user,
+  setSuccess,
+  processing,
+  setProcessing,
+}: {
+  planId: string;
+  planType: 'pro' | 'teams';
+  isYearly: boolean;
+  user: any;
+  setSuccess: (val: boolean) => void;
+  processing: boolean;
+  setProcessing: (val: boolean) => void;
+}) {
+  const [{ isPending, isRejected }] = usePayPalScriptReducer();
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center gap-3 py-8 text-neutral-500">
+        <FontAwesomeIcon icon={faSpinner} className="h-6 w-6 animate-spin text-purple-600" />
+        <span className="text-sm font-semibold">Loading PayPal checkout buttons…</span>
+      </div>
+    );
+  }
+
+  if (isRejected) {
+    return (
+      <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm text-center">
+        <strong>Unable to load PayPal script.</strong>
+        <p className="mt-1 text-xs text-neutral-600">
+          Please check your internet connection or disable ad-blockers for PayPal.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <PayPalButtons
+      style={{ layout: 'vertical', shape: 'rect', color: 'blue', label: 'subscribe' }}
+      disabled={processing}
+      createSubscription={(_data, actions) => {
+        return actions.subscription.create({
+          plan_id: planId,
+          ...(user?.id ? { custom_id: user.id } : {}),
+        });
+      }}
+      onApprove={async (data) => {
+        setProcessing(true);
+        try {
+          const now = new Date().toISOString();
+
+          if (user) {
+            // 1. Update users_meta.plan = planType (create if missing)
+            try {
+              const docs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
+                Query.equal('user_id', user.id)
+              ]);
+              const userMeta = docs.documents[0];
+              if (userMeta) {
+                await databases.updateDocument(DATABASE_ID, 'users_meta', userMeta.$id, {
+                  plan: planType,
+                  payment_ref: data.subscriptionID || data.orderID || null,
+                  updated_at: now,
+                });
+              } else {
+                await databases.createDocument(DATABASE_ID, 'users_meta', ID.unique(), {
+                  user_id: user.id,
+                  email: user.email,
+                  name: user.name || 'Subscriber',
+                  plan: planType,
+                  payment_ref: data.subscriptionID || data.orderID || null,
+                  created_at: now,
+                  updated_at: now,
+                });
+              }
+            } catch (_) {
+              // Webhook backup handles this
+            }
+
+            // 2. Create / update subscriptions record
+            try {
+              const existingSubs = await databases.listDocuments(DATABASE_ID, 'subscriptions', [
+                Query.equal('user_id', user.id)
+              ]);
+              const existing = existingSubs.documents[0];
+              const subPayload = {
+                user_id: user.id,
+                plan: planType,
+                period: isYearly ? 'yearly' : 'monthly',
+                status: 'active',
+                subscription_id: data.subscriptionID || null,
+                payment_method: 'paypal',
+                updated_at: now,
+              };
+
+              if (existing) {
+                await databases.updateDocument(DATABASE_ID, 'subscriptions', existing.$id, subPayload);
+              } else {
+                await databases.createDocument(DATABASE_ID, 'subscriptions', ID.unique(), {
+                  ...subPayload,
+                  created_at: now,
+                });
+              }
+            } catch (_) {
+              // Non-fatal
+            }
+          }
+
+          toast.success(`🎉 Subscription activated! Welcome to Qofeno ${planType.toUpperCase()}!`);
+          setSuccess(true);
+        } catch (err) {
+          toast.error("Payment received but profile update failed. Contact support if your plan doesn't reflect PRO.");
+        } finally {
+          setProcessing(false);
+        }
+      }}
+      onError={(err) => {
+        const errStr = String(err?.message || err || '');
+        if (errStr.includes('cancel')) return;
+        toast.error('PayPal checkout error. Please check your card or try again.');
+        console.error('PayPal Error:', err);
+      }}
+      onCancel={() => {
+        toast.info('Payment cancelled. You can try again anytime.');
+      }}
+    />
+  );
+}
 
 export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButtonProps) {
   const { user, isLoading, refreshSession } = useAuth();
@@ -137,94 +269,14 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
         currency: 'USD',
         intent: 'subscription',
       }}>
-        <PayPalButtons
-          style={{ layout: 'vertical', shape: 'rect', color: 'blue', label: 'subscribe' }}
-          disabled={processing}
-          createSubscription={(_data, actions) => {
-            return actions.subscription.create({
-              plan_id: planId,
-              ...(user?.id ? { custom_id: user.id } : {}),
-            });
-          }}
-          onApprove={async (data) => {
-            setProcessing(true);
-            try {
-              const now = new Date().toISOString();
-
-              if (user) {
-                // 1. Update users_meta.plan = planType (create if missing)
-                try {
-                  const docs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
-                    Query.equal('user_id', user.id)
-                  ]);
-                  const userMeta = docs.documents[0];
-                  if (userMeta) {
-                    await databases.updateDocument(DATABASE_ID, 'users_meta', userMeta.$id, {
-                      plan: planType,
-                      payment_ref: data.subscriptionID || data.orderID || null,
-                      updated_at: now,
-                    });
-                  } else {
-                    await databases.createDocument(DATABASE_ID, 'users_meta', ID.unique(), {
-                      user_id: user.id,
-                      email: user.email,
-                      name: user.name || 'Subscriber',
-                      plan: planType,
-                      payment_ref: data.subscriptionID || data.orderID || null,
-                      created_at: now,
-                      updated_at: now,
-                    });
-                  }
-                } catch (_) {
-                  // Webhook backup handles this
-                }
-
-                // 2. Create / update subscriptions record
-                try {
-                  const existingSubs = await databases.listDocuments(DATABASE_ID, 'subscriptions', [
-                    Query.equal('user_id', user.id)
-                  ]);
-                  const existing = existingSubs.documents[0];
-                  const subPayload = {
-                    user_id: user.id,
-                    plan: planType,
-                    period: isYearly ? 'yearly' : 'monthly',
-                    status: 'active',
-                    subscription_id: data.subscriptionID || null,
-                    payment_method: 'paypal',
-                    updated_at: now,
-                  };
-
-                  if (existing) {
-                    await databases.updateDocument(DATABASE_ID, 'subscriptions', existing.$id, subPayload);
-                  } else {
-                    await databases.createDocument(DATABASE_ID, 'subscriptions', ID.unique(), {
-                      ...subPayload,
-                      created_at: now,
-                    });
-                  }
-                } catch (_) {
-                  // Non-fatal
-                }
-              }
-
-              toast.success(`🎉 Subscription activated! Welcome to Qofeno ${planType.toUpperCase()}!`);
-              setSuccess(true);
-            } catch (err) {
-              toast.error('Payment received but profile update failed. Contact support if your plan doesn\'t reflect PRO.');
-            } finally {
-              setProcessing(false);
-            }
-          }}
-          onError={(err) => {
-            const errStr = String(err?.message || err || '');
-            if (errStr.includes('cancel')) return;
-            toast.error('PayPal checkout error. Please check your card or try again.');
-            console.error('PayPal Error:', err);
-          }}
-          onCancel={() => {
-            toast.info('Payment cancelled. You can try again anytime.');
-          }}
+        <InternalPayPalButtons
+          planId={planId}
+          planType={planType}
+          isYearly={isYearly}
+          user={user}
+          setSuccess={setSuccess}
+          processing={processing}
+          setProcessing={setProcessing}
         />
       </PayPalScriptProvider>
     </div>
