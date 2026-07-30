@@ -12,7 +12,6 @@ const PLAN_ID_MONTHLY     = import.meta.env.VITE_PAYPAL_PLAN_ID_MONTHLY || '';
 const PLAN_ID_YEARLY      = import.meta.env.VITE_PAYPAL_PLAN_ID_YEARLY  || '';
 const TEAMS_PLAN_ID_MONTHLY = import.meta.env.VITE_PAYPAL_TEAMS_PLAN_ID_MONTHLY || '';
 const TEAMS_PLAN_ID_YEARLY  = import.meta.env.VITE_PAYPAL_TEAMS_PLAN_ID_YEARLY  || '';
-const PAYPAL_MODE         = import.meta.env.VITE_PAYPAL_MODE           || 'live';
 
 type PayPalButtonProps = {
   isYearly?: boolean;
@@ -23,14 +22,9 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
   const { user, isLoading, refreshSession } = useAuth();
   const [success, setSuccess] = useState(false);
   const [processing, setProcessing] = useState(false);
-  // null = not yet attempted, true = retry in progress or done
   const retried = useRef(false);
-  // After one retry, if still no user, retryFailed=true
   const [retryFailed, setRetryFailed] = useState(false);
 
-  // When the component first sees isLoading=false but user=null, do ONE silent re-verify.
-  // This catches the race where AuthContext's initial check finished before the SPA
-  // navigated here (e.g. right after an OAuth redirect or email login).
   useEffect(() => {
     if (!isLoading && !user && !retried.current) {
       retried.current = true;
@@ -70,8 +64,7 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
     );
   }
 
-  // ── Auth loading guard — show spinner while session is being verified ────────
-  // Covers: initial AuthContext load AND the one-time silent retry above.
+  // ── Auth loading guard ───────────────────────────────────────────────────────
   if (isLoading || (retried.current && !retryFailed && !user)) {
     return (
       <div className="flex items-center justify-center gap-3 py-6 text-neutral-500">
@@ -81,9 +74,8 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
     );
   }
 
-  // ── Unauthenticated Guard — only shown once isLoading is false AND retry done ─
+  // ── Unauthenticated Guard ───────────────────────────────────────────────────
   if (!user) {
-    const redirectParam = encodeURIComponent(`/checkout/${planType}?plan=${planType}`);
     return (
       <div className="w-full text-center space-y-3">
         <button
@@ -141,31 +133,18 @@ export function PayPalButton({ isYearly = false, planType = 'pro' }: PayPalButto
       )}
 
       <PayPalScriptProvider options={{
-        'client-id': PAYPAL_CLIENT_ID,
         clientId: PAYPAL_CLIENT_ID,
         currency: 'USD',
-        vault: true,
         intent: 'subscription',
+        vault: true,
       }}>
         <PayPalButtons
           style={{ layout: 'vertical', shape: 'rect', color: 'blue', label: 'subscribe' }}
           disabled={processing}
           createSubscription={(_data, actions) => {
-            const givenName = user.name?.trim() ? user.name.trim().split(' ')[0] : 'Subscriber';
-            const surname = user.name?.trim() && user.name.trim().split(' ').length > 1 
-              ? user.name.trim().split(' ').slice(1).join(' ') 
-              : 'Qofeno';
-
             return actions.subscription.create({
               plan_id: planId,
-              custom_id: user.id, // Used by PayPal webhook to identify the user
-              subscriber: {
-                name: {
-                  given_name: givenName,
-                  surname: surname,
-                },
-                email_address: user.email,
-              },
+              custom_id: user.id,
             });
           }}
           onApprove={async (data) => {
