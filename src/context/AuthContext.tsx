@@ -68,6 +68,34 @@ function getTokenFromUrl(): { userId: string; secret: string } | null {
   return { userId, secret };
 }
 
+/**
+ * Appwrite passes a JWT string containing the session secret in the URL parameter.
+ * This extracts the 64-char session secret from the JWT payload, or returns the raw secret
+ * if it's already a plain secret.
+ */
+function extractSessionSecret(rawSecret: string): string {
+  if (!rawSecret) return '';
+  if (rawSecret.includes('.')) {
+    try {
+      const parts = rawSecret.split('.');
+      if (parts.length >= 2) {
+        let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) {
+          base64 += '=';
+        }
+        const payloadStr = atob(base64);
+        const payload = JSON.parse(payloadStr);
+        if (payload && payload.secret) {
+          return String(payload.secret);
+        }
+      }
+    } catch (e) {
+      console.warn('[Auth] Failed to parse JWT secret:', e);
+    }
+  }
+  return rawSecret;
+}
+
 function cleanTokenFromUrl() {
   if (typeof window === 'undefined') return;
   const clean = new URL(window.location.href);
@@ -103,12 +131,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Called exclusively from AuthCallback after an OAuth redirect.
    *
    * Flow:
-   * 1. Read ?userId + ?secret from URL (appended by Appwrite after createOAuth2Token)
-   * 2. Call account.createSession(userId, secret) → Appwrite creates a real session
-   * 3. Call persistSession(session.secret) → stores the session secret in localStorage
-   *    AND sets client.setSession(secret) so every subsequent SDK call includes
-   *    X-Appwrite-Session header. This bypasses third-party cookies AND X-Fallback-Cookies.
-   * 4. Call account.get() to confirm the session works
+   * 1. Read ?userId + ?secret (JWT or raw) from URL
+   * 2. Extract the actual 64-char session secret from the JWT payload
+   * 3. Call persistSession(sessionSecret) to set client.setSession() & save to localStorage
+   * 4. Call account.get() to load user profile
    */
   const exchangeOAuthToken = useCallback(async (): Promise<OAuthExchangeResult> => {
     setIsLoading(true);
@@ -116,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = getTokenFromUrl();
 
       if (!token) {
-        // No URL params — maybe the user already has an active session (e.g. email login redirect)
+        // No URL params — check if user already has an active session
         try {
           const raw  = await account.get();
           const plan = await loadPlan(raw.$id);
@@ -131,43 +157,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // Exchange the one-time token for a real session
-      let session: any;
-      try {
-        session = await account.createSession(token.userId, token.secret);
-      } catch (e: any) {
-        console.error('[Auth] createSession failed:', e);
-        return {
-          ok: false,
-          reason: 'create_session_failed',
-          detail: String(e?.message || e || 'Unknown error from createSession'),
-        };
-      }
+      // Extract the true 64-char session secret from the JWT string (or use raw)
+      const sessionSecret = extractSessionSecret(token.secret);
 
-      // ── The critical fix ────────────────────────────────────────────────────
-      // After createSession, Appwrite returns a Session object with a `secret`
-      // field. We persist this to localStorage AND call client.setSession() so
-      // every subsequent SDK call sends X-Appwrite-Session header directly.
-      // This completely bypasses the need for third-party cookies or the
-      // X-Fallback-Cookies header mechanism.
-      const sessionSecret = session?.secret || token.secret;
+      // Persist to localStorage & set client session header
       persistSession(sessionSecret);
       cleanTokenFromUrl();
-      // ────────────────────────────────────────────────────────────────────────
 
-      // Confirm the session works
+      // Attempt 1: Try account.get() directly using the session secret
       try {
         const raw  = await account.get();
         const plan = await loadPlan(raw.$id);
         const resolved = toAuthUser(raw, plan);
         setUserRef.current(resolved);
         return { ok: true, user: resolved };
-      } catch (e: any) {
-        return {
-          ok: false,
-          reason: 'get_account_failed',
-          detail: String(e?.message || e || 'Unknown error from account.get()'),
-        };
+      } catch (getErr: any) {
+        console.warn('[Auth] account.get() direct session test failed, trying createSession fallback:', getErr);
+
+        // Attempt 2: Fallback to account.createSession in case Appwrite expects token exchange
+        try {
+          const session = await account.createSession(token.userId, sessionSecret);
+          const finalSecret = session?.secret || sessionSecret;
+          persistSession(finalSecret);
+
+          const raw  = await account.get();
+          const plan = await loadPlan(raw.$id);
+          const resolved = toAuthUser(raw, plan);
+          setUserRef.current(resolved);
+          return { ok: true, user: resolved };
+        } catch (createErr: any) {
+          // If that also failed, try with raw token
+          try {
+            const session2 = await account.createSession(token.userId, token.secret);
+            const finalSecret2 = session2?.secret || token.secret;
+            persistSession(finalSecret2);
+
+            const raw  = await account.get();
+            const plan = await loadPlan(raw.$id);
+            const resolved = toAuthUser(raw, plan);
+            setUserRef.current(resolved);
+            return { ok: true, user: resolved };
+          } catch (createErr2: any) {
+            return {
+              ok: false,
+              reason: 'create_session_failed',
+              detail: `get: ${getErr?.message || getErr} | create1: ${createErr?.message || createErr} | create2: ${createErr2?.message || createErr2}`,
+            };
+          }
+        }
       }
     } finally {
       setIsLoading(false);
