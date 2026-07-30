@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ID, OAuthProvider, Query } from 'appwrite';
-import { account, DATABASE_ID, databases } from '../lib/qofeno-appwrite';
+import { account, DATABASE_ID, databases, persistSession, clearPersistedSession } from '../lib/qofeno-appwrite';
 
 export type AuthPlan = 'free' | 'pro' | 'teams';
 
@@ -78,7 +78,7 @@ function cleanTokenFromUrl() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]       = useState<AuthUser | null>(null);
+  const [user, setUser]           = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const setUserRef = useRef(setUser);
   setUserRef.current = setUser;
@@ -100,39 +100,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
-   * Called exclusively from AuthCallback.
-   * Returns a typed result object so the UI can show exactly what failed.
+   * Called exclusively from AuthCallback after an OAuth redirect.
+   *
+   * Flow:
+   * 1. Read ?userId + ?secret from URL (appended by Appwrite after createOAuth2Token)
+   * 2. Call account.createSession(userId, secret) → Appwrite creates a real session
+   * 3. Call persistSession(session.secret) → stores the session secret in localStorage
+   *    AND sets client.setSession(secret) so every subsequent SDK call includes
+   *    X-Appwrite-Session header. This bypasses third-party cookies AND X-Fallback-Cookies.
+   * 4. Call account.get() to confirm the session works
    */
   const exchangeOAuthToken = useCallback(async (): Promise<OAuthExchangeResult> => {
     setIsLoading(true);
     try {
       const token = getTokenFromUrl();
 
-      // ── Step 1: exchange one-time token for a session ──
-      if (token) {
-        try {
-          await account.createSession(token.userId, token.secret);
-          cleanTokenFromUrl();
-        } catch (e: any) {
-          console.error('[Auth] createSession failed:', e);
-          // Token exchange failed — still try account.get() in case
-          // there's an existing session from a previous sign-in
-          try {
-            const raw  = await account.get();
-            const plan = await loadPlan(raw.$id);
-            const resolved = toAuthUser(raw, plan);
-            setUserRef.current(resolved);
-            return { ok: true, user: resolved };
-          } catch {}
-          return {
-            ok: false,
-            reason: 'create_session_failed',
-            detail: String(e?.message || e || 'Unknown error'),
-          };
-        }
-      } else {
-        // No token in URL — try account.get() anyway (might have a live session
-        // from cookie-fallback if the user was already signed in)
+      if (!token) {
+        // No URL params — maybe the user already has an active session (e.g. email login redirect)
         try {
           const raw  = await account.get();
           const plan = await loadPlan(raw.$id);
@@ -147,7 +131,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // ── Step 2: load user after successful session creation ──
+      // Exchange the one-time token for a real session
+      let session: any;
+      try {
+        session = await account.createSession(token.userId, token.secret);
+      } catch (e: any) {
+        console.error('[Auth] createSession failed:', e);
+        return {
+          ok: false,
+          reason: 'create_session_failed',
+          detail: String(e?.message || e || 'Unknown error from createSession'),
+        };
+      }
+
+      // ── The critical fix ────────────────────────────────────────────────────
+      // After createSession, Appwrite returns a Session object with a `secret`
+      // field. We persist this to localStorage AND call client.setSession() so
+      // every subsequent SDK call sends X-Appwrite-Session header directly.
+      // This completely bypasses the need for third-party cookies or the
+      // X-Fallback-Cookies header mechanism.
+      const sessionSecret = session?.secret || token.secret;
+      persistSession(sessionSecret);
+      cleanTokenFromUrl();
+      // ────────────────────────────────────────────────────────────────────────
+
+      // Confirm the session works
       try {
         const raw  = await account.get();
         const plan = await loadPlan(raw.$id);
@@ -158,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {
           ok: false,
           reason: 'get_account_failed',
-          detail: String(e?.message || e || 'Unknown error'),
+          detail: String(e?.message || e || 'Unknown error from account.get()'),
         };
       }
     } finally {
@@ -171,13 +179,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const login = useCallback(async (email: string, password: string) => {
-    await account.createEmailPasswordSession(email, password);
+    const session = await account.createEmailPasswordSession(email, password);
+    persistSession(session.secret);
     await refreshSession();
   }, [refreshSession]);
 
   const signup = useCallback(async (name: string, email: string, password: string) => {
     await account.create(ID.unique(), email, password, name);
-    await account.createEmailPasswordSession(email, password);
+    const session = await account.createEmailPasswordSession(email, password);
+    persistSession(session.secret);
     try {
       await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
     } catch (e) {
@@ -188,6 +198,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try { await account.deleteSession('current'); } catch {}
+    clearPersistedSession();
     setUserRef.current(null);
     setIsLoading(false);
   }, []);

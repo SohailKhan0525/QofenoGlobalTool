@@ -116,9 +116,19 @@ const secondaryEndpoint = primaryEndpoint.includes('fra.')
   ? 'https://cloud.appwrite.io/v1' 
   : 'https://fra.cloud.appwrite.io/v1';
 
-const client = new Client().setEndpoint(primaryEndpoint).setProject(projectId);
+export const client = new Client().setEndpoint(primaryEndpoint).setProject(projectId);
 const fallbackClient = new Client().setEndpoint(secondaryEndpoint).setProject(projectId);
 
+// Restore a persisted session so subsequent account.get() calls include the
+// X-Appwrite-Session header even after a page reload. This bypasses both the
+// third-party cookie problem AND the X-Fallback-Cookies mechanism.
+const SESSION_STORAGE_KEY = 'qofeno_session_secret';
+if (typeof window !== 'undefined') {
+  const persisted = window.localStorage.getItem(SESSION_STORAGE_KEY);
+  if (persisted) {
+    client.setSession(persisted);
+  }
+}
 
 export const account = new Account(client);
 export const databases = new Databases(client);
@@ -127,6 +137,16 @@ export const fallbackStorage = new Storage(fallbackClient);
 export const functions = new Functions(client);
 export const fallbackFunctions = new Functions(fallbackClient);
 export const realtime = new Realtime(client);
+
+export function persistSession(secret: string) {
+  window.localStorage.setItem(SESSION_STORAGE_KEY, secret);
+  client.setSession(secret);
+}
+
+export function clearPersistedSession() {
+  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+  client.setSession('');
+}
 
 export function isAppwriteConfigured() {
   return Boolean(primaryEndpoint && projectId);
