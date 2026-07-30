@@ -31,6 +31,9 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const APPWRITE_ENDPOINT   = 'https://fra.cloud.appwrite.io/v1';
+const APPWRITE_PROJECT_ID = '69c58725000ef2b43f18';
+
 async function loadPlan(userId: string): Promise<AuthPlan> {
   try {
     const docs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
@@ -100,6 +103,70 @@ function cleanTokenFromUrl() {
   window.history.replaceState({}, '', clean.toString());
 }
 
+/**
+ * Direct fetch to Appwrite /account/sessions/token using credentials: 'omit'.
+ * This avoids browser third-party cookie blocking (TypeError: Failed to fetch)
+ * when calling from a cross-origin domain like qofeno-labs.pages.dev.
+ */
+async function directCreateSession(userId: string, secret: string): Promise<any> {
+  const res = await fetch(`${APPWRITE_ENDPOINT}/account/sessions/token`, {
+    method: 'POST',
+    credentials: 'omit',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+    },
+    body: JSON.stringify({ userId, secret }),
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = text;
+    try {
+      const parsed = JSON.parse(text);
+      msg = parsed.message || parsed.type || text;
+    } catch {}
+    throw new Error(`[${res.status}] ${msg}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Invalid JSON response from Appwrite createSession');
+  }
+}
+
+/**
+ * Direct fetch to Appwrite /account using X-Appwrite-Session header and credentials: 'omit'.
+ */
+async function directGetAccount(sessionSecret: string): Promise<any> {
+  const res = await fetch(`${APPWRITE_ENDPOINT}/account`, {
+    method: 'GET',
+    credentials: 'omit',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+      'X-Appwrite-Session': sessionSecret,
+    },
+  });
+
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = text;
+    try {
+      const parsed = JSON.parse(text);
+      msg = parsed.message || parsed.type || text;
+    } catch {}
+    throw new Error(`[${res.status}] ${msg}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('Invalid JSON response from Appwrite getAccount');
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]           = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,13 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Called exclusively from AuthCallback after an OAuth redirect.
-   *
-   * Flow:
-   * 1. Read ?userId + ?secret from URL
-   * 2. Call account.createSession(userId, secret) to exchange the one-time token
-   * 3. Call persistSession(session.secret) to set client session header & save to localStorage
-   * 4. Clean URL bar
-   * 5. Call account.get() to load user profile
+   * Uses direct fetch with credentials: 'omit' to prevent browser third-party cookie blocks.
    */
   const exchangeOAuthToken = useCallback(async (): Promise<OAuthExchangeResult> => {
     setIsLoading(true);
@@ -153,21 +214,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // Step 1: Exchange the one-time token for an active session
+      // Step 1: Exchange the one-time OAuth token for a session via direct fetch
       let session: any = null;
       let errDetail = '';
 
+      // Try 1A: Direct fetch with raw token string
       try {
-        session = await account.createSession(token.userId, token.secret);
+        session = await directCreateSession(token.userId, token.secret);
       } catch (e1: any) {
         errDetail = String(e1?.message || e1);
-        // Fallback: If raw token failed and it contains a JWT payload with an inner secret, try that
+
+        // Try 1B: Direct fetch with extracted JWT secret if token is a JWT
         const cleanSecret = extractSessionSecret(token.secret);
         if (cleanSecret && cleanSecret !== token.secret) {
           try {
-            session = await account.createSession(token.userId, cleanSecret);
+            session = await directCreateSession(token.userId, cleanSecret);
           } catch (e2: any) {
-            errDetail += ` | jwt_fallback_err: ${e2?.message || e2}`;
+            errDetail += ` | jwt_err: ${e2?.message || e2}`;
+          }
+        }
+
+        // Try 1C: SDK fallback
+        if (!session) {
+          try {
+            session = await account.createSession(token.userId, token.secret);
+          } catch (e3: any) {
+            errDetail += ` | sdk_err: ${e3?.message || e3}`;
           }
         }
       }
@@ -176,30 +248,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {
           ok: false,
           reason: 'create_session_failed',
-          detail: errDetail || 'Appwrite createSession returned null/empty',
+          detail: errDetail || 'Appwrite createSession returned empty session',
         };
       }
 
-      // Step 2: Persist the returned session secret (sets X-Appwrite-Session header & saves to localStorage)
+      // Step 2: Extract & persist session secret (sets X-Appwrite-Session header & saves to localStorage)
       const sessionSecret = session.secret || extractSessionSecret(token.secret) || token.secret;
       persistSession(sessionSecret);
 
       // Step 3: Clean token params from URL bar
       cleanTokenFromUrl();
 
-      // Step 4: Verify session with account.get()
+      // Step 4: Verify session with direct getAccount call
       try {
-        const raw  = await account.get();
+        const raw  = await directGetAccount(sessionSecret);
         const plan = await loadPlan(raw.$id);
         const resolved = toAuthUser(raw, plan);
         setUserRef.current(resolved);
         return { ok: true, user: resolved };
       } catch (getErr: any) {
-        return {
-          ok: false,
-          reason: 'get_account_failed',
-          detail: String(getErr?.message || getErr),
-        };
+        // Fallback to SDK account.get()
+        try {
+          const raw2 = await account.get();
+          const plan2 = await loadPlan(raw2.$id);
+          const resolved2 = toAuthUser(raw2, plan2);
+          setUserRef.current(resolved2);
+          return { ok: true, user: resolved2 };
+        } catch (sdkGetErr: any) {
+          return {
+            ok: false,
+            reason: 'get_account_failed',
+            detail: `directGet: ${getErr?.message || getErr} | sdkGet: ${sdkGetErr?.message || sdkGetErr}`,
+          };
+        }
       }
     } finally {
       setIsLoading(false);
