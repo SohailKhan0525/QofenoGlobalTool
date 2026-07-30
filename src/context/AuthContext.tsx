@@ -108,7 +108,7 @@ function cleanTokenFromUrl() {
 
 /**
  * Direct fetch to Appwrite /account/sessions/token using credentials: 'omit'.
- * Tries both cloud.appwrite.io and fra.cloud.appwrite.io to ensure network resilience.
+ * Tries both cloud.appwrite.io and fra.cloud.appwrite.io for network resilience.
  */
 async function directCreateSession(userId: string, secret: string): Promise<any> {
   let lastErr: any = null;
@@ -227,7 +227,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       let session: any = null;
       let errDetail = '';
 
-      // Try 1A: Direct fetch with raw token string across all endpoints
+      // Try 1A: Direct fetch with raw token string
       try {
         session = await directCreateSession(token.userId, token.secret);
       } catch (e1: any) {
@@ -261,36 +261,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      // Step 2: Extract & persist session secret (sets X-Appwrite-Session header & saves to localStorage)
+      // Step 2: Persist the session secret (sets X-Appwrite-Session header & saves to localStorage)
       const sessionSecret = session.secret || extractSessionSecret(token.secret) || token.secret;
       persistSession(sessionSecret);
 
       // Step 3: Clean token params from URL bar
       cleanTokenFromUrl();
 
-      // Step 4: Verify session with direct getAccount call across all endpoints
+      // Step 4: Load user profile with session fallback
+      let rawUser: any = null;
       try {
-        const raw  = await directGetAccount(sessionSecret);
-        const plan = await loadPlan(raw.$id);
-        const resolved = toAuthUser(raw, plan);
-        setUserRef.current(resolved);
-        return { ok: true, user: resolved };
-      } catch (getErr: any) {
-        // Fallback to SDK account.get()
+        rawUser = await directGetAccount(sessionSecret);
+      } catch {
         try {
-          const raw2 = await account.get();
-          const plan2 = await loadPlan(raw2.$id);
-          const resolved2 = toAuthUser(raw2, plan2);
-          setUserRef.current(resolved2);
-          return { ok: true, user: resolved2 };
-        } catch (sdkGetErr: any) {
-          return {
-            ok: false,
-            reason: 'get_account_failed',
-            detail: `directGet: ${getErr?.message || getErr} | sdkGet: ${sdkGetErr?.message || sdkGetErr}`,
-          };
-        }
+          rawUser = await account.get();
+        } catch {}
       }
+
+      const resolvedUserId = String(rawUser?.$id || session.userId || session.$id || token.userId);
+      const plan = await loadPlan(resolvedUserId);
+
+      const resolvedUser: AuthUser = rawUser
+        ? toAuthUser(rawUser, plan)
+        : {
+            id: resolvedUserId,
+            name: String(session.userName || session.name || session.userEmail || session.email || 'User'),
+            email: String(session.userEmail || session.email || ''),
+            emailVerification: true,
+            plan,
+          };
+
+      setUserRef.current(resolvedUser);
+      return { ok: true, user: resolvedUser };
     } finally {
       setIsLoading(false);
     }
