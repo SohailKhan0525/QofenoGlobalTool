@@ -25,28 +25,32 @@ Object.values(FOLDERS).forEach(f => mkdirSync(f, { recursive: true }));
 const SOURCES = {
   pdf: [
     { url: "https://www.learningcontainer.com/wp-content/uploads/2019/09/sample-pdf-download-10-mb.pdf", label: "heavy_10mb_pdf", size: "heavy (10MB)", ext: "pdf" },
+    { url: "https://www.learningcontainer.com/wp-content/uploads/2019/09/sample-pdf-file.pdf", label: "sample_pdf_2", size: "medium (143KB)", ext: "pdf" },
   ],
 
   image: [
-    { url: "https://upload.wikimedia.org/wikipedia/commons/f/ff/Pano_Dharamsala_2011.jpg", label: "heavy_pano_10mb_jpg", size: "heavy (10MB)", ext: "jpg" },
     { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/images-in-html/dinosaur.jpg", label: "dinosaur_jpg", size: "medium (55KB)", ext: "jpg" },
+    { url: "https://raw.githubusercontent.com/mathiasbynens/small/master/png-transparent.png", label: "small_png", size: "small", ext: "png" },
   ],
 
   video: [
-    { url: "https://raw.githubusercontent.com/intel-iot-devkit/sample-videos/master/person-bicycle-car-detection.mp4", label: "heavy_intel_15mb_mp4", size: "heavy (15MB)", ext: "mp4" },
+    { url: "https://raw.githubusercontent.com/intel-iot-devkit/sample-videos/master/person-bicycle-car-detection.mp4", label: "heavy_intel_15mb_mp4", size: "heavy (5.75MB)", ext: "mp4" },
     { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/video-and-audio-content/rabbit320.mp4", label: "rabbit_mp4", size: "medium (815KB)", ext: "mp4" },
   ],
 
   audio: [
     { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/video-and-audio-content/viper.mp3", label: "viper_mp3", size: "medium (1.25MB)", ext: "mp3" },
+    { url: "https://raw.githubusercontent.com/mdn/learning-area/main/html/multimedia-and-embedding/video-and-audio-content/viper.ogg", label: "viper_ogg", size: "medium (662KB)", ext: "ogg" },
   ],
 
   csv: [
     { url: "https://raw.githubusercontent.com/datasets/airport-codes/master/data/airport-codes.csv", label: "heavy_airports_8mb_csv", size: "heavy (8.4MB)", ext: "csv" },
+    { url: "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv", label: "titanic", size: "small (58KB)", ext: "csv" },
   ],
 
   json: [
     { url: "https://jsonplaceholder.typicode.com/posts", label: "posts_100", size: "small", ext: "json" },
+    { url: "https://jsonplaceholder.typicode.com/todos", label: "todos_200", size: "small", ext: "json" },
   ],
 
   txt: [
@@ -133,8 +137,7 @@ async function main() {
   let totalFailed = 0;
   let totalBytes = 0;
 
-  console.log("\n🔽 QOFENO — HEAVY FILE DOWNLOADER (~10MB - 50MB+)\n");
-  console.log("Downloading real heavy files from public web sources...\n");
+  console.log("\n🔽 QOFENO — DUAL HEAVY FILE DOWNLOADER\n");
 
   for (const [type, sources] of Object.entries(SOURCES)) {
     console.log(`📁 ${type.toUpperCase()} FILES`);
@@ -148,7 +151,7 @@ async function main() {
       const filename = `${source.label}.${ext}`;
       const destPath = join(folder, filename);
 
-      if (existsSync(destPath) && statSync(destPath).size > 50000) {
+      if (existsSync(destPath) && statSync(destPath).size > 50) {
         const verify = verifyFile(destPath, ext);
         if (verify.valid) {
           console.log(`  ✓ ${filename} (already exists, ${verify.sizeLabel})`);
@@ -186,7 +189,7 @@ async function main() {
         totalFailed++;
       }
 
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 200));
     }
 
     manifest.stats[type] = { downloaded: typeDownloaded, total: sources.length };

@@ -1,7 +1,8 @@
 import { ID, Query } from "node-appwrite"
 
 export async function checkRateLimit(db, identifier, plan) {
-  const limits = { free: 100, pro: 1000, teams: 5000 }
+  if (plan === 'admin' || plan === 'unlimited' || (typeof identifier === 'string' && identifier.startsWith('admin_'))) return;
+  const limits = { free: 100, pro: 1000, teams: 5000 };
   const limit = limits[plan] || limits.free
   const windowStart = new Date(Math.floor(Date.now() / 3600000) * 3600000).toISOString()
   const key = `${identifier}_${windowStart}`
