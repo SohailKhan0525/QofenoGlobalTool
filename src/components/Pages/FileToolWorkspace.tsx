@@ -1411,7 +1411,13 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     setWrongType(false);
     setProgressMessage('Starting...');
     if (realtimeUnsubRef.current) {
-      realtimeUnsubRef.current();
+      try {
+        if (typeof realtimeUnsubRef.current === 'function') {
+          realtimeUnsubRef.current();
+        } else if (typeof (realtimeUnsubRef.current as any).unsubscribe === 'function') {
+          (realtimeUnsubRef.current as any).unsubscribe();
+        }
+      } catch {}
       realtimeUnsubRef.current = null;
     }
   };
@@ -1502,6 +1508,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         payload = {
           tool: tool.slug,
           bucket_id: bucketInputs,
+          file_id: uploadedFiles[0]?.file_id || null,
           file_ids: uploadedFiles.map(x => x.file_id),
           input_filenames: uploadedFiles.map(x => x.input_filename),
           user_id: userId || null,
@@ -1523,9 +1530,6 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           ...fields
         };
       }
-
-
-
 
       trackToolUse(tool.slug, tool.title || tool.slug, tool.category || 'General', tool.type === 'Pro');
 
@@ -1584,7 +1588,13 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     } finally {
       window.clearInterval(ticker);
       if (realtimeUnsubRef.current) {
-        realtimeUnsubRef.current();
+        try {
+          if (typeof realtimeUnsubRef.current === 'function') {
+            realtimeUnsubRef.current();
+          } else if (typeof (realtimeUnsubRef.current as any).unsubscribe === 'function') {
+            (realtimeUnsubRef.current as any).unsubscribe();
+          }
+        } catch {}
         realtimeUnsubRef.current = null;
       }
       setTimeout(() => setProgress(0), 800);
