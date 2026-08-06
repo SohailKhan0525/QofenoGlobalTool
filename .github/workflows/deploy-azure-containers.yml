@@ -1,0 +1,139 @@
+name: Deploy Azure Processor Container
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docker/qofeno-processor/**'
+      - '.github/workflows/deploy-azure-containers.yml'
+  workflow_dispatch:   # Manual trigger button in GitHub UI
+
+env:
+  ACR_SERVER:        qofenoacr3745.azurecr.io
+  CONTAINER_NAME:    qofeno-processor
+  RESOURCE_GROUP:    qofeno-rg-india
+  CONTAINER_ENV:     qofeno-env
+
+jobs:
+  build-and-deploy:
+    name: Build, Push & Deploy qofeno-processor
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────────────────────
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # ── 2. Azure Login ─────────────────────────────────────────────────────────
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # ── 3. ACR Login ───────────────────────────────────────────────────────────
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.AZURE_ACR_SERVER }}
+          username:     ${{ secrets.AZURE_ACR_USERNAME }}
+          password:     ${{ secrets.AZURE_ACR_PASSWORD }}
+
+      # ── 4. Docker build & push (multi-stage — ONE container, Phase 1) ──────────
+      - name: Build & Push qofeno-processor
+        run: |
+          IMAGE="${{ secrets.AZURE_ACR_SERVER }}/qofeno-processor:latest"
+          docker build \
+            --file docker/qofeno-processor/Dockerfile \
+            --tag "$IMAGE" \
+            docker/qofeno-processor
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          echo "✅ Pushed $IMAGE"
+
+      # ── 5. Install Container Apps extension ────────────────────────────────────
+      - name: Install Azure Container Apps extension
+        run: az extension add --name containerapp --upgrade -y
+
+      # ── 6. Create or update the Container App ──────────────────────────────────
+      - name: Deploy Container App
+        run: |
+          IMAGE="${{ secrets.AZURE_ACR_SERVER }}/qofeno-processor:latest"
+          RG="${{ secrets.AZURE_RESOURCE_GROUP || env.RESOURCE_GROUP }}"
+          ENV="${{ secrets.AZURE_CONTAINER_ENV || env.CONTAINER_ENV }}"
+          SECRET="${{ secrets.QOFENO_CONTAINER_SECRET }}"
+
+          # Check if it already exists
+          EXISTS=$(az containerapp show --name qofeno-processor --resource-group "$RG" --query "name" -o tsv 2>/dev/null || echo "")
+
+          if [ -z "$EXISTS" ]; then
+            echo "Creating new container app..."
+            az containerapp create \
+              --name               qofeno-processor \
+              --resource-group     "$RG" \
+              --environment        "$ENV" \
+              --image              "$IMAGE" \
+              --registry-server    "${{ secrets.AZURE_ACR_SERVER }}" \
+              --registry-username  "${{ secrets.AZURE_ACR_USERNAME }}" \
+              --registry-password  "${{ secrets.AZURE_ACR_PASSWORD }}" \
+              --cpu                1.0 \
+              --memory             2.0Gi \
+              --min-replicas       0 \
+              --max-replicas       3 \
+              --scale-rule-name    http-rule \
+              --scale-rule-type    http \
+              --scale-rule-http-concurrency 5 \
+              --ingress            external \
+              --target-port        8080 \
+              --transport          http \
+              --env-vars           "QOFENO_CONTAINER_SECRET=$SECRET"
+          else
+            echo "Updating existing container app..."
+            az containerapp update \
+              --name           qofeno-processor \
+              --resource-group "$RG" \
+              --image          "$IMAGE"
+          fi
+
+      # ── 7. Get FQDN and output it ──────────────────────────────────────────────
+      - name: Get Container App URL
+        id: get-url
+        run: |
+          RG="${{ secrets.AZURE_RESOURCE_GROUP || env.RESOURCE_GROUP }}"
+          FQDN=$(az containerapp show \
+            --name qofeno-processor \
+            --resource-group "$RG" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          URL="https://$FQDN"
+          echo "PROCESSOR_URL=$URL" >> "$GITHUB_OUTPUT"
+          echo "✅ Processor URL: $URL"
+
+      # ── 8. Health check ────────────────────────────────────────────────────────
+      - name: Health Check (warm-up ping)
+        run: |
+          URL="${{ steps.get-url.outputs.PROCESSOR_URL }}"
+          SECRET="${{ secrets.QOFENO_CONTAINER_SECRET }}"
+          echo "Pinging $URL/health..."
+          # Container may take 30–60s to cold-start on first deploy
+          for i in $(seq 1 20); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "Authorization: Bearer $SECRET" "$URL/health" || echo "000")
+            echo "  Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ Container is healthy!"
+              break
+            fi
+            sleep 5
+          done
+
+      - name: Summary
+        run: |
+          echo "## Deployment Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Item | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Container | qofeno-processor |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Image | \`${{ env.ACR_SERVER }}/qofeno-processor:latest\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| URL | \`${{ steps.get-url.outputs.PROCESSOR_URL }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Size | 1 vCPU / 2GiB |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Scale | 0–3 replicas, trigger at 5 concurrent |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Next step**: Copy the URL above and set it as \`AZURE_PROCESSOR_URL\` on the \`azure-manager\` Appwrite function." >> "$GITHUB_STEP_SUMMARY"

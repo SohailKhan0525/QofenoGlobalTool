@@ -14,3 +14,4 @@ test-results/
 
 # Keep scripts
 !scripts/
+scripts/github-secrets.json
