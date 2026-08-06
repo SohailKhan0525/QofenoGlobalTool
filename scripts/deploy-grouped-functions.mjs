@@ -50,6 +50,13 @@ async function main() {
       if (fs.existsSync(path.join(fullDir, 'src'))) filesToTar.push('src');
       if (fs.existsSync(path.join(fullDir, 'Dockerfile'))) filesToTar.push('Dockerfile');
 
+      // Copy shared azure-router.js if available
+      const sharedRouter = path.resolve('functions', 'shared', 'azure-router.js');
+      const utilsDir = path.join(fullDir, 'src', 'utils');
+      if (fs.existsSync(sharedRouter) && fs.existsSync(utilsDir)) {
+        fs.copyFileSync(sharedRouter, path.join(utilsDir, 'azure-router.js'));
+      }
+
       // Create archive
       await tar.c(
         {

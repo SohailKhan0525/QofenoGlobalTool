@@ -340,6 +340,27 @@ export default async (context) => {
     return error(res, err.message, "RATE_LIMIT_EXCEEDED", 200);
   }
 
+  // Check if Pro tool or Azure routing is explicitly requested
+  if (body.is_pro_tool || body.route_to_azure) {
+    try {
+      const { routeToAzure } = await import("./utils/azure-router.js");
+      const azureResult = await routeToAzure({
+        file_id: body.file_id,
+        file_ids: body.file_ids,
+        tool: body.tool,
+        params: body,
+        storage,
+        db,
+        log: context.log,
+        ctx: context
+      });
+      await saveToolExecution(client, body, azureResult);
+      return res.json(azureResult, 200);
+    } catch (azErr) {
+      logError(`Azure router error for '${tool}': ${azErr.message}. Executing local handler / fallback...`);
+    }
+  }
+
   // Try importing dynamic tool handler first
   try {
     const handlerModule = await import(`./handlers/${tool}.js`);

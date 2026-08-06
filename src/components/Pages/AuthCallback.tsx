@@ -84,10 +84,12 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
             <h1 className="text-xl font-black text-[#0F0A1E]">Sign-in failed</h1>
 
             {/* Diagnostic info — helps identify root cause */}
-            <div className="mt-4 rounded-xl bg-neutral-50 border border-neutral-200 p-3 text-left text-xs text-neutral-600 space-y-1">
-              <p><span className="font-bold">Reason:</span> {REASON_LABELS[result.reason] ?? result.reason}</p>
-              <p className="break-all"><span className="font-bold">Detail:</span> {result.detail}</p>
-            </div>
+            {result && 'reason' in result && (
+              <div className="mt-4 rounded-xl bg-neutral-50 border border-neutral-200 p-3 text-left text-xs text-neutral-600 space-y-1">
+                <p><span className="font-bold">Reason:</span> {REASON_LABELS[result.reason] ?? result.reason}</p>
+                <p className="break-all"><span className="font-bold">Detail:</span> {result.detail}</p>
+              </div>
+            )}
 
             <button
               onClick={() => {

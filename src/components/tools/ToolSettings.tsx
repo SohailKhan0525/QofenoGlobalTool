@@ -29,7 +29,7 @@ function PDFCompressSettings({ onChange }: { onChange: (s: any) => void }) {
         <span className="text-xs font-semibold text-gray-600">Compression Level</span>
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <FontAwesomeIcon icon={faCircleInfo} className="text-gray-300 text-xs cursor-help" />
             </TooltipTrigger>
             <TooltipContent>

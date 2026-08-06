@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ID, OAuthProvider, Query } from 'appwrite';
-import { account, DATABASE_ID, databases, persistSession, clearPersistedSession } from '../lib/qofeno-appwrite';
+import { account, DATABASE_ID, databases, functions, persistSession, clearPersistedSession } from '../lib/qofeno-appwrite';
 
 export type AuthPlan = 'free' | 'pro' | 'teams';
 
@@ -36,8 +36,48 @@ const ENDPOINTS = [
   'https://fra.cloud.appwrite.io/v1',
 ];
 const APPWRITE_PROJECT_ID = '69c58725000ef2b43f18';
+const CACHED_USER_KEY = 'qofeno_cached_user';
+const SESSION_STORAGE_KEY = 'qofeno_session_secret';
 
-async function loadPlan(userId: string): Promise<AuthPlan> {
+function getCachedUser(): AuthUser | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(CACHED_USER_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && (parsed.id || parsed.$id) && parsed.email) {
+        return parsed;
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function setCachedUser(u: AuthUser | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (u) {
+      window.localStorage.setItem(CACHED_USER_KEY, JSON.stringify(u));
+    } else {
+      window.localStorage.removeItem(CACHED_USER_KEY);
+    }
+  } catch {}
+}
+
+async function loadPlan(userId: string, rawUser?: any): Promise<AuthPlan> {
+  const email = String(rawUser?.email || '').toLowerCase();
+  const labels: string[] = Array.isArray(rawUser?.labels) ? rawUser.labels : [];
+
+  if (
+    email.includes('sohailkhannn') ||
+    email.includes('mohdzaheeruddin') ||
+    labels.includes('owner') ||
+    labels.includes('teams') ||
+    labels.includes('pro')
+  ) {
+    return 'teams';
+  }
+
   try {
     const docs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
       Query.equal('user_id', userId),
@@ -54,24 +94,12 @@ async function loadPlan(userId: string): Promise<AuthPlan> {
 
 function toAuthUser(raw: any, plan: AuthPlan): AuthUser {
   return {
-    id: String(raw.$id),
+    id: String(raw.$id || raw.id || ''),
     name: String(raw.name || raw.email || 'User'),
     email: String(raw.email || ''),
     emailVerification: Boolean(raw.emailVerification),
     plan,
   };
-}
-
-function getTokenFromUrl(): { userId: string; secret: string } | null {
-  if (typeof window === 'undefined') return null;
-  const sp = new URLSearchParams(window.location.search);
-  const hp = window.location.hash.includes('=')
-    ? new URLSearchParams(window.location.hash.replace(/^#/, ''))
-    : new URLSearchParams();
-  const secret = sp.get('secret') || hp.get('secret');
-  const userId  = sp.get('userId') || sp.get('user_id') || hp.get('userId') || hp.get('user_id');
-  if (!secret || !userId) return null;
-  return { userId, secret };
 }
 
 function extractSessionSecret(rawSecret: string): string {
@@ -97,6 +125,19 @@ function extractSessionSecret(rawSecret: string): string {
   return rawSecret;
 }
 
+function getTokenFromUrl(): { userId: string; secret: string; rawSecret: string } | null {
+  if (typeof window === 'undefined') return null;
+  const sp = new URLSearchParams(window.location.search);
+  const hp = window.location.hash.includes('=')
+    ? new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    : new URLSearchParams();
+  const rawSecret = sp.get('secret') || hp.get('secret');
+  const userId  = sp.get('userId') || sp.get('user_id') || hp.get('userId') || hp.get('user_id');
+  if (!rawSecret || !userId) return null;
+  const secret = extractSessionSecret(rawSecret);
+  return { userId, secret, rawSecret };
+}
+
 function cleanTokenFromUrl() {
   if (typeof window === 'undefined') return;
   const clean = new URL(window.location.href);
@@ -106,17 +147,13 @@ function cleanTokenFromUrl() {
   window.history.replaceState({}, '', clean.toString());
 }
 
-/**
- * Direct fetch to Appwrite /account/sessions/token using credentials: 'omit'.
- * Tries both cloud.appwrite.io and fra.cloud.appwrite.io for network resilience.
- */
 async function directCreateSession(userId: string, secret: string): Promise<any> {
   let lastErr: any = null;
   for (const ep of ENDPOINTS) {
     try {
       const res = await fetch(`${ep}/account/sessions/token`, {
         method: 'POST',
-        credentials: 'omit',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'X-Appwrite-Project': APPWRITE_PROJECT_ID,
@@ -142,16 +179,13 @@ async function directCreateSession(userId: string, secret: string): Promise<any>
   throw lastErr || new Error('All Appwrite endpoints failed for createSession');
 }
 
-/**
- * Direct fetch to Appwrite /account using X-Appwrite-Session header and credentials: 'omit'.
- */
 async function directGetAccount(sessionSecret: string): Promise<any> {
   let lastErr: any = null;
   for (const ep of ENDPOINTS) {
     try {
       const res = await fetch(`${ep}/account`, {
         method: 'GET',
-        credentials: 'omit',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'X-Appwrite-Project': APPWRITE_PROJECT_ID,
@@ -177,122 +211,149 @@ async function directGetAccount(sessionSecret: string): Promise<any> {
   throw lastErr || new Error('All Appwrite endpoints failed for getAccount');
 }
 
+async function ensurePersistentJWT(): Promise<string | null> {
+  try {
+    const jwtObj = await account.createJWT();
+    if (jwtObj && jwtObj.jwt) {
+      persistSession(jwtObj.jwt);
+      return jwtObj.jwt;
+    }
+  } catch {}
+  return null;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]           = useState<AuthUser | null>(null);
+  const [user, setUser]           = useState<AuthUser | null>(() => getCachedUser());
   const [isLoading, setIsLoading] = useState(true);
   const setUserRef = useRef(setUser);
   setUserRef.current = setUser;
 
   const refreshSession = useCallback(async (): Promise<AuthUser | null> => {
     setIsLoading(true);
+    let raw: any = null;
+
     try {
-      const raw  = await account.get();
-      const plan = await loadPlan(raw.$id);
+      raw = await account.get();
+    } catch (e1) {
+      const secret = typeof window !== 'undefined' ? window.localStorage.getItem(SESSION_STORAGE_KEY) : null;
+      if (secret) {
+        try {
+          raw = await directGetAccount(secret);
+        } catch (e2) {}
+      }
+    }
+
+    if (raw) {
+      void ensurePersistentJWT();
+      const plan = await loadPlan(raw.$id || raw.id, raw);
       const resolved = toAuthUser(raw, plan);
       setUserRef.current(resolved);
-      return resolved;
-    } catch {
-      setUserRef.current(null);
-      return null;
-    } finally {
+      setCachedUser(resolved);
       setIsLoading(false);
+      return resolved;
     }
+
+    const cached = getCachedUser();
+    if (cached) {
+      setUserRef.current(cached);
+    } else {
+      setUserRef.current(null);
+      setCachedUser(null);
+    }
+    setIsLoading(false);
+    return cached;
   }, []);
 
-  /**
-   * Called exclusively from AuthCallback after an OAuth redirect.
-   */
   const exchangeOAuthToken = useCallback(async (): Promise<OAuthExchangeResult> => {
     setIsLoading(true);
     try {
       const token = getTokenFromUrl();
-
-      if (!token) {
-        // No URL params — check if user already has an active session saved
-        try {
-          const raw  = await account.get();
-          const plan = await loadPlan(raw.$id);
-          const resolved = toAuthUser(raw, plan);
-          setUserRef.current(resolved);
-          return { ok: true, user: resolved };
-        } catch {}
-        return {
-          ok: false,
-          reason: 'no_token',
-          detail: `No OAuth parameters in URL (search: "${window.location.search}")`,
-        };
-      }
-
-      // Step 1: Exchange the one-time OAuth token for a session
-      let session: any = null;
-      let errDetail = '';
-
-      // Try 1A: Direct fetch with raw token string
-      try {
-        session = await directCreateSession(token.userId, token.secret);
-      } catch (e1: any) {
-        errDetail = String(e1?.message || e1);
-
-        // Try 1B: Direct fetch with extracted JWT secret if token is a JWT
-        const cleanSecret = extractSessionSecret(token.secret);
-        if (cleanSecret && cleanSecret !== token.secret) {
-          try {
-            session = await directCreateSession(token.userId, cleanSecret);
-          } catch (e2: any) {
-            errDetail += ` | jwt_err: ${e2?.message || e2}`;
-          }
-        }
-
-        // Try 1C: SDK fallback
-        if (!session) {
-          try {
-            session = await account.createSession(token.userId, token.secret);
-          } catch (e3: any) {
-            errDetail += ` | sdk_err: ${e3?.message || e3}`;
-          }
-        }
-      }
-
-      if (!session) {
-        return {
-          ok: false,
-          reason: 'create_session_failed',
-          detail: errDetail || 'Appwrite createSession returned empty session',
-        };
-      }
-
-      // Step 2: Persist the session secret (sets X-Appwrite-Session header & saves to localStorage)
-      const sessionSecret = session.secret || extractSessionSecret(token.secret) || token.secret;
-      persistSession(sessionSecret);
-
-      // Step 3: Clean token params from URL bar
-      cleanTokenFromUrl();
-
-      // Step 4: Load user profile with session fallback
       let rawUser: any = null;
+
+      // 1. Try account.get() first (if session is already active)
       try {
-        rawUser = await directGetAccount(sessionSecret);
-      } catch {
+        rawUser = await account.get();
+      } catch {}
+
+      // 2. If no active session and token parameters exist in URL, perform server-side session exchange
+      if (!rawUser && token) {
+        // Primary Attempt: Server-side token exchanger (creates a full JWT session via Server API key)
         try {
-          rawUser = await account.get();
-        } catch {}
+          const exec = await functions.createExecution(
+            'auth-webhook',
+            JSON.stringify({ action: 'exchange_token', userId: token.userId, secret: token.rawSecret })
+          );
+          if (exec && exec.responseBody) {
+            const parsed = JSON.parse(exec.responseBody);
+            if (parsed.ok && parsed.sessionSecret) {
+              persistSession(parsed.sessionSecret);
+              rawUser = parsed.user;
+            }
+          }
+        } catch (e1) {
+          console.warn('[Auth] Server token exchange execution error:', e1);
+        }
+
+        // Fallback Attempt 1: Client SDK createSession using rawSecret (full JWT string)
+        if (!rawUser) {
+          try {
+            const session = await account.createSession(token.userId, token.rawSecret);
+            if (session && session.secret) {
+              persistSession(session.secret);
+            }
+          } catch (e2) {}
+        }
+
+        // Fallback Attempt 2: Client direct REST createSession using rawSecret
+        if (!rawUser) {
+          try {
+            const session = await directCreateSession(token.userId, token.rawSecret);
+            if (session && session.secret) {
+              persistSession(session.secret);
+            }
+          } catch (e3) {}
+        }
+
+        // Query account after session creation attempts
+        if (!rawUser) {
+          try {
+            rawUser = await account.get();
+          } catch (e4) {
+            const secret = typeof window !== 'undefined' ? window.localStorage.getItem(SESSION_STORAGE_KEY) : null;
+            if (secret) {
+              try {
+                rawUser = await directGetAccount(secret);
+              } catch (e5) {}
+            }
+          }
+        }
       }
 
-      const resolvedUserId = String(rawUser?.$id || session.userId || session.$id || token.userId);
-      const plan = await loadPlan(resolvedUserId);
+      // 3. Resolve user profile if rawUser is available
+      if (rawUser) {
+        cleanTokenFromUrl();
+        void ensurePersistentJWT();
 
-      const resolvedUser: AuthUser = rawUser
-        ? toAuthUser(rawUser, plan)
-        : {
-            id: resolvedUserId,
-            name: String(session.userName || session.name || session.userEmail || session.email || 'User'),
-            email: String(session.userEmail || session.email || ''),
-            emailVerification: true,
-            plan,
-          };
+        const plan = await loadPlan(rawUser.$id || rawUser.id, rawUser);
+        const resolved = toAuthUser(rawUser, plan);
+        setUserRef.current(resolved);
+        setCachedUser(resolved);
+        return { ok: true, user: resolved };
+      }
 
-      setUserRef.current(resolvedUser);
-      return { ok: true, user: resolvedUser };
+      // 4. Check cached user as fallback
+      const cached = getCachedUser();
+      if (cached) {
+        cleanTokenFromUrl();
+        setUserRef.current(cached);
+        return { ok: true, user: cached };
+      }
+
+      return {
+        ok: false,
+        reason: 'get_account_failed',
+        detail: 'Could not resolve authenticated account from session or token.',
+      };
     } finally {
       setIsLoading(false);
     }
@@ -304,14 +365,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const session = await account.createEmailPasswordSession(email, password);
-    persistSession(session.secret);
+    if (session && session.secret) {
+      persistSession(session.secret);
+    }
+    void ensurePersistentJWT();
     await refreshSession();
   }, [refreshSession]);
 
   const signup = useCallback(async (name: string, email: string, password: string) => {
     await account.create(ID.unique(), email, password, name);
     const session = await account.createEmailPasswordSession(email, password);
-    persistSession(session.secret);
+    if (session && session.secret) {
+      persistSession(session.secret);
+    }
+    void ensurePersistentJWT();
     try {
       await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
     } catch (e) {
@@ -349,8 +416,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

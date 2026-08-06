@@ -63,7 +63,6 @@ import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { PlanBadge } from './components/PlanBadge';
 
 
-// @ts-expect-error - Vite raw import support
 import qofenoFullSvg from '../public/qofeno_full.svg?raw';
 const LETTER_X_REST      = [150, 302, 414, 526, 652] as const;
 const LETTER_X_ENTRANCE  = [ 95, 247, 359, 471, 597] as const;
