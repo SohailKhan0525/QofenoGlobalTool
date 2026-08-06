@@ -1,19 +1,14 @@
-"""
-Qofeno Pro Processor — FastAPI server
-Pre-loads all heavy libraries at startup for fast first-request response
-"""
-import asyncio
 import os
-import subprocess
-import tempfile
+import sys
 import time
 import shutil
+import tempfile
+import subprocess
 import io
 from contextlib import asynccontextmanager
-from typing import Optional
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import Response, JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 print("⚡ Pre-loading libraries...")
@@ -52,31 +47,15 @@ async def lifespan(app: FastAPI):
         print(f"  ❌ FFmpeg not found: {e}")
 
     try:
-        result = subprocess.run(
-            ["libreoffice", "--headless", "--version"],
-            capture_output=True, text=True, timeout=10
-        )
-        print(f"  ✓ LibreOffice: {result.stdout.strip()[:50]}")
-    except Exception as e:
-        print(f"  ❌ LibreOffice: {e}")
-
-    try:
-        result = subprocess.run(["tesseract", "--version"], capture_output=True, text=True)
-        print(f"  ✓ Tesseract: {result.stdout.split(chr(10))[0]}")
-    except Exception as e:
-        print(f"  ❌ Tesseract: {e}")
-
-    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-        tmp.write(b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
-                  b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
-                  b"3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R>>endobj\n"
-                  b"xref\n0 4\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n9\n%%EOF")
-        warmup_pdf = tmp.name
-
-    try:
+        warmup_pdf = tempfile.mktemp(suffix=".pdf")
+        doc = fitz.open()
+        doc.new_page()
+        doc.save(warmup_pdf)
+        doc.close()
         with pikepdf.open(warmup_pdf) as pdf:
-            _ = len(pdf.pages)
-        print("  ✓ pikepdf warmed up")
+            pdf.save(warmup_pdf + ".out")
+        os.unlink(warmup_pdf + ".out")
+        print("  ✓ PyMuPDF & pikepdf warm")
     except Exception as e:
         print(f"  ⚠️  pikepdf warmup: {e}")
     finally:
@@ -177,16 +156,21 @@ async def compress_pdf(
         out_size   = os.path.getsize(out_path)
         reduction  = max(0, round((1 - out_size / input_size) * 100))
 
-        response = FileResponse(
-            out_path,
+        with open(out_path, "rb") as out_f:
+            out_bytes = out_f.read()
+
+        out_name = f"compressed_{reduction}pct.pdf"
+        return Response(
+            content=out_bytes,
             media_type="application/pdf",
-            filename=f"compressed_{reduction}pct.pdf"
+            headers={
+                "X-Output-Filename": out_name,
+                "X-Reduction-Percent": str(reduction),
+                "X-Output-Size": str(out_size),
+                "X-Input-Size": str(input_size),
+                "Content-Disposition": f'attachment; filename="{out_name}"'
+            }
         )
-        response.headers["X-Output-Filename"] = f"compressed_{reduction}pct.pdf"
-        response.headers["X-Reduction-Percent"] = str(reduction)
-        response.headers["X-Output-Size"]       = str(out_size)
-        response.headers["X-Input-Size"]        = str(input_size)
-        return response
 
 # ── PDF: to Word ───────────────────────────────────────────────────────────────
 @app.post("/pdf/to-word")
@@ -229,13 +213,18 @@ async def pdf_to_word(
 
         mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         out_path = os.path.join(tmp, docx_files[0])
-        response = FileResponse(
-            out_path,
+        
+        with open(out_path, "rb") as out_f:
+            out_bytes = out_f.read()
+
+        return Response(
+            content=out_bytes,
             media_type=mime,
-            filename="converted.docx"
+            headers={
+                "X-Output-Filename": "converted.docx",
+                "Content-Disposition": 'attachment; filename="converted.docx"'
+            }
         )
-        response.headers["X-Output-Filename"] = "converted.docx"
-        return response
 
 # ── PDF: OCR ──────────────────────────────────────────────────────────────────
 @app.post("/pdf/ocr")
@@ -277,9 +266,17 @@ async def ocr_pdf(
             except Exception:
                 shutil.copy(in_path, out_path)
 
-        response = FileResponse(out_path, media_type="application/pdf", filename="ocr_output.pdf")
-        response.headers["X-Output-Filename"] = "ocr_output.pdf"
-        return response
+        with open(out_path, "rb") as out_f:
+            out_bytes = out_f.read()
+
+        return Response(
+            content=out_bytes,
+            media_type="application/pdf",
+            headers={
+                "X-Output-Filename": "ocr_output.pdf",
+                "Content-Disposition": 'attachment; filename="ocr_output.pdf"'
+            }
+        )
 
 # ── PDF: Extract Tables ────────────────────────────────────────────────────────
 @app.post("/pdf/extract-tables")
@@ -319,9 +316,18 @@ async def extract_tables(
             tables.export(out_path, f="csv", compress=False)
             mime = "text/csv"
 
-        response = FileResponse(out_path, media_type=mime, filename=f"tables.{output_format}")
-        response.headers["X-Output-Filename"] = f"tables.{output_format}"
-        return response
+        with open(out_path, "rb") as out_f:
+            out_bytes = out_f.read()
+
+        out_name = f"tables.{output_format}"
+        return Response(
+            content=out_bytes,
+            media_type=mime,
+            headers={
+                "X-Output-Filename": out_name,
+                "Content-Disposition": f'attachment; filename="{out_name}"'
+            }
+        )
 
 # ── Video: Compress ────────────────────────────────────────────────────────────
 @app.post("/video/compress")
@@ -359,10 +365,18 @@ async def compress_video(
         output_size = os.path.getsize(out_path)
         reduction   = max(0, round((1 - output_size / input_size) * 100))
 
-        response = FileResponse(out_path, media_type="video/mp4", filename="compressed.mp4")
-        response.headers["X-Output-Filename"] = "compressed.mp4"
-        response.headers["X-Reduction-Percent"] = str(reduction)
-        return response
+        with open(out_path, "rb") as out_f:
+            out_bytes = out_f.read()
+
+        return Response(
+            content=out_bytes,
+            media_type="video/mp4",
+            headers={
+                "X-Output-Filename": "compressed.mp4",
+                "X-Reduction-Percent": str(reduction),
+                "Content-Disposition": 'attachment; filename="compressed.mp4"'
+            }
+        )
 
 # ── Audio: Convert ────────────────────────────────────────────────────────────
 @app.post("/audio/convert")
@@ -401,9 +415,18 @@ async def convert_audio(
         if not os.path.exists(out_path) or os.path.getsize(out_path) == 0:
             raise HTTPException(500, f"Audio conversion failed: {r.stderr.decode()[-200:]}")
 
-        response = FileResponse(out_path, media_type=fmt["mime"], filename=f"converted.{fmt['ext']}")
-        response.headers["X-Output-Filename"] = f"converted.{fmt['ext']}"
-        return response
+        with open(out_path, "rb") as out_f:
+            out_bytes = out_f.read()
+
+        out_name = f"converted.{fmt['ext']}"
+        return Response(
+            content=out_bytes,
+            media_type=fmt["mime"],
+            headers={
+                "X-Output-Filename": out_name,
+                "Content-Disposition": f'attachment; filename="{out_name}"'
+            }
+        )
 
 # ── Image: Background Remove ───────────────────────────────────────────────────
 @app.post("/image/bg-remove")
@@ -429,6 +452,14 @@ async def remove_background(
         except Exception as e:
             raise HTTPException(500, f"Background removal failed: {e}")
 
-        response = FileResponse(out_path, media_type="image/png", filename="no_background.png")
-        response.headers["X-Output-Filename"] = "no_background.png"
-        return response
+        with open(out_path, "rb") as out_f:
+            out_bytes = out_f.read()
+
+        return Response(
+            content=out_bytes,
+            media_type="image/png",
+            headers={
+                "X-Output-Filename": "no_background.png",
+                "Content-Disposition": 'attachment; filename="no_background.png"'
+            }
+        )
