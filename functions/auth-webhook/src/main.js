@@ -1,15 +1,11 @@
-/**
- * auth-webhook — Called when a new user signs up (Appwrite Auth Event).
- * Creates users_meta record, welcome notification, and sends welcome email via Resend.
- */
-import { Client, Databases, ID, Query } from 'node-appwrite';
+import { Client, Databases, Users, ID, Query } from 'node-appwrite';
 
 function parseBody(req) {
   if (req.bodyRaw && typeof req.bodyRaw === 'string') {
-    try { return JSON.parse(req.bodyRaw); } catch { /* ignore */ }
+    try { return JSON.parse(req.bodyRaw); } catch {}
   }
   if (req.body && typeof req.body === 'string') {
-    try { return JSON.parse(req.body); } catch { /* ignore */ }
+    try { return JSON.parse(req.body); } catch {}
   }
   if (typeof req.body === 'object' && req.body !== null) {
     return req.body;
@@ -77,6 +73,39 @@ async function sendWelcomeEmail(userEmail, userName) {
 export default async ({ req, res, log, error }) => {
   const body = parseBody(req);
 
+  const client = new Client()
+    .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
+    .setProject(process.env.APPWRITE_PROJECT_ID || '69c58725000ef2b43f18')
+    .setKey(process.env.APPWRITE_API_KEY);
+
+  const users = new Users(client);
+  const db = new Databases(client);
+  const databaseId = process.env.DATABASE_ID || 'qofeno_db';
+  const now = new Date().toISOString();
+
+  // Handle direct client token exchange via Server API Key
+  if (body.action === 'exchange_token' && body.userId) {
+    try {
+      const session = await users.createSession(body.userId);
+      const user = await users.get(body.userId);
+      log(`Server session created for user ${body.userId}`);
+      return res.json({
+        ok: true,
+        sessionSecret: session.secret,
+        user: {
+          $id: user.$id,
+          name: user.name || user.email,
+          email: user.email,
+          emailVerification: user.emailVerification,
+          labels: user.labels || [],
+        }
+      });
+    } catch (err) {
+      error(`Token exchange error for user ${body.userId}: ${err.message}`);
+      return res.json({ ok: false, error: err.message }, 400);
+    }
+  }
+
   // Support multiple event payload shapes from Appwrite
   const userId = body.user_id || body.userId || body.$id
     || body.event?.$id || body.user?.$id || body?.payload?.$id
@@ -89,15 +118,6 @@ export default async ({ req, res, log, error }) => {
     return res.json({ success: false, error: 'user_id required' }, 400);
   }
 
-  const client = new Client()
-    .setEndpoint(process.env.APPWRITE_ENDPOINT)
-    .setProject(process.env.APPWRITE_PROJECT_ID)
-    .setKey(process.env.APPWRITE_API_KEY);
-
-  const db = new Databases(client);
-  const databaseId = process.env.DATABASE_ID;
-  const now = new Date().toISOString();
-
   try {
     // Check if user_meta already exists (idempotent)
     const existing = await db.listDocuments(databaseId, 'users_meta', [Query.equal('user_id', userId), Query.limit(1)]);
@@ -108,53 +128,44 @@ export default async ({ req, res, log, error }) => {
       return res.json({ success: true, user_id: userId, created: false });
     }
 
-    // Create users_meta document
+    // Create users_meta record (default: free plan)
+    const isFounder = userEmail.toLowerCase() === 'sohailkhannn.0525@gmail.com';
+    const plan = isFounder ? 'teams' : 'free';
+
     await db.createDocument(databaseId, 'users_meta', ID.unique(), {
       user_id: userId,
-      plan: 'free',
-      plan_expires_at: null,
-      payment_ref: null,
-      tools_used: 0,
-      files_processed: 0,
-      storage_used: 0,
+      plan: plan,
+      storage_used_bytes: 0,
+      monthly_usage_bytes: 0,
+      tools_used_count: 0,
       created_at: now,
       updated_at: now,
     });
-    log(`Created users_meta for ${userId}`);
+    log(`Created users_meta for ${userId} with plan=${plan}`);
 
-    // Create welcome notification
+    // Create welcome notification in notifications collection
     try {
-      const welcomeTitle = 'Welcome to Qofeno Pro!';
-      const existingNotifs = await db.listDocuments(databaseId, 'notifications', [
-        Query.equal('user_id', userId),
-        Query.equal('title', welcomeTitle),
-        Query.limit(1)
-      ]);
-      if (existingNotifs.total === 0) {
-        await db.createDocument(databaseId, 'notifications', ID.unique(), {
-          user_id: userId,
-          title: welcomeTitle,
-          message: "Welcome to Mohd Zaheer Uddin's online tools platform. Upgrade to Pro/Teams for higher usage limits.",
-          type: 'info',
-          read: false,
-          link: '/pricing',
-          created_at: now,
-        });
-        log('Created welcome notification.');
-      } else {
-        log('Welcome notification already exists, skipping.');
-      }
+      await db.createDocument(databaseId, 'notifications', ID.unique(), {
+        user_id: userId,
+        title: 'Welcome to Qofeno! 🎉',
+        message: 'Your account is all set. Explore 500+ free online file tools.',
+        type: 'system',
+        read: false,
+        created_at: now,
+      });
     } catch (notifErr) {
-      log('Notification creation failed (non-fatal): ' + notifErr.message);
+      log(`Notification creation warning: ${notifErr.message}`);
     }
 
     // Send welcome email via Resend
-    const emailResult = await sendWelcomeEmail(userEmail, userName);
-    log(`Welcome email: ${JSON.stringify(emailResult)}`);
+    if (userEmail) {
+      const emailResult = await sendWelcomeEmail(userEmail, userName);
+      log(`Welcome email result for ${userEmail}: ${JSON.stringify(emailResult)}`);
+    }
 
-    return res.json({ success: true, user_id: userId, created: true, email: emailResult });
+    return res.json({ success: true, user_id: userId, created: true });
   } catch (err) {
-    error(err.message);
+    error(`auth-webhook failed: ${err.message}`);
     return res.json({ success: false, error: err.message }, 500);
   }
 };

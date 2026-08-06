@@ -257,44 +257,48 @@ async function universalFallback(context, body, storage, client) {
 
   // 12. General file fallback (for file-based tools that need real implementation)
   else if (body.file_id) {
-    const bucketId = body.bucket_id || process.env.BUCKET_INPUTS || 'tool_inputs';
-    const ep = (process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
-    const projId = process.env.APPWRITE_FUNCTION_PROJECT_ID || process.env.APPWRITE_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
-    const apiKey = process.env.APPWRITE_API_KEY || 'standard_de2628e1d388cc087d06c18709188fbba1f70ad9fb89ebb5a629d99a50b5d982c0039ecee34d13c38cf6d9376cc2076c7f38f501b5c235c9ca459dfbbe38a1a715c8fb85bf86405c1e6c322e4f6b8ceb70055f3bf146cf8cb4c8cc6d66e5747d5a8b6c6a28c070f658cd50e0a4caeddf59e59f10889149c0d32ad79457d46998';
-    const fileId = body.file_id;
+    try {
+      const bucketId = body.bucket_id || process.env.BUCKET_INPUTS || 'tool_inputs';
+      const ep = (process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
+      const projId = process.env.APPWRITE_FUNCTION_PROJECT_ID || process.env.APPWRITE_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
+      const apiKey = process.env.APPWRITE_API_KEY || 'standard_de2628e1d388cc087d06c18709188fbba1f70ad9fb89ebb5a629d99a50b5d982c0039ecee34d13c38cf6d9376cc2076c7f38f501b5c235c9ca459dfbbe38a1a715c8fb85bf86405c1e6c322e4f6b8ceb70055f3bf146cf8cb4c8cc6d66e5747d5a8b6c6a28c070f658cd50e0a4caeddf59e59f10889149c0d32ad79457d46998';
+      const fileId = body.file_id;
 
-    const resp = await fetch(`${ep}/storage/buckets/${bucketId}/files/${fileId}/download`, {
-      headers: { 'X-Appwrite-Project': projId, 'X-Appwrite-Key': apiKey },
-    });
+      const resp = await fetch(`${ep}/storage/buckets/${bucketId}/files/${fileId}/download`, {
+        headers: { 'X-Appwrite-Project': projId, 'X-Appwrite-Key': apiKey },
+      });
 
-    if (!resp.ok) {
-      throw new Error(`Unable to download source file: ${resp.status}`);
+      if (!resp.ok) {
+        responseObj = { success: false, error: `Unable to download source file (HTTP ${resp.status}). Please check your upload.` };
+      } else {
+        const buf = Buffer.from(await resp.arrayBuffer());
+        const outName = body.input_filename ? `processed-${body.input_filename}` : `${tool}-output.bin`;
+        const outFile = await storage.createFile(
+          process.env.BUCKET_OUTPUTS || 'tool_outputs',
+          ID.unique(),
+          InputFile.fromBuffer(buf, outName),
+          [Permission.read(Role.any()), Permission.delete(Role.any())]
+        );
+
+        const downloadUrl = `${ep}/storage/buckets/${process.env.BUCKET_OUTPUTS || 'tool_outputs'}/files/${outFile.$id}/download?project=${projId}`;
+        responseObj = {
+          success: true,
+          output_filename: outName,
+          download_url: downloadUrl,
+          file_id: outFile.$id,
+          output_size: buf.length
+        };
+      }
+    } catch (fallbackErr) {
+      responseObj = { success: false, error: fallbackErr.message || 'Universal fallback processing failed' };
     }
-
-    const buf = Buffer.from(await resp.arrayBuffer());
-    const outName = body.input_filename ? `processed-${body.input_filename}` : `${tool}-output.bin`;
-    const outFile = await storage.createFile(
-      process.env.BUCKET_OUTPUTS || 'tool_outputs',
-      ID.unique(),
-      InputFile.fromBuffer(buf, outName),
-      [Permission.read(Role.any()), Permission.delete(Role.any())]
-    );
-
-    const downloadUrl = `${ep}/storage/buckets/${process.env.BUCKET_OUTPUTS || 'tool_outputs'}/files/${outFile.$id}/download?project=${projId}`;
-    responseObj = {
-      success: true,
-      output_filename: outName,
-      download_url: downloadUrl,
-      file_id: outFile.$id,
-      output_size: buf.length
-    };
   } else {
     responseObj = { success: false, error: `Tool '${tool}' requires a file upload. Please upload a file to use this tool.` };
   }
 
   // Save to tool_executions for async polling support
   await saveToolExecution(client, body, responseObj);
-  return res.json(responseObj, responseObj.success ? 200 : 400);
+  return res.json(responseObj, 200);
 }
 
 export default async (context) => {
@@ -347,7 +351,13 @@ export default async (context) => {
         const bodyStr = typeof raw.body === 'string' ? JSON.parse(raw.body || '{}') : {};
         if (statusCode >= 400 || bodyStr.success === false) {
           logError(`Specific handler for '${tool}' returned error ${statusCode}: ${bodyStr.error || 'error'}. Executing Universal Fallback...`);
-          return await universalFallback(context, body, storage, client);
+          try {
+            return await universalFallback(context, body, storage, client);
+          } catch (fbErr) {
+            const errObj = { success: false, error: bodyStr.error || fbErr.message || 'Processing failed' };
+            await saveToolExecution(client, body, errObj);
+            return res.json(errObj, 200);
+          }
         }
         await saveToolExecution(client, body, bodyStr);
       } catch {}
@@ -364,6 +374,6 @@ export default async (context) => {
     logError(`Universal fallback execution error in ${tool}: ${err.stack || err.message}`);
     const failObj = { success: false, error: err.message || 'Processing failed' };
     await saveToolExecution(client, body, failObj);
-    return error(res, err.message || 'Processing failed', "PROCESSING_ERROR", 200);
+    return res.json(failObj, 200);
   }
 };

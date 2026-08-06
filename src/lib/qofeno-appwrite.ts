@@ -329,6 +329,14 @@ export async function executeJsonFunction(
     const execution = await functions.createExecution(targetId, JSON.stringify(payload), false);
     
     if (execution.status === 'failed') {
+      const raw = execution.responseBody || '';
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.error) return parsed;
+        } catch {}
+      }
+
       const serverErr = String(execution.errors || 'Function execution failed on server.');
       if (serverErr.includes('timed out') || serverErr.includes('exceed 30 seconds') || serverErr.includes('408')) {
         console.warn('Appwrite Cloud function timed out (>30s). Launching background async execution & polling DB...');
@@ -340,7 +348,11 @@ export async function executeJsonFunction(
         }
         return await pollExecutionResult(toolSlug, startTime, executionId, onProgress);
       }
-      return { success: false, error: serverErr };
+
+      const cleanMsg = (serverErr.includes('general_unknown') || serverErr.includes('Error Code: 500') || serverErr.includes('Function execution failed on server.'))
+        ? 'Processing encountered a temporary server error. Please check your options and try again.'
+        : serverErr;
+      return { success: false, error: cleanMsg };
     }
 
     const raw = execution.responseBody || '{}';
