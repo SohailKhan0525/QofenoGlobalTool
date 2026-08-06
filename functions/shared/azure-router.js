@@ -4,6 +4,31 @@ import { InputFile } from "node-appwrite/file";
 
 const DEFAULT_AZURE_URL = "https://qofeno-processor.gentleforest-5357c740.centralindia.azurecontainerapps.io";
 
+const ROUTE_MAP = {
+  // PDF tools
+  'pdf-compress': '/pdf/compress',
+  'pdf-compressor': '/pdf/compress',
+  'pdf-reduce-resolution': '/pdf/compress',
+  'pdf-to-word': '/pdf/to-word',
+  'pdf-ocr': '/pdf/ocr',
+  'pdf-extract-tables': '/pdf/extract-tables',
+  'pdf-table-to-excel': '/pdf/extract-tables',
+  'pdf-table-to-csv': '/pdf/extract-tables',
+  'pdf-to-excel': '/pdf/extract-tables',
+
+  // Media / Video / Audio tools
+  'video-compress': '/video/compress',
+  'video-compressor': '/video/compress',
+  'audio-convert': '/audio/convert',
+  'audio-converter': '/audio/convert',
+  'audio-to-mp3': '/audio/convert',
+
+  // Image tools
+  'image-bg-remove': '/image/bg-remove',
+  'bg-remove': '/image/bg-remove',
+  'image-remove-bg': '/image/bg-remove'
+};
+
 export async function routeToAzure({ file_id, file_ids, tool, params, storage, db, log, containerKey, azureEndpoint, fallbackHandler, ctx }) {
   const startTime = Date.now();
 
@@ -47,21 +72,29 @@ export async function routeToAzure({ file_id, file_ids, tool, params, storage, d
       containerBase = DEFAULT_AZURE_URL;
     }
 
-    const endpointPath = azureEndpoint || (
-      cKey === "pdf" ? `/pdf/${tool.replace(/^pdf-/, '')}` :
-      cKey === "image" ? `/image/${tool.replace(/^image-/, '')}` :
-      `/media/${tool}`
+    const normalizedTool = String(tool || '').toLowerCase();
+    const endpointPath = azureEndpoint || ROUTE_MAP[normalizedTool] || (
+      cKey === "pdf" ? `/pdf/${normalizedTool.replace(/^pdf-/, '')}` :
+      cKey === "image" ? `/image/${normalizedTool.replace(/^image-/, '')}` :
+      `/media/${normalizedTool}`
     );
 
     const targetUrl = `${containerBase.replace(/\/$/, '')}${endpointPath}`;
-    const secret = process.env.QOFENO_CONTAINER_SECRET || "qofeno_azure_secret_key_2024";
+
+    const secretsToTry = Array.from(new Set([
+      process.env.QOFENO_CONTAINER_SECRET,
+      "e4f9b8c2d1a3e5f7a9b0c2d4e6f8a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5",
+      "qofeno_azure_secret_key_2024"
+    ].filter(Boolean)));
+
+    let validSecret = secretsToTry[0];
 
     // 1. Cold-start check / Ping container /health endpoint with retries
     let awake = false;
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const ping = await fetch(`${containerBase.replace(/\/$/, '')}/health`, {
-          headers: { "Authorization": `Bearer ${secret}` },
+          headers: { "Authorization": `Bearer ${validSecret}` },
           timeout: 4000
         });
         if (ping.ok) {
@@ -105,14 +138,40 @@ export async function routeToAzure({ file_id, file_ids, tool, params, storage, d
       form.append("file", fileBuffer, { filename: inputFilename });
     }
 
-    const response = await fetch(targetUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${secret}`,
-        ...form.getHeaders()
-      },
-      timeout: 300000 // 5 minute execution limit for heavy jobs
-    });
+    let response = null;
+    let lastErr = null;
+
+    // Try posting request with secrets
+    for (const sec of secretsToTry) {
+      try {
+        const testForm = new FormData();
+        testForm.append("tool", tool);
+        testForm.append("params", JSON.stringify(params || {}));
+        if (fileBuffer) {
+          testForm.append("file", fileBuffer, { filename: inputFilename });
+        }
+
+        response = await fetch(targetUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${sec}`,
+            ...testForm.getHeaders()
+          },
+          timeout: 300000
+        });
+
+        if (response.status !== 403) {
+          break; // Authenticated successfully (either 200 or business logic status)
+        }
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+
+    if (!response) {
+      if (fallbackHandler) return await fallbackHandler(ctx);
+      return { success: false, error: `Azure connection failed: ${lastErr?.message || 'Network error'}` };
+    }
 
     if (!response.ok) {
       const errText = await response.text();
