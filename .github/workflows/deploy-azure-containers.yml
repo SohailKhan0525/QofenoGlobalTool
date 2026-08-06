@@ -43,6 +43,7 @@ jobs:
         run: |
           IMAGE="${{ secrets.AZURE_ACR_SERVER }}/qofeno-processor:latest"
           docker build \
+            --no-cache \
             --file docker/qofeno-processor/Dockerfile \
             --tag "$IMAGE" \
             docker/qofeno-processor
@@ -91,7 +92,8 @@ jobs:
             az containerapp update \
               --name           qofeno-processor \
               --resource-group "$RG" \
-              --image          "$IMAGE"
+              --image          "$IMAGE" \
+              --revision-suffix "rev-${{ github.run_number }}"
           fi
 
       # ── 7. Get FQDN and output it ──────────────────────────────────────────────
