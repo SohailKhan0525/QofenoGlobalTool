@@ -126,7 +126,15 @@ const SESSION_STORAGE_KEY = 'qofeno_session_secret';
 if (typeof window !== 'undefined') {
   const persisted = window.localStorage.getItem(SESSION_STORAGE_KEY);
   if (persisted) {
-    client.setSession(persisted);
+    try {
+      if (persisted.startsWith('ey')) {
+        client.setJWT(persisted);
+        fallbackClient.setJWT(persisted);
+      } else {
+        client.setSession(persisted);
+        fallbackClient.setSession(persisted);
+      }
+    } catch {}
   }
 }
 
@@ -139,13 +147,26 @@ export const fallbackFunctions = new Functions(fallbackClient);
 export const realtime = new Realtime(client);
 
 export function persistSession(secret: string) {
+  if (!secret) return;
   window.localStorage.setItem(SESSION_STORAGE_KEY, secret);
-  client.setSession(secret);
+  try {
+    if (secret.startsWith('ey')) {
+      client.setJWT(secret);
+      fallbackClient.setJWT(secret);
+    } else {
+      client.setSession(secret);
+      fallbackClient.setSession(secret);
+    }
+  } catch {}
 }
 
 export function clearPersistedSession() {
   window.localStorage.removeItem(SESSION_STORAGE_KEY);
-  client.setSession('');
+  window.localStorage.removeItem('qofeno_cached_user');
+  try {
+    client.setSession('');
+    fallbackClient.setSession('');
+  } catch {}
 }
 
 export function isAppwriteConfigured() {
@@ -195,14 +216,41 @@ export function resolveGroupedFunctionId(toolSlug: string, category?: string): s
   return 'qofeno-pdf';
 }
 
-async function pollExecutionResult(toolSlug: string, startTime: number): Promise<any> {
+async function pollExecutionResult(
+  toolSlug: string,
+  startTime: number,
+  executionId?: string,
+  onProgress?: (progress: number, message: string) => void
+): Promise<any> {
   const maxWaitMs = 300000; // 5 minutes polling window
-  const pollIntervalMs = 2000;
+  const pollIntervalMs = 1500;
   const ep = (env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
   const pid = env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 
+  let pollCount = 0;
+
   while (Date.now() - startTime < maxWaitMs) {
+    pollCount++;
     await new Promise((r) => setTimeout(r, pollIntervalMs));
+
+    // 1. Poll tool_execution_logs for live progress messages from backend
+    if (onProgress && executionId) {
+      try {
+        const logDocs = await databases.listDocuments(DATABASE_ID, 'tool_execution_logs', [
+          Query.equal('execution_id', executionId),
+          Query.orderDesc('$createdAt'),
+          Query.limit(1)
+        ]);
+        if (logDocs.documents.length > 0) {
+          const latestLog = logDocs.documents[0];
+          if (latestLog.message) {
+            onProgress(latestLog.progress || 88, latestLog.message);
+          }
+        }
+      } catch {}
+    }
+
+    // 2. Poll tool_executions for final completion document
     try {
       let docs = await databases.listDocuments(DATABASE_ID, 'tool_executions', [
         Query.equal('tool_slug', toolSlug),
@@ -222,6 +270,7 @@ async function pollExecutionResult(toolSlug: string, startTime: number): Promise
           const docTime = new Date(latest.$createdAt).getTime();
           if (docTime >= startTime - 10000) {
             if (latest.status === 'completed' || latest.download_url) {
+              if (onProgress) onProgress(100, 'Processing complete!');
               return {
                 success: true,
                 output_filename: latest.output_filename || `${toolSlug}_result`,
@@ -242,6 +291,11 @@ async function pollExecutionResult(toolSlug: string, startTime: number): Promise
     } catch (e) {
       console.warn('Polling tool_executions document error:', e);
     }
+
+    if (onProgress && pollCount % 4 === 0) {
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      onProgress(Math.min(96, 85 + Math.floor(pollCount / 2)), `Background task running on server (${elapsed}s elapsed)...`);
+    }
   }
 
   const timeoutErr = new Error(`Tool Processing Timeout [${toolSlug}]: Processing timed out on server (>5 min).`);
@@ -250,7 +304,11 @@ async function pollExecutionResult(toolSlug: string, startTime: number): Promise
   return { success: false, error: 'Processing timed out on server. Please try again with a smaller file or different options.' };
 }
 
-export async function executeJsonFunction(functionId: string, payload: Record<string, unknown>) {
+export async function executeJsonFunction(
+  functionId: string,
+  payload: Record<string, unknown>,
+  onProgress?: (progress: number, message: string) => void
+) {
   const validFunctionIds = [
     'qofeno-pdf', 'qofeno-image', 'qofeno-video', 'qofeno-audio',
     'qofeno-text', 'qofeno-developer', 'qofeno-data', 'qofeno-security',
@@ -264,6 +322,7 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
   }
 
   const toolSlug = String(payload.tool || targetId);
+  const executionId = String(payload.execution_id || payload.executionId || '');
   const startTime = Date.now();
 
   try {
@@ -273,12 +332,13 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
       const serverErr = String(execution.errors || 'Function execution failed on server.');
       if (serverErr.includes('timed out') || serverErr.includes('exceed 30 seconds') || serverErr.includes('408')) {
         console.warn('Appwrite Cloud function timed out (>30s). Launching background async execution & polling DB...');
+        if (onProgress) onProgress(85, 'Function execution extended. Polling background result...');
         try {
           await functions.createExecution(targetId, JSON.stringify(payload), true);
         } catch (asyncErr) {
           console.warn('Async execution launch warning:', asyncErr);
         }
-        return await pollExecutionResult(toolSlug, startTime);
+        return await pollExecutionResult(toolSlug, startTime, executionId, onProgress);
       }
       return { success: false, error: serverErr };
     }
@@ -297,12 +357,13 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
 
     if (msg1.includes('timed out') || msg1.includes('exceed 30 seconds') || msg1.includes('408')) {
       console.warn('Synchronous execution timed out (>30s). Triggering background async execution and polling...');
+      if (onProgress) onProgress(85, 'Server connection timed out (>30s). Switching to live background polling...');
       try {
         await functions.createExecution(targetId, JSON.stringify(payload), true);
       } catch (asyncErr) {
         console.warn('Async execution launch warning:', asyncErr);
       }
-      return await pollExecutionResult(toolSlug, startTime);
+      return await pollExecutionResult(toolSlug, startTime, executionId, onProgress);
     }
 
     console.warn(`Primary Appwrite endpoint failed (${msg1}), retrying with fallback endpoint...`);
@@ -312,12 +373,13 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
         const serverErr = String(execution2.errors || 'Function execution failed on server.');
         if (serverErr.includes('timed out') || serverErr.includes('exceed 30 seconds') || serverErr.includes('408')) {
           console.warn('Fallback execution timed out. Launching async execution and polling DB...');
+          if (onProgress) onProgress(85, 'Fallback connection extended. Polling background result...');
           try {
             await fallbackFunctions.createExecution(targetId, JSON.stringify(payload), true);
           } catch (asyncErr) {
             console.warn('Async execution launch warning:', asyncErr);
           }
-          return await pollExecutionResult(toolSlug, startTime);
+          return await pollExecutionResult(toolSlug, startTime, executionId, onProgress);
         }
         return { success: false, error: serverErr };
       }
@@ -336,12 +398,13 @@ export async function executeJsonFunction(functionId: string, payload: Record<st
 
       if (msg2.includes('timed out') || msg2.includes('exceed 30 seconds') || msg2.includes('408')) {
         console.warn('Fallback endpoint timed out. Triggering background async execution and polling...');
+        if (onProgress) onProgress(85, 'Fallback endpoint timed out. Switching to live background polling...');
         try {
           await fallbackFunctions.createExecution(targetId, JSON.stringify(payload), true);
         } catch (asyncErr) {
           console.warn('Async execution launch warning:', asyncErr);
         }
-        return await pollExecutionResult(toolSlug, startTime);
+        return await pollExecutionResult(toolSlug, startTime, executionId, onProgress);
       }
 
       console.error('All Appwrite endpoints failed:', err2);

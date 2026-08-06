@@ -11,7 +11,7 @@ import { executeJsonFunction, FUNCTION_IDS, storage, fallbackStorage, realtime, 
 import { trackToolUse, trackFileProcessed, trackDownload } from '../../lib/analytics';
 import { captureException } from '../../lib/sentry';
 
-import { ID, Permission, Role } from 'appwrite';
+import { ID, Permission, Role, Query } from 'appwrite';
 
 import type { ToolCard } from '../../lib/toolCatalog';
 
@@ -1309,7 +1309,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
   const [fields, setFields] = useState<Record<string, any>>({});
   const [wrongType, setWrongType] = useState(false);
   const [progressMessage, setProgressMessage] = useState<string>('Starting...');
-  const realtimeUnsubRef = useRef<(() => void) | null>(null);
+  const realtimeUnsubRef = useRef<any>(null);
 
   // Reset when tool changes
   useEffect(() => {
@@ -1389,7 +1389,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     const bad = arr.some(f => !isFileTypeAccepted(f));
     if (bad) {
       setWrongType(true);
-      toast.error(`Unsupported file! Only ${acceptedExts || 'supported format'} files are allowed for ${tool.title || tool.slug}.`);
+      toast.error(`Unsupported file! Only ${acceptedExts || 'supported format'} files are allowed for ${tool.name || tool.slug}.`);
       return;
     }
     const maxFiles = config.maxFiles || (isMultiple ? 20 : 1);
@@ -1442,47 +1442,85 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
     setErrorMsg(null);
     setProgressMessage('Uploading your file...');
 
-    // Subscribe to real-time progress updates via tool_execution_logs
     const executionId = `exec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const progressSteps = [
-      { progress: 10, message: 'Uploading your file...' },
-      { progress: 25, message: 'File received — preparing to process...' },
-      { progress: 45, message: 'Processing on server...' },
-      { progress: 65, message: 'Applying transformations...' },
-      { progress: 80, message: 'Finalizing output file...' },
-      { progress: 90, message: 'Uploading result...' },
-    ];
-    let stepIdx = 0;
+    const startTime = Date.now();
 
+    // 1. Dynamic Asymptotic Progress Engine — never stuck at 90%!
     const ticker = window.setInterval(() => {
-      if (stepIdx < progressSteps.length) {
-        const step = progressSteps[stepIdx];
-        setProgress(step.progress);
-        setProgressMessage(step.message);
-        stepIdx++;
-      }
-    }, 2500);
+      const elapsedSec = (Date.now() - startTime) / 1000;
+      
+      let calcProgress = 10;
+      let msg = 'Uploading your file...';
 
-    // Appwrite Realtime subscription for live status from tool_execution_logs
+      if (elapsedSec < 3) {
+        calcProgress = 10 + (elapsedSec / 3) * 25; // 10% -> 35%
+        msg = 'Uploading file & initializing server...';
+      } else if (elapsedSec < 12) {
+        calcProgress = 35 + ((elapsedSec - 3) / 9) * 40; // 35% -> 75%
+        msg = 'Processing on cloud server...';
+      } else if (elapsedSec < 28) {
+        calcProgress = 75 + ((elapsedSec - 12) / 16) * 17; // 75% -> 92%
+        msg = 'Applying heavy transformations & AI processing...';
+      } else {
+        // Smooth asymptotic creep towards 98% (never freezes!)
+        calcProgress = 92 + 6 * (1 - Math.exp(-0.03 * (elapsedSec - 28)));
+        const dynamicMsgs = [
+          '⚡ Heavy processing in progress...',
+          '🔥 Cloud container active — finalizing output...',
+          'Almost ready — polishing output file...',
+          'Finalizing response & generating download link...'
+        ];
+        const msgIdx = Math.floor((elapsedSec - 28) / 5) % dynamicMsgs.length;
+        msg = dynamicMsgs[msgIdx];
+      }
+
+      setProgress((prev) => Math.max(prev, Math.min(98, Math.round(calcProgress))));
+      setProgressMessage((prev) => {
+        if (prev.startsWith('Complete!') || prev.startsWith('Error:')) return prev;
+        return msg;
+      });
+    }, 800);
+
+    // 2. Appwrite Realtime subscription for live status from tool_execution_logs
     try {
       const channel = `databases.${DATABASE_ID}.collections.tool_execution_logs.documents`;
       const unsub = realtime.subscribe(channel, (response) => {
         const doc = response.payload as any;
         if (!doc) return;
-        if (doc.status === 'processing' && doc.message) {
-          setProgressMessage(doc.message);
-          if (doc.progress) setProgress(doc.progress);
-        } else if (doc.status === 'completed') {
-          setProgressMessage('Complete! Preparing download...');
-          setProgress(100);
-        } else if (doc.status === 'failed' && doc.error_message) {
-          setProgressMessage(`Error: ${doc.error_message}`);
+        if (doc.execution_id === executionId || doc.tool_slug === tool.slug) {
+          if (doc.status === 'processing' && doc.message) {
+            setProgressMessage(doc.message);
+            if (doc.progress) setProgress((prev) => Math.max(prev, doc.progress));
+          } else if (doc.status === 'completed') {
+            setProgressMessage('Complete! Preparing download...');
+            setProgress(100);
+          } else if (doc.status === 'failed' && doc.error_message) {
+            setProgressMessage(`Error: ${doc.error_message}`);
+          }
         }
       });
       realtimeUnsubRef.current = unsub;
     } catch {
-      // Realtime not critical — polling fallback handles result
+      // Realtime fallback handled below
     }
+
+    // 3. Active DB Polling Listener (fallback every 1.5s in case WebSockets fail)
+    const dbPollInterval = window.setInterval(async () => {
+      try {
+        const logDocs = await databases.listDocuments(DATABASE_ID, 'tool_execution_logs', [
+          Query.equal('execution_id', executionId),
+          Query.orderDesc('$createdAt'),
+          Query.limit(1)
+        ]);
+        if (logDocs.documents.length > 0) {
+          const log = logDocs.documents[0];
+          if (log.message) {
+            setProgressMessage(log.message);
+            if (log.progress) setProgress((prev) => Math.max(prev, log.progress));
+          }
+        }
+      } catch {}
+    }, 1500);
 
     try {
       let payload: Record<string, unknown>;
@@ -1506,6 +1544,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           })
         );
         payload = {
+          execution_id: executionId,
           tool: tool.slug,
           bucket_id: bucketInputs,
           file_id: uploadedFiles[0]?.file_id || null,
@@ -1520,6 +1559,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         const primary = files[0];
         const uploaded = await safeUpload(primary);
         payload = {
+          execution_id: executionId,
           tool: tool.slug,
           bucket_id: bucketInputs,
           file_id: uploaded.$id,
@@ -1531,9 +1571,17 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         };
       }
 
-      trackToolUse(tool.slug, tool.title || tool.slug, tool.category || 'General', tool.type === 'Pro');
+      trackToolUse(tool.slug, tool.name || tool.slug, tool.category || 'General', tool.type === 'Pro');
 
-      const response = await executeJsonFunction(tool.functionId || config.functionId, payload);
+      const response = await executeJsonFunction(
+        tool.functionId || config.functionId,
+        payload,
+        (prog, msg) => {
+          if (prog) setProgress((prev) => Math.max(prev, prog));
+          if (msg) setProgressMessage(msg);
+        }
+      );
+
       setProgress(100);
 
       if (!response || response.success === false) {
@@ -1587,6 +1635,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       toast.error(message);
     } finally {
       window.clearInterval(ticker);
+      window.clearInterval(dbPollInterval);
       if (realtimeUnsubRef.current) {
         try {
           if (typeof realtimeUnsubRef.current === 'function') {
@@ -1680,6 +1729,14 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         animate={{ opacity: 1 }}
         className="flex flex-col items-center justify-center py-20 gap-6 w-full"
       >
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-purple-50 border border-purple-200/80 text-purple-700 text-xs font-extrabold rounded-full shadow-xs">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-600"></span>
+          </span>
+          Live Listener Connected &bull; Realtime Processing
+        </div>
+
         <div className="relative w-24 h-24">
           <svg className="w-24 h-24" viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="34" stroke="#E9D5FF" strokeWidth="6" fill="none" />
@@ -1702,11 +1759,11 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="text-sm text-purple-600 font-medium mt-2"
+            className="text-sm text-purple-600 font-semibold mt-2 min-h-[20px]"
           >
             {progressMessage}
           </motion.p>
-          <p className="text-xs text-neutral-400 mt-1">Running on our servers — please wait</p>
+          <p className="text-xs text-neutral-400 mt-1">Running on Qofeno cloud servers — please keep this tab open</p>
         </div>
         <div className="w-full max-w-sm bg-neutral-100 rounded-full h-2.5 overflow-hidden">
           <motion.div
@@ -1718,10 +1775,10 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
         {/* Live steps list */}
         <div className="w-full max-w-sm space-y-1.5">
           {[
-            { label: 'File uploaded', done: progress >= 20 },
-            { label: 'Processing on server', done: progress >= 50 },
-            { label: 'Applying transformations', done: progress >= 70 },
-            { label: 'Output ready', done: progress >= 95 },
+            { label: 'File uploaded & validated', done: progress >= 20 },
+            { label: 'Processing on cloud server', done: progress >= 50 },
+            { label: 'Applying transformations', done: progress >= 75 },
+            { label: 'Finalizing & generating link', done: progress >= 95 },
           ].map((s, i) => (
             <motion.div
               key={i}
