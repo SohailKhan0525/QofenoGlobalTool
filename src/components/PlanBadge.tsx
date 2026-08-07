@@ -2,13 +2,13 @@ import React from 'react';
 
 export function PlanBadge({ plan, className = '' }: { plan: string; className?: string }) {
   if (plan === 'teams') return (
-    <span className={`px-2.5 py-0.5 bg-purple-900 text-purple-100 text-xs font-bold rounded-full shadow-xs ${className}`}>
-      TEAMS ✦
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 bg-purple-900 text-purple-100 text-xs font-bold rounded-full shadow-xs ${className}`}>
+      <img src="/qofeno.png" alt="Q" className="w-3 h-3 object-contain" /> TEAMS
     </span>
   );
   if (plan === 'pro') return (
-    <span className={`px-2.5 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full shadow-xs ${className}`}>
-      PRO ✦
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold rounded-full shadow-xs ${className}`}>
+      <img src="/qofeno.png" alt="Q" className="w-3 h-3 object-contain" /> PRO
     </span>
   );
   return (

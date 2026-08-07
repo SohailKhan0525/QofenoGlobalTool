@@ -4,25 +4,31 @@ interface QofenoLogoProps {
   size?: number;
   showText?: boolean;
   className?: string;
+  textClass?: string;
 }
 
 export function QofenoLogo({ size = 36, showText = true, className = '' }: QofenoLogoProps) {
-  return (
-    <div className={`flex items-center gap-2.5 select-none ${className}`}>
-      <div
-        className="rounded-xl bg-gradient-to-tr from-purple-700 via-purple-600 to-fuchsia-500 p-2 text-white shadow-md shadow-purple-500/20 flex items-center justify-center"
-        style={{ width: size, height: size }}
-      >
-        <svg viewBox="0 0 228 216" className="w-full h-full fill-current">
-          <path d="M 119 180 A 65.9 65.9 0 1 1 155 151.5 L 143 141 A 49.2 49.2 0 1 0 108 166 Z" />
-          <path d="M 97 134 L 118 134 L 165 183 L 143.5 182.5 Z" />
-        </svg>
+  if (showText) {
+    return (
+      <div className={`flex items-center select-none ${className}`}>
+        <img
+          src="/qofeno_full.svg"
+          alt="Qofeno"
+          style={{ height: size }}
+          className="w-auto object-contain"
+        />
       </div>
-      {showText && (
-        <span className="font-display font-black text-2xl bg-gradient-to-r from-purple-700 via-purple-600 to-fuchsia-600 bg-clip-text text-transparent tracking-tight">
-          Qofeno
-        </span>
-      )}
+    );
+  }
+
+  return (
+    <div className={`flex items-center justify-center select-none ${className}`}>
+      <img
+        src="/favicon.svg"
+        alt="Qofeno"
+        style={{ width: size, height: size }}
+        className="object-contain"
+      />
     </div>
   );
 }

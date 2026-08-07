@@ -12709,3 +12709,34 @@ export function useToolCatalog(): ToolCatalogState {
 
   return state;
 }
+
+
+
+export async function trackToolView(toolSlug: string): Promise<void> {
+  if (!toolSlug || typeof window === 'undefined') return;
+  const key = `qofeno_viewed_${toolSlug}`;
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, "1");
+
+  try {
+    const existing = await databases.listDocuments(DATABASE_ID, "tool_views", [
+      Query.equal("tool_slug", toolSlug),
+      Query.limit(1)
+    ]);
+
+    if (existing.total > 0) {
+      const doc = existing.documents[0];
+      await databases.updateDocument(DATABASE_ID, "tool_views", doc.$id, {
+        count: (doc.count || 0) + 1
+      });
+    } else {
+      await databases.createDocument(DATABASE_ID, "tool_views", 'unique()', {
+        tool_slug: toolSlug,
+        count: 1,
+        likes: 0
+      });
+    }
+  } catch (err) {
+    console.warn("View tracking error:", err);
+  }
+}

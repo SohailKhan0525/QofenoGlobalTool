@@ -1137,37 +1137,23 @@ export default function App() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute top-full mt-2 right-0 w-48 bg-white border border-neutral-200 shadow-xl rounded-xl p-2 z-50 pointer-events-auto"
+                    className="absolute top-full mt-2 right-0 w-44 bg-white border border-neutral-200/80 shadow-xl rounded-2xl p-1.5 z-50 pointer-events-auto"
                   >
-                    <div className="px-3 py-2 border-b border-neutral-100 mb-2">
-                      <p className="text-xs font-bold text-[#0F0A1E]">{user?.plan === 'pro' ? 'Pro Account' : 'Free Account'}</p>
-                    </div>
-                    <button 
-                      onClick={() => { setShowProfileMenu(false); setActiveTab('profile'); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer mb-1"
-                    >
-                      <FontAwesomeIcon icon={faUser} className="w-4 h-4" /> Profile
-                    </button>
                     <button 
                       onClick={() => { setShowProfileMenu(false); setActiveTab('settings'); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer mb-1"
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold text-neutral-700 hover:bg-neutral-100 rounded-xl transition-colors cursor-pointer"
                     >
-                      <FontAwesomeIcon icon={faGear} className="w-4 h-4" /> Settings
+                      <FontAwesomeIcon icon={faGear} className="w-3.5 h-3.5 text-neutral-400" /> Settings
                     </button>
-                    <button 
-                      onClick={() => { setShowProfileMenu(false); setShowPreferences(true); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer mb-1"
-                    >
-                      <FontAwesomeIcon icon={faSliders} className="w-4 h-4" /> Preferences
-                    </button>
+                    <div className="h-px bg-neutral-100 my-1" />
                     <button 
                       onClick={() => {
                         setShowProfileMenu(false);
                         void handleLogout();
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
                     >
-                      <FontAwesomeIcon icon={faRightFromBracket} className="w-4 h-4" /> Logout
+                      <FontAwesomeIcon icon={faRightFromBracket} className="w-3.5 h-3.5 text-red-500" /> Log out
                     </button>
                   </motion.div>
                 )}

@@ -26,6 +26,10 @@ import { FILE_TOOL_SLUGS, FileToolWorkspace } from './FileToolWorkspace';
 import { useAuth } from '../../context/AuthContext';
 import { PayPalButton } from '../PayPal/PayPalButton';
 import { Turnstile } from '@marsidev/react-turnstile';
+import { UpgradeCard } from '../tools/UpgradeCard';
+import { LikeButton } from '../tools/LikeButton';
+import { ShareButton } from '../tools/ShareButton';
+import { trackToolView } from '../../lib/toolCatalog';
 
 const getFAQsForCategory = (category: string, toolName: string) => {
   const common = [
@@ -205,6 +209,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     let cancelled = false;
     const sendView = async () => {
       try {
+        void trackToolView(toolSlug);
         await trackEvent('view', toolSlug, currentUserId || undefined);
         if (cancelled) return;
         if (currentUserId) {
@@ -547,35 +552,18 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                    <FontAwesomeIcon icon={faHeart} className="w-4 h-4" /> Likes
+                    <FontAwesomeIcon icon={faHeart} className="w-4 h-4 text-red-500" /> Likes
                   </span>
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-[#0F0A1E]">{likes.toLocaleString()}</span>
-                    <button
-                      onClick={toggleLike}
-                      className={cn(
-                        "p-2 rounded-full transition-all cursor-pointer",
-                        hasLiked ? "bg-pink-100 text-pink-600 shadow-sm" : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600"
-                      )}
-                    >
-                      <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", hasLiked && "text-pink-500")} />
-                    </button>
-                  </div>
+                  <LikeButton toolSlug={toolSlug} initialLikes={likes} />
+                </div>
+                <div className="pt-4 border-t border-neutral-100 flex justify-end">
+                  <ShareButton toolName={tool.name} toolSlug={toolSlug} />
                 </div>
               </div>
 
-              <div className="bg-purple-50 border border-purple-100 rounded-3xl p-6 shadow-sm">
-                <h3 className="font-bold text-purple-900 mb-2">Upgrade to Pro</h3>
-                <p className="text-xs text-purple-700 leading-relaxed mb-4">
-                  Get unlimited bulk processing, secure API access, and no file size limits.
-                </p>
-                <button
-                  onClick={() => onNavigate('pricing')}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-colors cursor-pointer text-sm"
-                >
-                  View Plans
-                </button>
-              </div>
+              {(!user || user.plan === 'free') && (
+                <UpgradeCard toolName={tool.name} onUpgrade={() => onNavigate('pricing')} />
+              )}
             </div>
           </div>
         </div>
@@ -948,37 +936,20 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   </div>
                   <div className="flex justify-between items-center py-3">
                     <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                      <FontAwesomeIcon icon={faHeart} className="w-4 h-4" /> Likes
+                      <FontAwesomeIcon icon={faHeart} className="w-4 h-4 text-red-500" /> Likes
                     </span>
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold text-[#0F0A1E]">{likes.toLocaleString()}</span>
-                      <button 
-                        onClick={toggleLike}
-                        className={cn(
-                          "p-2 rounded-full transition-all cursor-pointer",
-                          hasLiked ? "bg-pink-100 text-pink-600 shadow-sm" : "bg-neutral-100 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-600"
-                        )}
-                      >
-                        <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", hasLiked && "fill-current")} />
-                      </button>
-                    </div>
+                    <LikeButton toolSlug={toolSlug} initialLikes={likes} />
+                  </div>
+                  <div className="pt-4 border-t border-neutral-100 flex justify-end">
+                    <ShareButton toolName={tool.name} toolSlug={toolSlug} />
                   </div>
                 </>
               )}
             </div>
 
-            <div className="bg-purple-50 border border-purple-100 rounded-3xl p-6 shadow-sm">
-              <h3 className="font-bold text-purple-900 mb-2">Upgrade to Pro</h3>
-              <p className="text-xs text-purple-700 leading-relaxed mb-4">
-                Get unlimited bulk processing, secure API access, and no file size limits.
-              </p>
-              <button 
-                onClick={() => onNavigate('pricing')}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-colors cursor-pointer text-sm"
-              >
-                View Plans
-              </button>
-            </div>
+            {(!user || user.plan === 'free') && (
+              <UpgradeCard toolName={tool.name} onUpgrade={() => onNavigate('pricing')} />
+            )}
           </div>
         </div>
 

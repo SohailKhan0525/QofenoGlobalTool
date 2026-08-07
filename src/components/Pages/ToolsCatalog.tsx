@@ -51,7 +51,7 @@ interface ToolsCatalogProps {
 
 export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   const { tools, categoryCards } = useToolCatalog();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Tools');
@@ -241,9 +241,17 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
       .slice(0, 16);
   }, [tools]);
 
+  const userPlan = user?.plan || 'free';
+  const isFreePlan = !user || userPlan === 'free';
+
   const filteredTools = useMemo(() => {
     const sourceTools = tools.length > 0 ? tools : FALLBACK_TOOLS;
     let list = sourceTools.filter(tool => {
+      // Free/anonymous users see only free tools by default (unless filtering specifically by Pro)
+      if (isFreePlan && activeFilterTag !== 'Pro' && tool.type === 'Pro') {
+        return false;
+      }
+
       // Search query check (matches name, description or tags)
       const matchesSearch = tool.name.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
                 tool.desc.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -512,6 +520,25 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
           {/* MAIN COLUMN: CARDS GRID REFLOWS */}
           <main className="flex-1">
+            {isFreePlan && (
+              <div className="bg-purple-50/80 border border-purple-100 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                <div>
+                  <p className="text-sm font-bold text-purple-900">
+                    Showing free tools only
+                  </p>
+                  <p className="text-xs text-purple-700 mt-0.5 leading-relaxed">
+                    Upgrade to Pro to unlock 200+ additional advanced tools, 500MB file limits, and Ghostscript quality.
+                  </p>
+                </div>
+                <button
+                  onClick={() => onNavigate('pricing')}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl whitespace-nowrap transition-colors shadow-sm cursor-pointer"
+                >
+                  See all tools →
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-6">
               <span className="text-sm font-semibold text-neutral-500">
                 Found <span className="text-neutral-900 font-extrabold">{filteredTools.length}</span> tools

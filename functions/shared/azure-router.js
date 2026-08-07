@@ -29,6 +29,15 @@ const ROUTE_MAP = {
   'image-remove-bg': '/image/bg-remove'
 };
 
+function getMimeType(filename) {
+  const ext = (filename || '').split('.').pop().toLowerCase();
+  if (ext === 'pdf') return 'application/pdf';
+  if (['png','jpg','jpeg','webp','gif'].includes(ext)) return `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+  if (['mp4','webm','mkv','avi'].includes(ext)) return `video/${ext}`;
+  if (['mp3','wav','ogg','flac','aac'].includes(ext)) return `audio/${ext}`;
+  return 'application/octet-stream';
+}
+
 export async function routeToAzure({ file_id, file_ids, tool, params, storage, db, log, containerKey, azureEndpoint, fallbackHandler, ctx }) {
   const startTime = Date.now();
 
@@ -120,7 +129,8 @@ export async function routeToAzure({ file_id, file_ids, tool, params, storage, d
     if (file_id) {
       try {
         const downloaded = await storage.getFileDownload(bucketId, file_id);
-        fileBuffer = Buffer.from(downloaded);
+        fileBuffer = Buffer.isBuffer(downloaded) ? downloaded : Buffer.from(downloaded);
+        if (log) log(`Downloaded file from Appwrite storage: ${fileBuffer.length} bytes`);
       } catch (err) {
         if (log) log(`Failed to download input file from storage: ${err.message}`);
         if (fallbackHandler) return await fallbackHandler(ctx);
@@ -130,14 +140,6 @@ export async function routeToAzure({ file_id, file_ids, tool, params, storage, d
 
     // 3. Post request to Azure container endpoint
     const FormData = (await import("form-data")).default;
-    const form = new FormData();
-    form.append("tool", tool);
-    form.append("params", JSON.stringify(params || {}));
-
-    if (fileBuffer) {
-      form.append("file", fileBuffer, { filename: inputFilename });
-    }
-
     let response = null;
     let lastErr = null;
 
@@ -145,10 +147,21 @@ export async function routeToAzure({ file_id, file_ids, tool, params, storage, d
     for (const sec of secretsToTry) {
       try {
         const testForm = new FormData();
-        testForm.append("tool", tool);
-        testForm.append("params", JSON.stringify(params || {}));
+        
+        // Append all parameters directly as Form fields for FastAPI compatibility
+        if (params && typeof params === "object") {
+          for (const [k, v] of Object.entries(params)) {
+            if (v !== undefined && v !== null && k !== "input_filename" && k !== "bucket_id") {
+              testForm.append(k, String(v));
+            }
+          }
+        }
+
         if (fileBuffer) {
-          testForm.append("file", fileBuffer, { filename: inputFilename });
+          testForm.append("file", fileBuffer, {
+            filename: inputFilename,
+            contentType: getMimeType(inputFilename)
+          });
         }
 
         response = await fetch(targetUrl, {
@@ -157,11 +170,12 @@ export async function routeToAzure({ file_id, file_ids, tool, params, storage, d
             "Authorization": `Bearer ${sec}`,
             ...testForm.getHeaders()
           },
+          body: testForm,
           timeout: 300000
         });
 
         if (response.status !== 403) {
-          break; // Authenticated successfully (either 200 or business logic status)
+          break; // Authenticated successfully
         }
       } catch (err) {
         lastErr = err;

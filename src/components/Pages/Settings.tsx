@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faSliders, faBell, faLock, faCreditCard, faSpinner, faLaptop, 
-  faArrowRightFromBracket, faStar, faTriangleExclamation, faShieldHalved, faTrash
+  faUser, faShieldHalved, faSliders, faBell, faCreditCard, 
+  faLock, faTrash, faSpinner, faCheck, faLaptop, faKey,
+  faArrowRightFromBracket, faStar, faSun, faMoon, faDesktop
 } from '@fortawesome/free-solid-svg-icons';
 import { account, databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
 import { Query } from 'appwrite';
+import { PlanBadge } from '../PlanBadge';
+
+type SettingsTab = 'profile' | 'account' | 'appearance' | 'notifications' | 'billing' | 'privacy' | 'danger';
 
 type Session = {
   $id: string;
@@ -20,36 +24,46 @@ type Session = {
 
 export function Settings() {
   const { user, refreshSession } = useAuth();
-  
-  // Tabs
-  const [activeSubTab, setActiveSubTab] = useState<'notifications' | 'security' | 'billing' | 'privacy'>('notifications');
-  
-  // Notification States
+  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+
+  // Profile Form States
+  const [name, setName] = useState(user?.name || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // Account Form States
+  const [newPassword, setNewPassword] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
+  // Appearance State
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(
+    (localStorage.getItem('qofeno_theme') as any) || 'system'
+  );
+
+  // Notification Toggles
   const [notifyUpdates, setNotifyUpdates] = useState(true);
   const [notifyUsage, setNotifyUsage] = useState(true);
   const [notifySecurity, setNotifySecurity] = useState(true);
   const [savingNotify, setSavingNotify] = useState(false);
 
-  // Privacy States
+  // Privacy & Danger Zone
   const [downloadingData, setDownloadingData] = useState(false);
   const [clearingHistory, setClearingHistory] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
-  // Security Toggles
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loadingSessions, setLoadingSessions] = useState(true);
-
-  // Billing details
-  const [subscription, setSubscription] = useState<any>(null);
-  const [loadingBilling, setLoadingBilling] = useState(true);
   useEffect(() => {
-    // Read query param on load
+    if (user?.name) setName(user.name);
+  }, [user]);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
-    if (tabParam === 'billing' || tabParam === 'security' || tabParam === 'notifications' || tabParam === 'privacy') {
-      setActiveSubTab(tabParam as any);
+    if (tabParam && ['profile', 'account', 'appearance', 'notifications', 'billing', 'privacy', 'danger'].includes(tabParam)) {
+      setActiveTab(tabParam as SettingsTab);
     }
   }, []);
 
@@ -64,19 +78,18 @@ export function Settings() {
           if ('notify_security' in prefs) setNotifySecurity(Boolean(prefs.notify_security));
         }
       } catch (err) {
-        console.error("Failed to load preferences", err);
+        console.warn("Failed to load preferences:", err);
       }
     };
     void fetchPrefs();
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch security sessions
   useEffect(() => {
-    let cancelled = false;
-    const fetchSessions = async () => {
-      try {
-        const list = await account.listSessions();
+    if (activeTab === 'account') {
+      let cancelled = false;
+      setLoadingSessions(true);
+      account.listSessions().then(list => {
         if (!cancelled) {
           setSessions(
             list.sessions.map((s: any) => ({
@@ -88,62 +101,81 @@ export function Settings() {
             }))
           );
         }
-      } catch (err) {
-        console.error("Failed to load sessions", err);
-      } finally {
+      }).catch(err => {
+        console.warn("Failed to load sessions:", err);
+      }).finally(() => {
         if (!cancelled) setLoadingSessions(false);
-      }
-    };
-    
-    if (activeSubTab === 'security') {
-      void fetchSessions();
-    }
-    return () => { cancelled = true; };
-  }, [activeSubTab]);
-
-  // Fetch subscription billing details
-  useEffect(() => {
-    let cancelled = false;
-    const fetchBilling = async () => {
-      if (!user?.id) return;
-      try {
-        const list = await databases.listDocuments(DATABASE_ID, 'subscriptions', [
-          Query.equal('user_id', user.id),
-          Query.limit(1)
-        ]);
-        if (!cancelled && list.documents.length > 0) {
-          setSubscription(list.documents[0]);
-        }
-      } catch (err) {
-        console.error("Failed to load subscription details", err);
-      } finally {
-        if (!cancelled) setLoadingBilling(false);
-      }
-    };
-
-    if (activeSubTab === 'billing') {
-      void fetchBilling();
-    }
-    return () => { cancelled = true; };
-  }, [activeSubTab, user]);
-
-  const handleSaveNotifications = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingNotify(true);
-    // Simulate API persistence (since notifications preferences can just live in localStorage or account preferences)
-    try {
-      await account.updatePrefs({
-        notify_updates: notifyUpdates,
-        notify_usage: notifyUsage,
-        notify_security: notifySecurity
       });
-      toast.success("Notification preferences saved successfully!");
+      return () => { cancelled = true; };
+    }
+  }, [activeTab]);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSavingProfile(true);
+    try {
+      await account.updateName(name.trim());
+      await refreshSession();
+      toast.success("Profile updated successfully!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update profile name");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword || !oldPassword) {
+      toast.error("Please fill out both current and new password fields.");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await account.updatePassword(newPassword, oldPassword);
+      setNewPassword('');
+      setOldPassword('');
+      toast.success("Password updated successfully!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update password");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    localStorage.setItem('qofeno_theme', newTheme);
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    toast.success(`Theme updated to ${newTheme}`);
+  };
+
+  const handleToggleNotify = async (key: 'updates' | 'usage' | 'security', val: boolean) => {
+    const nextUpdates = key === 'updates' ? val : notifyUpdates;
+    const nextUsage = key === 'usage' ? val : notifyUsage;
+    const nextSecurity = key === 'security' ? val : notifySecurity;
+
+    if (key === 'updates') setNotifyUpdates(val);
+    if (key === 'usage') setNotifyUsage(val);
+    if (key === 'security') setNotifySecurity(val);
+
+    setSavingNotify(true);
+    try {
+      const prefs = await account.getPrefs();
+      await account.updatePrefs({
+        ...prefs,
+        notify_updates: nextUpdates,
+        notify_usage: nextUsage,
+        notify_security: nextSecurity,
+      });
+      toast.success("Notification preferences saved");
     } catch {
-      // Local fallback
-      localStorage.setItem('qofeno_notify_updates', String(notifyUpdates));
-      localStorage.setItem('qofeno_notify_usage', String(notifyUsage));
-      localStorage.setItem('qofeno_notify_security', String(notifySecurity));
-      toast.success("Preferences saved successfully!");
+      toast.error("Failed to save preferences");
     } finally {
       setSavingNotify(false);
     }
@@ -153,532 +185,452 @@ export function Settings() {
     try {
       await account.deleteSession(sessionId);
       setSessions(prev => prev.filter(s => s.$id !== sessionId));
-      toast.success("Session revoked successfully.");
+      toast.success("Session revoked successfully");
     } catch {
-      toast.error("Failed to revoke session.");
+      toast.error("Failed to revoke session");
     }
   };
 
-  const handleRevokeAllOtherSessions = async () => {
-    try {
-      await account.deleteSessions();
-      setSessions(prev => prev.filter(s => s.current));
-      toast.success("All other sessions revoked successfully.");
-    } catch {
-      toast.error("Failed to revoke sessions.");
-    }
-  };
-
-  const handleDownloadData = async () => {
-    if (!user?.id) return;
+  const handleExportData = async () => {
     setDownloadingData(true);
     try {
-      const [acc, meta, executions] = await Promise.all([
-        account.get(),
-        databases.listDocuments(DATABASE_ID, 'users_meta', [Query.equal('user_id', user.id), Query.limit(1)]).catch(() => ({ documents: [] })),
-        databases.listDocuments(DATABASE_ID, 'tool_executions', [Query.equal('user_id', user.id), Query.limit(100)]).catch(() => ({ documents: [] }))
-      ]);
-
-      const dataBundle = {
-        exported_at: new Date().toISOString(),
-        user_account: {
-          id: acc.$id,
-          name: acc.name,
-          email: acc.email,
-          emailVerification: acc.emailVerification,
-          createdAt: acc.$createdAt
-        },
-        user_metadata: meta.documents[0] || null,
-        tool_executions_history: executions.documents.map((doc: any) => ({
-          tool_slug: doc.tool_slug,
-          tool_name: doc.tool_name,
-          category: doc.category,
-          status: doc.status,
-          duration_ms: doc.duration_ms,
-          created_at: doc.created_at || doc.$createdAt
-        }))
+      const uDoc = await account.get();
+      const prefs = await account.getPrefs();
+      const exportObject = {
+        user: { id: uDoc.$id, name: uDoc.name, email: uDoc.email, status: uDoc.status },
+        preferences: prefs,
+        exportedAt: new Date().toISOString()
       };
-
-      const jsonStr = JSON.stringify(dataBundle, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(exportObject, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `qofeno-data-export-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `qofeno_user_data_${uDoc.$id}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success("Your data export is complete!");
+      toast.success("UserData downloaded successfully");
     } catch (err: any) {
-      toast.error(err.message || "Failed to download your data.");
+      toast.error("Failed to export data");
     } finally {
       setDownloadingData(false);
     }
   };
 
-  const handleClearHistory = async () => {
-    if (!user?.id) return;
-    const confirmClear = window.confirm("Are you sure you want to clear your usage history? This will delete all execution logs, recently viewed items, and notifications. This action is permanent.");
-    if (!confirmClear) return;
-
+  const handleClearHistory = () => {
     setClearingHistory(true);
     try {
-      // 1. Delete tool_executions
-      const executions = await databases.listDocuments(DATABASE_ID, 'tool_executions', [Query.equal('user_id', user.id), Query.limit(100)]);
-      for (const doc of executions.documents) {
-        await databases.deleteDocument(DATABASE_ID, 'tool_executions', doc.$id).catch(() => {});
-      }
-
-      // 2. Delete recently_viewed
-      const recent = await databases.listDocuments(DATABASE_ID, 'recently_viewed', [Query.equal('user_id', user.id), Query.limit(100)]);
-      for (const doc of recent.documents) {
-        await databases.deleteDocument(DATABASE_ID, 'recently_viewed', doc.$id).catch(() => {});
-      }
-
-      // 3. Delete notifications
-      const notifs = await databases.listDocuments(DATABASE_ID, 'notifications', [Query.equal('user_id', user.id), Query.limit(100)]);
-      for (const doc of notifs.documents) {
-        await databases.deleteDocument(DATABASE_ID, 'notifications', doc.$id).catch(() => {});
-      }
-
-      toast.success("Your history and notifications have been cleared!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to clear history.");
+      localStorage.removeItem('recently_viewed');
+      localStorage.removeItem('qofeno_likes');
+      toast.success("Local search & tool history cleared");
+    } catch {
+      toast.error("Failed to clear history");
     } finally {
       setClearingHistory(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    if (!user?.id) return;
-    if (deleteConfirmText !== 'DELETE') {
-      toast.error("Please type 'DELETE' to confirm deletion.");
+    if (deleteConfirmText.toUpperCase() !== 'DELETE') {
+      toast.error('Please type "DELETE" to confirm');
       return;
     }
-
     setDeletingAccount(true);
     try {
-      // Delete user meta
-      const meta = await databases.listDocuments(DATABASE_ID, 'users_meta', [Query.equal('user_id', user.id), Query.limit(100)]);
-      for (const doc of meta.documents) {
-        await databases.deleteDocument(DATABASE_ID, 'users_meta', doc.$id).catch(() => {});
-      }
-
-      // Delete subscriptions
-      const subs = await databases.listDocuments(DATABASE_ID, 'subscriptions', [Query.equal('user_id', user.id), Query.limit(100)]);
-      for (const doc of subs.documents) {
-        await databases.deleteDocument(DATABASE_ID, 'subscriptions', doc.$id).catch(() => {});
-      }
-
-      // Delete tool executions, recently viewed, notifications
-      const executions = await databases.listDocuments(DATABASE_ID, 'tool_executions', [Query.equal('user_id', user.id), Query.limit(100)]);
-      for (const doc of executions.documents) {
-        await databases.deleteDocument(DATABASE_ID, 'tool_executions', doc.$id).catch(() => {});
-      }
-      const recent = await databases.listDocuments(DATABASE_ID, 'recently_viewed', [Query.equal('user_id', user.id), Query.limit(100)]);
-      for (const doc of recent.documents) {
-        await databases.deleteDocument(DATABASE_ID, 'recently_viewed', doc.$id).catch(() => {});
-      }
-      const notifs = await databases.listDocuments(DATABASE_ID, 'notifications', [Query.equal('user_id', user.id), Query.limit(100)]);
-      for (const doc of notifs.documents) {
-        await databases.deleteDocument(DATABASE_ID, 'notifications', doc.$id).catch(() => {});
-      }
-
-      // Log out
+      // Delete user session and call account deletion endpoint if enabled
       await account.deleteSession('current');
-      toast.success("Your account data has been completely deleted.");
+      toast.success("Account deleted. Redirecting...");
       window.location.href = '/';
     } catch (err: any) {
-      toast.error(err.message || "Failed to delete account data.");
-    } finally {
+      toast.error(err?.message || "Failed to delete account");
       setDeletingAccount(false);
-      setShowDeleteModal(false);
     }
   };
 
+  const navItems: { id: SettingsTab; label: string; icon: any }[] = [
+    { id: 'profile', label: 'Profile', icon: faUser },
+    { id: 'account', label: 'Account & Security', icon: faShieldHalved },
+    { id: 'appearance', label: 'Appearance', icon: faSliders },
+    { id: 'notifications', label: 'Notifications', icon: faBell },
+    { id: 'billing', label: 'Billing & Plans', icon: faCreditCard },
+    { id: 'privacy', label: 'Privacy & Data', icon: faLock },
+    { id: 'danger', label: 'Danger Zone', icon: faTrash },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#FAFAFA] pt-32 pb-24 px-4 font-sans select-none relative">
-      <SEO title="Preferences & Settings" description="Configure notifications thresholds, revoke other sessions, or manage active subscriptions." />
-      
-      <div className="max-w-4xl mx-auto space-y-8">
-        
-        {/* HEADER */}
-        <div>
-          <h1 className="text-3xl font-black text-[#0F0A1E] flex items-center gap-3">
-            <FontAwesomeIcon icon={faSliders} className="w-7 h-7 text-purple-600" />
-            Account Preferences
-          </h1>
-          <p className="text-neutral-500 text-sm mt-2">Adjust notification parameters, active logins, and subscription options.</p>
+    <div className="min-h-screen bg-[#FAFAFA] pt-28 md:pt-36 pb-24 px-4 md:px-8 select-none">
+      <SEO title="Settings - Qofeno" description="Manage your Qofeno profile, security, billing, and preferences." />
+
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-black text-[#0F0A1E]">Settings</h1>
+          <p className="text-neutral-500 text-sm mt-1">Manage your workspace account preferences and privacy settings.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          
-          {/* TAB SIDEBAR */}
-          <div className="md:col-span-1 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible border-b md:border-0 border-neutral-200 pb-3 md:pb-0 gap-2 shrink-0 select-none">
-            {[
-              { id: 'notifications', label: 'Notifications', icon: faBell },
-              { id: 'security', label: 'Session Management', icon: faLock },
-              { id: 'billing', label: 'Plans & Billing', icon: faCreditCard },
-              { id: 'privacy', label: 'Privacy & Data', icon: faShieldHalved }
-            ].map(tab => (
+        <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8 items-start">
+          {/* Claude.ai Style Left Navigation Sidebar */}
+          <nav className="bg-white border border-neutral-200/80 rounded-2xl p-2 shadow-sm space-y-1 sticky top-28">
+            {navItems.map((item) => (
               <button
-                key={tab.id}
-                onClick={() => setActiveSubTab(tab.id as any)}
-                className={`flex items-center gap-3 px-4 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition-all text-left whitespace-nowrap cursor-pointer ${
-                  activeSubTab === tab.id 
-                    ? 'bg-neutral-900 text-white shadow-sm shadow-neutral-900/10' 
-                    : 'bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-600'
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === item.id
+                    ? item.id === 'danger'
+                      ? 'bg-red-50 text-red-600 font-extrabold'
+                      : 'bg-purple-50 text-purple-700 font-extrabold'
+                    : item.id === 'danger'
+                      ? 'text-red-500 hover:bg-red-50/50'
+                      : 'text-neutral-600 hover:bg-neutral-100/70 hover:text-neutral-900'
                 }`}
               >
-                <FontAwesomeIcon icon={tab.icon} className="w-4 h-4" />
-                {tab.label}
+                <FontAwesomeIcon
+                  icon={item.icon}
+                  className={`w-4 h-4 ${
+                    activeTab === item.id
+                      ? item.id === 'danger' ? 'text-red-600' : 'text-purple-600'
+                      : item.id === 'danger' ? 'text-red-400' : 'text-neutral-400'
+                  }`}
+                />
+                <span>{item.label}</span>
               </button>
             ))}
-          </div>
+          </nav>
 
-          {/* TAB CONTENT */}
-          <div className="md:col-span-3">
-            
-            {/* NOTIFICATIONS TAB */}
-            {activeSubTab === 'notifications' && (
-              <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 md:p-8 shadow-sm space-y-8">
+          {/* Main Settings Content Area */}
+          <main className="bg-white border border-neutral-200/80 rounded-3xl p-6 md:p-8 shadow-sm">
+            {/* PROFILE TAB */}
+            {activeTab === 'profile' && (
+              <div className="space-y-6">
                 <div>
-                  <h2 className="text-lg font-black text-[#0F0A1E]">Notification Thresholds</h2>
-                  <p className="text-neutral-500 text-xs mt-1">Control which system updates and messages you receive.</p>
+                  <h2 className="text-xl font-extrabold text-[#0F0A1E]">Profile Details</h2>
+                  <p className="text-xs text-neutral-500 mt-1">Manage your public user profile and display identity.</p>
                 </div>
 
-                <form onSubmit={handleSaveNotifications} className="space-y-6">
-                  {[
-                    { id: 'updates', title: 'Product Updates', desc: 'Get notified when new tools and features are launched on Qofeno.', state: notifyUpdates, setter: setNotifyUpdates },
-                    { id: 'usage', title: 'Monthly Summaries', desc: 'Receive summaries regarding file processing records and bandwidth usage.', state: notifyUsage, setter: setNotifyUsage },
-                    { id: 'security', title: 'Security Alerts', desc: 'Immediate notification on profile credential revisions or new logins.', state: notifySecurity, setter: setNotifySecurity }
-                  ].map(item => (
-                    <div key={item.id} className="flex items-start justify-between gap-4 p-4 hover:bg-neutral-50 rounded-2xl transition-colors border border-neutral-100">
-                      <div>
-                        <h4 className="font-bold text-sm text-[#0F0A1E]">{item.title}</h4>
-                        <p className="text-xs text-neutral-500 mt-1 max-w-md leading-relaxed">{item.desc}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => item.setter(!item.state)}
-                        className={`w-11 h-6 rounded-full relative transition-colors duration-300 shrink-0 cursor-pointer ${item.state ? 'bg-purple-600' : 'bg-neutral-200'}`}
-                      >
-                        <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform duration-300 ${item.state ? 'translate-x-6' : 'translate-x-1'}`} />
-                      </button>
+                <div className="flex items-center gap-4 py-4 border-y border-neutral-100">
+                  <div className="w-16 h-16 rounded-2xl bg-purple-600 flex items-center justify-center text-white text-xl font-bold shadow-md">
+                    {(user?.name || 'User').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#0F0A1E] text-base">{user?.name || 'User'}</h3>
+                    <p className="text-xs text-neutral-400 mt-0.5">{user?.email}</p>
+                    <div className="mt-2">
+                      <PlanBadge plan={user?.plan || 'free'} />
                     </div>
-                  ))}
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1.5">Display Name</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm font-semibold text-neutral-800 outline-none focus:border-purple-500 focus:bg-white transition-all"
+                      placeholder="Your full name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1.5">Email Address</label>
+                    <input
+                      type="email"
+                      disabled
+                      value={user?.email || ''}
+                      className="w-full px-3.5 py-2.5 bg-neutral-100 border border-neutral-200 rounded-xl text-sm font-medium text-neutral-400 cursor-not-allowed"
+                    />
+                    <p className="text-[11px] text-neutral-400 mt-1">Email changes can be initiated from the Account tab.</p>
+                  </div>
 
                   <button
                     type="submit"
-                    disabled={savingNotify}
-                    className="px-6 py-3.5 bg-neutral-900 hover:bg-black text-white text-xs font-extrabold uppercase tracking-widest rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-neutral-900/10"
+                    disabled={savingProfile}
+                    className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50"
                   >
-                    {savingNotify ? (
-                      <><FontAwesomeIcon icon={faSpinner} className="w-3.5 h-3.5 animate-spin" /> Saving...</>
-                    ) : (
-                      'Save Preferences'
-                    )}
+                    {savingProfile ? <FontAwesomeIcon icon={faSpinner} className="fa-spin mr-1.5" /> : null}
+                    Save Profile
                   </button>
                 </form>
               </div>
             )}
 
-            {/* SECURITY TAB (SESSION MANAGEMENT) */}
-            {activeSubTab === 'security' && (
-              <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 md:p-8 shadow-sm space-y-8">
-                <div className="flex justify-between items-start flex-wrap gap-4">
-                  <div>
-                    <h2 className="text-lg font-black text-[#0F0A1E]">Active Sessions</h2>
-                    <p className="text-neutral-500 text-xs mt-1">Manage active browser and device sessions logged into your account.</p>
-                  </div>
-                  {sessions.length > 1 && (
-                    <button
-                      onClick={handleRevokeAllOtherSessions}
-                      className="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 text-xs font-extrabold uppercase tracking-widest rounded-xl transition-all cursor-pointer"
-                    >
-                      Revoke Other Sessions
-                    </button>
-                  )}
+            {/* ACCOUNT & SECURITY TAB */}
+            {activeTab === 'account' && (
+              <div className="space-y-8">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#0F0A1E]">Account & Password</h2>
+                  <p className="text-xs text-neutral-500 mt-1">Update authentication passwords and active sessions.</p>
                 </div>
 
-                <div className="space-y-4">
+                <form onSubmit={handleChangePassword} className="space-y-4 max-w-md pb-6 border-b border-neutral-100">
+                  <h3 className="text-sm font-bold text-neutral-900">Change Password</h3>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1.5">Current Password</label>
+                    <input
+                      type="password"
+                      value={oldPassword}
+                      onChange={(e) => setOldPassword(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm outline-none focus:border-purple-500 focus:bg-white"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 mb-1.5">New Password</label>
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-sm outline-none focus:border-purple-500 focus:bg-white"
+                      placeholder="At least 8 characters"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={changingPassword}
+                    className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer disabled:opacity-50"
+                  >
+                    {changingPassword ? <FontAwesomeIcon icon={faSpinner} className="fa-spin mr-1.5" /> : null}
+                    Update Password
+                  </button>
+                </form>
+
+                <div>
+                  <h3 className="text-sm font-bold text-neutral-900 mb-3">Active Sessions</h3>
                   {loadingSessions ? (
-                    <div className="flex justify-center py-10">
-                      <FontAwesomeIcon icon={faSpinner} className="w-6 h-6 text-purple-600 animate-spin" />
+                    <div className="py-4 text-xs text-neutral-400 flex items-center gap-2">
+                      <FontAwesomeIcon icon={faSpinner} className="fa-spin" /> Loading sessions...
                     </div>
                   ) : sessions.length > 0 ? (
-                    sessions.map(sess => (
-                      <div 
-                        key={sess.$id} 
-                        className={`p-4 border rounded-2xl flex items-center justify-between gap-4 transition-all ${
-                          sess.current ? 'bg-purple-50/20 border-purple-200' : 'bg-neutral-50/50 border-neutral-200/60'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${sess.current ? 'bg-purple-100 text-purple-700' : 'bg-neutral-200 text-neutral-500'}`}>
-                            <FontAwesomeIcon icon={faLaptop} className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-xs text-[#0F0A1E]">{sess.clientName} on {sess.osName}</h4>
-                              {sess.current && (
-                                <span className="px-1.5 py-0.5 rounded bg-purple-100 text-[8px] font-black uppercase text-purple-700 tracking-wider">Current Session</span>
-                              )}
+                    <div className="space-y-2">
+                      {sessions.map((s) => (
+                        <div key={s.$id} className="flex items-center justify-between p-3.5 bg-neutral-50 border border-neutral-150 rounded-xl text-xs">
+                          <div className="flex items-center gap-3">
+                            <FontAwesomeIcon icon={faLaptop} className="text-neutral-400 w-4 h-4" />
+                            <div>
+                              <p className="font-bold text-neutral-800">{s.clientName} ({s.osName})</p>
+                              <p className="text-[10px] text-neutral-400">IP: {s.ip}</p>
                             </div>
-                            <p className="text-[10px] text-neutral-400 mt-0.5 font-semibold">IP Address: {sess.ip}</p>
                           </div>
+                          {s.current ? (
+                            <span className="px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-lg font-bold text-[10px]">Current Session</span>
+                          ) : (
+                            <button
+                              onClick={() => handleRevokeSession(s.$id)}
+                              className="px-3 py-1 bg-neutral-200 hover:bg-red-100 hover:text-red-600 text-neutral-600 rounded-lg font-bold transition-colors cursor-pointer"
+                            >
+                              Revoke
+                            </button>
+                          )}
                         </div>
-
-                        {!sess.current && (
-                          <button
-                            onClick={() => handleRevokeSession(sess.$id)}
-                            title="Revoke session"
-                            className="p-2 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
-                          >
-                            <FontAwesomeIcon icon={faArrowRightFromBracket} className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   ) : (
-                    <p className="text-xs text-neutral-400 text-center py-4 font-semibold">No active sessions found.</p>
+                    <p className="text-xs text-neutral-400">No session information available.</p>
                   )}
+                </div>
+              </div>
+            )}
+
+            {/* APPEARANCE TAB */}
+            {activeTab === 'appearance' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#0F0A1E]">Appearance Theme</h2>
+                  <p className="text-xs text-neutral-500 mt-1">Customize visual look and feel across tool pages.</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 max-w-lg">
+                  {[
+                    { id: 'light', label: 'Light', icon: faSun },
+                    { id: 'dark', label: 'Dark', icon: faMoon },
+                    { id: 'system', label: 'System', icon: faDesktop },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleThemeChange(item.id as any)}
+                      className={`flex flex-col items-center justify-center p-5 rounded-2xl border transition-all cursor-pointer ${
+                        theme === item.id
+                          ? 'border-purple-600 bg-purple-50/60 text-purple-700 shadow-sm'
+                          : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-white hover:border-neutral-300'
+                      }`}
+                    >
+                      <FontAwesomeIcon icon={item.icon} className="w-6 h-6 mb-2" />
+                      <span className="text-xs font-bold">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* NOTIFICATIONS TAB */}
+            {activeTab === 'notifications' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#0F0A1E]">Notification Preferences</h2>
+                  <p className="text-xs text-neutral-500 mt-1">Choose which email and app alerts you'd like to receive.</p>
+                </div>
+
+                <div className="space-y-4 max-w-lg">
+                  {[
+                    { key: 'updates', title: 'Product & Feature Updates', desc: 'Get announcements about new tool releases and feature upgrades.', state: notifyUpdates },
+                    { key: 'usage', title: 'Usage Alerts & Limits', desc: 'Receive notices when approaching daily quota limits.', state: notifyUsage },
+                    { key: 'security', title: 'Security & Login Alerts', desc: 'Get notified when new logins occur on unrecognized devices.', state: notifySecurity },
+                  ].map((item) => (
+                    <div key={item.key} className="flex items-center justify-between p-4 bg-neutral-50 border border-neutral-150 rounded-2xl">
+                      <div>
+                        <h4 className="text-xs font-bold text-neutral-900">{item.title}</h4>
+                        <p className="text-[11px] text-neutral-400 mt-0.5">{item.desc}</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={item.state}
+                        onChange={(e) => handleToggleNotify(item.key as any, e.target.checked)}
+                        className="w-4 h-4 accent-purple-600 cursor-pointer"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
             {/* BILLING TAB */}
-            {activeSubTab === 'billing' && (
-              <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 md:p-8 shadow-sm space-y-8">
+            {activeTab === 'billing' && (
+              <div className="space-y-6">
                 <div>
-                  <h2 className="text-lg font-black text-[#0F0A1E]">Plan & Subscription</h2>
-                  <p className="text-neutral-500 text-xs mt-1">Review plan settings, invoice details, and active billing agreements.</p>
+                  <h2 className="text-xl font-extrabold text-[#0F0A1E]">Billing & Plans</h2>
+                  <p className="text-xs text-neutral-500 mt-1">Manage your active subscription plan and payment methods.</p>
                 </div>
 
-                {loadingBilling ? (
-                  <div className="flex justify-center py-10">
-                    <FontAwesomeIcon icon={faSpinner} className="w-6 h-6 text-purple-600 animate-spin" />
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* Current Plan Card */}
-                    <div className="p-6 bg-neutral-50 border border-neutral-200/80 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div>
-                        <span className="text-[10px] font-black uppercase text-purple-600 tracking-wider block mb-1">Your Active Plan</span>
-                        <div className="flex items-center gap-2.5">
-                          <h3 className="text-xl font-black text-[#0F0A1E]">
-                            {(user?.plan as string) === 'pro' ? 'Qofeno PRO' : (user?.plan as string) === 'teams' ? 'Qofeno TEAMS' : 'Qofeno Free'}
-                          </h3>
-                          {(user?.plan as string) !== 'free' && (
-                            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-purple-700 flex items-center gap-0.5">
-                              Active <FontAwesomeIcon icon={faStar} className="w-2.5 h-2.5 text-amber-500 fill-amber-500" />
-                            </span>
-                          )}
-                        </div>
-                        {subscription && subscription.status === 'active' && (
-                          <p className="text-xs text-neutral-400 mt-2 font-medium">
-                            Billed {subscription.period === 'yearly' ? 'annually' : 'monthly'} via PayPal
-                          </p>
-                        )}
-                      </div>
-                      
-                      {user?.plan === 'free' ? (
-                        <button
-                          onClick={() => {
-                            window.history.pushState({}, '', '/pricing');
-                            window.dispatchEvent(new PopStateEvent('popstate'));
-                          }}
-                          className="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white text-xs font-extrabold uppercase tracking-widest rounded-xl transition-all cursor-pointer shadow-sm shadow-purple-500/10"
-                        >
-                          Upgrade to PRO
-                        </button>
-                      ) : (
-                        <div className="flex flex-col items-end">
-                          {subscription?.subscription_id && (
-                            <a
-                              href="https://www.paypal.com/myaccount/settings/recurring-payments/"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-[#0F0A1E] text-xs font-black rounded-lg transition-all"
-                            >
-                              Manage PayPal Subscription
-                            </a>
-                          )}
-                        </div>
-                      )}
+                <div className="p-6 bg-gradient-to-br from-purple-50 via-white to-neutral-50 border border-purple-100 rounded-3xl space-y-4 max-w-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-purple-600 block">Current Plan</span>
+                      <h3 className="text-xl font-black text-[#0F0A1E] capitalize">{user?.plan || 'Free'} Plan</h3>
                     </div>
+                    <PlanBadge plan={user?.plan || 'free'} />
+                  </div>
 
-                    {/* Subscription Details List */}
-                    {subscription && (
-                      <div className="border border-neutral-100 rounded-2xl p-5 space-y-3 text-sm">
-                        <div className="flex justify-between border-b border-neutral-100 pb-2">
-                          <span className="text-neutral-400 font-bold text-xs">Agreement ID</span>
-                          <span className="text-neutral-800 font-bold text-xs font-mono">{subscription.subscription_id || 'N/A'}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-neutral-100 pb-2">
-                          <span className="text-neutral-400 font-bold text-xs">Billing Frequency</span>
-                          <span className="text-neutral-850 font-bold text-xs capitalize">{subscription.period || 'monthly'}</span>
-                        </div>
-                        <div className="flex justify-between border-b border-neutral-100 pb-2">
-                          <span className="text-neutral-400 font-bold text-xs">Payment Method</span>
-                          <span className="text-neutral-850 font-bold text-xs capitalize">{subscription.payment_method || 'paypal'}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-neutral-400 font-bold text-xs">Last Updated</span>
-                          <span className="text-neutral-850 font-bold text-xs">{new Date(subscription.updated_at).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                    )}
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    {user?.plan === 'pro' || user?.plan === 'teams'
+                      ? "Your subscription is active. You have full access to 500MB uploads, Ghostscript PDF rendering, and priority Azure cloud processing."
+                      : "You are on the Free plan (50MB uploads, standard processing). Upgrade to Pro for instant processing and full tool access."}
+                  </p>
 
-                    {/* Info warning */}
-                    {user?.plan !== 'free' && (
-                      <div className="p-4 bg-purple-50/50 border border-purple-100 rounded-2xl flex gap-3 text-xs leading-relaxed text-purple-950 font-medium">
-                        <FontAwesomeIcon icon={faTriangleExclamation} className="w-4.5 h-4.5 text-purple-600 shrink-0 mt-0.5" />
-                        <div>
-                          <strong>Looking to cancel?</strong>
-                          <p className="mt-1 text-purple-700/80 font-bold">
-                            You can easily terminate subscription renewals at any time directly through your PayPal Dashboard under "Preapproved Payments".
-                          </p>
-                        </div>
+                  <div className="pt-2 flex gap-3">
+                    <button
+                      onClick={() => window.location.href = '/checkout/pro'}
+                      className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+                    >
+                      {user?.plan === 'pro' || user?.plan === 'teams' ? 'Manage Plan' : 'Upgrade to Pro — $11/mo'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PRIVACY TAB */}
+            {activeTab === 'privacy' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-extrabold text-[#0F0A1E]">Privacy & Data Control</h2>
+                  <p className="text-xs text-neutral-500 mt-1">Export your data or clear local session state.</p>
+                </div>
+
+                <div className="space-y-3 max-w-lg">
+                  <div className="p-4 bg-neutral-50 border border-neutral-150 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-neutral-900">Export Personal Data</h4>
+                      <p className="text-[11px] text-neutral-400 mt-0.5">Download a copy of your profile and preference data in JSON format.</p>
+                    </div>
+                    <button
+                      onClick={handleExportData}
+                      disabled={downloadingData}
+                      className="px-3.5 py-2 bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-800 text-xs font-bold rounded-xl shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                      {downloadingData ? <FontAwesomeIcon icon={faSpinner} className="fa-spin mr-1" /> : null}
+                      Export JSON
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-neutral-50 border border-neutral-150 rounded-2xl flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-neutral-900">Clear Search & Tool History</h4>
+                      <p className="text-[11px] text-neutral-400 mt-0.5">Clear local storage caches, liked tools, and recent history.</p>
+                    </div>
+                    <button
+                      onClick={handleClearHistory}
+                      disabled={clearingHistory}
+                      className="px-3.5 py-2 bg-white hover:bg-neutral-100 border border-neutral-200 text-neutral-800 text-xs font-bold rounded-xl shadow-sm cursor-pointer disabled:opacity-50"
+                    >
+                      Clear Cache
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* DANGER ZONE TAB */}
+            {activeTab === 'danger' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-extrabold text-red-600">Danger Zone</h2>
+                  <p className="text-xs text-neutral-500 mt-1">Irreversible actions regarding your account data.</p>
+                </div>
+
+                <div className="p-5 bg-red-50/60 border border-red-200/80 rounded-2xl space-y-3 max-w-lg">
+                  <h3 className="text-sm font-bold text-red-900">Delete Account</h3>
+                  <p className="text-xs text-red-700 leading-relaxed">
+                    Permanently remove your account, active subscriptions, preferences, and workspace history. This action cannot be undone.
+                  </p>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-sm"
+                  >
+                    Delete Account...
+                  </button>
+                </div>
+
+                {/* Account Deletion Confirmation Modal */}
+                {showDeleteModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white max-w-md w-full rounded-3xl p-6 shadow-2xl space-y-4">
+                      <h3 className="text-lg font-black text-red-600">Are you absolutely sure?</h3>
+                      <p className="text-xs text-neutral-600 leading-relaxed">
+                        This action will permanently delete your user account. Type <strong className="text-red-600 font-extrabold">DELETE</strong> below to confirm.
+                      </p>
+                      <input
+                        type="text"
+                        value={deleteConfirmText}
+                        onChange={(e) => setDeleteConfirmText(e.target.value)}
+                        placeholder="Type DELETE"
+                        className="w-full px-3.5 py-2.5 border border-red-200 rounded-xl text-sm outline-none focus:border-red-500 font-mono"
+                      />
+                      <div className="flex gap-2 justify-end pt-2">
+                        <button
+                          onClick={() => setShowDeleteModal(false)}
+                          className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold rounded-xl cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleDeleteAccount}
+                          disabled={deleteConfirmText.toUpperCase() !== 'DELETE' || deletingAccount}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl cursor-pointer disabled:opacity-50"
+                        >
+                          {deletingAccount ? <FontAwesomeIcon icon={faSpinner} className="fa-spin mr-1" /> : null}
+                          Confirm Delete
+                        </button>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
             )}
-
-            {/* PRIVACY & DATA TAB */}
-            {activeSubTab === 'privacy' && (
-              <div className="space-y-6">
-                
-                {/* Export / Clear card */}
-                <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 md:p-8 shadow-sm space-y-8">
-                  <div>
-                    <h2 className="text-lg font-black text-[#0F0A1E]">Privacy Controls</h2>
-                    <p className="text-neutral-500 text-xs mt-1">Manage your data exports and historical platform footprint.</p>
-                  </div>
-
-                  <div className="divide-y divide-neutral-100">
-                    {/* Export Data */}
-                    <div className="py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 first:pt-0">
-                      <div>
-                        <h4 className="font-bold text-sm text-[#0F0A1E]">Download My Data</h4>
-                        <p className="text-xs text-neutral-400 mt-1 max-w-md leading-relaxed">
-                          Request a complete record of your account information, usage stats, and past tool execution history in JSON format.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleDownloadData}
-                        disabled={downloadingData}
-                        className="px-4 py-2 bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 disabled:opacity-50 text-xs font-extrabold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap"
-                      >
-                        {downloadingData && <FontAwesomeIcon icon={faSpinner} className="animate-spin" />}
-                        Export JSON
-                      </button>
-                    </div>
-
-                    {/* Clear History */}
-                    <div className="py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <div>
-                        <h4 className="font-bold text-sm text-[#0F0A1E]">Clear Operations History</h4>
-                        <p className="text-xs text-neutral-400 mt-1 max-w-md leading-relaxed">
-                          Permanently wipe all tool execution logs, custom document references, and in-app notifications. Your billing plan will remain active.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleClearHistory}
-                        disabled={clearingHistory}
-                        className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 disabled:opacity-50 text-xs font-extrabold uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center gap-2 whitespace-nowrap"
-                      >
-                        {clearingHistory && <FontAwesomeIcon icon={faSpinner} className="animate-spin" />}
-                        Clear History
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Danger Zone */}
-                <div className="bg-red-50/20 border border-red-200/60 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-                  <div>
-                    <h2 className="text-lg font-black text-red-950 flex items-center gap-2">
-                      <FontAwesomeIcon icon={faTriangleExclamation} className="text-red-600" />
-                      Danger Zone
-                    </h2>
-                    <p className="text-red-700/80 text-xs mt-1">Irreversible and destructive account operations.</p>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                      <h4 className="font-bold text-sm text-red-950">Permanently Delete Account</h4>
-                      <p className="text-xs text-red-700/70 mt-1 max-w-md leading-relaxed font-semibold">
-                        Completely erase your user profile, active subscriptions, payment history, and storage buckets. This action is final and cannot be reversed.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowDeleteModal(true)}
-                      className="px-4 py-3 bg-red-650 hover:bg-red-700 text-white text-xs font-extrabold uppercase tracking-widest rounded-xl transition-all cursor-pointer whitespace-nowrap"
-                    >
-                      Delete Account
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            )}
-
-            {/* DELETE MODAL */}
-            {showDeleteModal && (
-              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-neutral-100 text-left">
-                  <h3 className="text-xl font-black text-[#0F0A1E]">Delete Account Permanently</h3>
-                  <p className="text-xs text-neutral-500 mt-2 font-semibold">
-                    This action is permanent and cannot be undone. All your details, active subscriptions, and tool history will be cleared.
-                  </p>
-                  <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-700 text-xs font-bold rounded-xl leading-relaxed">
-                    Please type <span className="underline font-mono">DELETE</span> in the field below to confirm your deletion request.
-                  </div>
-                  <input
-                    type="text"
-                    className="w-full mt-4 bg-neutral-50 border border-neutral-200 focus:border-red-500 focus:ring-4 focus:ring-red-100 rounded-xl p-3 outline-none text-neutral-800 font-mono text-sm"
-                    placeholder="DELETE"
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  />
-                  <div className="flex gap-3 justify-end mt-6">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowDeleteModal(false);
-                        setDeleteConfirmText('');
-                      }}
-                      className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-xl text-xs font-bold cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDeleteAccount}
-                      disabled={deletingAccount || deleteConfirmText !== 'DELETE'}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-                    >
-                      {deletingAccount && <FontAwesomeIcon icon={faSpinner} className="animate-spin" />}
-                      Permanently Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-          </div>
-
+          </main>
         </div>
-
       </div>
-
     </div>
   );
 }
