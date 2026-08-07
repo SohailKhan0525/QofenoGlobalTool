@@ -38,7 +38,8 @@ const PLAN_FEATURES = [
 ];
 
 export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string) => void; onGetPro?: () => void }) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const currentPlan = user?.plan || 'free';
   const [isYearly, setIsYearly] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [faqQuery, setFaqQuery] = useState('');
