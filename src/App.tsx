@@ -922,17 +922,6 @@ export default function App() {
                         <div className="p-6 text-center text-xs text-neutral-400">No notifications yet.</div>
                       )}
                     </div>
-                    <div className="p-3 border-t border-neutral-100 bg-neutral-50 text-center">
-                      <button 
-                        onClick={() => {
-                          setShowNotifications(false);
-                          setShowPreferences(true);
-                        }} 
-                        className="text-xs font-bold text-neutral-500 hover:text-purple-600 flex items-center justify-center gap-1 w-full"
-                      >
-                        <FontAwesomeIcon icon={faGear} className="w-3.5 h-3.5" /> Notification Settings
-                      </button>
-                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

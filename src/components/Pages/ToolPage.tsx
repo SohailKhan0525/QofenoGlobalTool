@@ -269,6 +269,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   const [isProcessing, setIsProcessing] = useState(false);
   const [statsObj, setStatsObj] = useState<any>({ words: 0, chars: 0, readingTime: 0 });
   const [actionMode, setActionMode] = useState<'encode' | 'decode'>('encode');
+  const [caseMode, setCaseMode] = useState<'uppercase' | 'lowercase' | 'title' | 'sentence' | 'camel' | 'snake' | 'kebab' | 'pascal'>('uppercase');
   
   const handleDownload = () => {
     // Actual file download must be synchronous to avoid popup blockers
@@ -283,6 +284,122 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     URL.revokeObjectURL(url);
     
     toast.success("File downloaded!");
+  };
+
+  const processTextTool = (slug: string, input: string, actMode: string, cMode: string): string => {
+    if (!input) return '';
+
+    // 1. Text Case Converter
+    if (slug === 'text-case-converter' || slug === 'case-converter' || slug === 'uppercase-converter' || slug === 'lowercase-converter') {
+      switch (cMode) {
+        case 'uppercase':
+          return input.toUpperCase();
+        case 'lowercase':
+          return input.toLowerCase();
+        case 'title':
+          return input.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+        case 'sentence':
+          return input.toLowerCase().replace(/(^\s*\w|[\.\!\?]\s*\w)/g, (c) => c.toUpperCase());
+        case 'camel':
+          return input
+            .replace(/(?:^\w|[A-Z]|\b\w)/g, (letter, index) =>
+              index === 0 ? letter.toLowerCase() : letter.toUpperCase()
+            )
+            .replace(/[\s\-_]+/g, '');
+        case 'snake':
+          return input
+            .trim()
+            .replace(/[\s\-]+/g, '_')
+            .replace(/([a-z])([A-Z])/g, '$1_$2')
+            .toLowerCase();
+        case 'kebab':
+          return input
+            .trim()
+            .replace(/[\s_]+/g, '-')
+            .replace(/([a-z])([A-Z])/g, '$1-$2')
+            .toLowerCase();
+        case 'pascal':
+          return input
+            .replace(/(?:^\w|[A-Z]|\b\w)/g, (letter) => letter.toUpperCase())
+            .replace(/[\s\-_]+/g, '');
+        default:
+          return input.toUpperCase();
+      }
+    }
+
+    // 2. URL Encoder / Decoder
+    if (slug === 'url-encoder-decoder' || slug === 'url-encoder' || slug === 'url-decoder') {
+      if (actMode === 'decode' || slug === 'url-decoder') {
+        try { return decodeURIComponent(input); } catch { return '// Invalid URL encoded string'; }
+      }
+      return encodeURIComponent(input);
+    }
+
+    // 3. Remove Duplicate Lines
+    if (slug === 'remove-duplicate-lines' || slug === 'dedupe-text') {
+      const lines = input.split('\n');
+      return Array.from(new Set(lines)).join('\n');
+    }
+
+    // 4. Sort Text Lines
+    if (slug === 'sort-text-lines' || slug === 'text-sorter') {
+      const lines = input.split('\n');
+      return lines.sort((a, b) => a.localeCompare(b)).join('\n');
+    }
+
+    // 5. HTML Entity Encoder
+    if (slug === 'html-entity-encoder' || slug === 'html-encoder') {
+      return input.replace(/[\u00A0-\u9999<>\&]/g, (i) => '&#' + i.charCodeAt(0) + ';');
+    }
+
+    // 6. JWT Decoder
+    if (slug === 'jwt-decoder') {
+      try {
+        const parts = input.trim().split('.');
+        if (parts.length < 2) return '// Invalid JWT format (header.payload.signature)';
+        const header = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')));
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        return JSON.stringify({ HEADER: header, PAYLOAD: payload }, null, 2);
+      } catch {
+        return '// Invalid JWT token string';
+      }
+    }
+
+    // 7. CSV to JSON
+    if (slug === 'csv-to-json') {
+      try {
+        const lines = input.trim().split('\n');
+        if (lines.length < 2) return '// CSV requires a header row and data rows';
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        const rows = lines.slice(1).map(line => {
+          const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+          const obj: Record<string, string> = {};
+          headers.forEach((h, i) => { obj[h] = values[i] || ''; });
+          return obj;
+        });
+        return JSON.stringify(rows, null, 2);
+      } catch {
+        return '// Invalid CSV format';
+      }
+    }
+
+    // 8. JSON to CSV
+    if (slug === 'json-to-csv') {
+      try {
+        const data = JSON.parse(input);
+        if (!Array.isArray(data) || data.length === 0) return '// JSON must be an array of objects';
+        const headers = Object.keys(data[0]);
+        const csvRows = [
+          headers.join(','),
+          ...data.map(row => headers.map(h => JSON.stringify(row[h] ?? '')).join(','))
+        ];
+        return csvRows.join('\n');
+      } catch {
+        return '// Invalid JSON array format';
+      }
+    }
+
+    return input;
   };
 
   // Real-time processing
@@ -334,37 +451,29 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
               readingTime: Number(result?.reading_time_minutes || result?.readingTime || 0),
             });
           }
+        } else {
+          const res = processTextTool(toolSlug, inputText, actionMode, caseMode);
+          if (!cancelled) {
+            setOutputText(res);
+          }
         }
       } catch (e: any) {
         if (cancelled) return;
-        if (toolSlug === 'json-formatter') {
-          setOutputText('// Invalid JSON');
-        } else if (toolSlug === 'base64-encoder' && actionMode === 'decode') {
-          setOutputText('// Invalid Base64 string');
-        } else if (toolSlug === 'word-counter') {
-          const text = inputText.trim();
-          const words = text ? text.split(/\s+/).length : 0;
-          const chars = inputText.length;
-          setStatsObj({ words, chars, readingTime: Math.ceil(words / 200) });
-        } else {
-          setOutputText('// Error processing input.');
-        }
+        setOutputText('// Error processing input.');
       } finally {
         if (!cancelled) {
           setIsProcessing(false);
         }
       }
-    }, 180);
+    }, 120);
 
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [inputText, actionMode, toolSlug]);
+  }, [inputText, actionMode, caseMode, toolSlug]);
 
-  const [docSearchQuery, setDocSearchQuery] = useState('');
-
-  const getInstructions = (id: string) => {
+  const getFaq = (id: string) => {
     if (id === 'json-formatter') {
       return [
         { q: "How to parse and format JSON data?", a: "Paste standard raw or minified JSON text into the Input text area. The parser will immediately clean, structure, validate and format indentations dynamically in real-time." },
@@ -531,10 +640,45 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 </div>
               ) : (
                 <div className="flex flex-col gap-6">
-                    {toolSlug === 'base64-encoder' && (
+                  {toolSlug === 'base64-encoder' && (
                     <div className="flex gap-2">
-                      <button onClick={() => setActionMode('encode')} className={cn("px-4 py-2 rounded-lg text-sm font-bold border transition-colors", actionMode === 'encode' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-neutral-600 border-neutral-200')}>Encode Base64</button>
-                      <button onClick={() => setActionMode('decode')} className={cn("px-4 py-2 rounded-lg text-sm font-bold border transition-colors", actionMode === 'decode' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-neutral-600 border-neutral-200')}>Decode Base64</button>
+                      <button onClick={() => setActionMode('encode')} className={cn("px-4 py-2 rounded-lg text-sm font-bold border transition-colors cursor-pointer", actionMode === 'encode' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-neutral-600 border-neutral-200')}>Encode Base64</button>
+                      <button onClick={() => setActionMode('decode')} className={cn("px-4 py-2 rounded-lg text-sm font-bold border transition-colors cursor-pointer", actionMode === 'decode' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-neutral-600 border-neutral-200')}>Decode Base64</button>
+                    </div>
+                  )}
+
+                  {(toolSlug === 'text-case-converter' || toolSlug === 'case-converter' || toolSlug === 'uppercase-converter' || toolSlug === 'lowercase-converter') && (
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { id: 'uppercase', label: 'UPPERCASE' },
+                        { id: 'lowercase', label: 'lowercase' },
+                        { id: 'title', label: 'Title Case' },
+                        { id: 'sentence', label: 'Sentence case' },
+                        { id: 'camel', label: 'camelCase' },
+                        { id: 'snake', label: 'snake_case' },
+                        { id: 'kebab', label: 'kebab-case' },
+                        { id: 'pascal', label: 'PascalCase' },
+                      ].map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => setCaseMode(m.id as any)}
+                          className={cn(
+                            "px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer",
+                            caseMode === m.id
+                              ? "bg-purple-600 text-white border-purple-600 shadow-sm"
+                              : "bg-white text-neutral-600 border-neutral-200 hover:border-purple-300"
+                          )}
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {(toolSlug === 'url-encoder-decoder' || toolSlug === 'url-encoder' || toolSlug === 'url-decoder') && (
+                    <div className="flex gap-2">
+                      <button onClick={() => setActionMode('encode')} className={cn("px-4 py-2 rounded-lg text-sm font-bold border transition-colors cursor-pointer", actionMode === 'encode' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-neutral-600 border-neutral-200')}>URL Encode</button>
+                      <button onClick={() => setActionMode('decode')} className={cn("px-4 py-2 rounded-lg text-sm font-bold border transition-colors cursor-pointer", actionMode === 'decode' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-neutral-600 border-neutral-200')}>URL Decode</button>
                     </div>
                   )}
                   
