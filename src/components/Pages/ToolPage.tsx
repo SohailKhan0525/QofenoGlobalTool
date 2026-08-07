@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCloudArrowUp, faCircleCheck, faArrowLeft, faShieldHalved, faDownload,
   faHeart, faEye, faCirclePlay, faCircleQuestion, faXmark, faChevronDown,
-  faShareNodes, faSpinner, faChevronRight, faExpand, faFileLines,
+  faSpinner, faChevronRight, faExpand, faFileLines,
   faCopy, faMagnifyingGlass, faRocket,
 } from '@fortawesome/free-solid-svg-icons';
 import { faXTwitter, faFacebook as faFbBrand, faLinkedin } from '@fortawesome/free-brands-svg-icons';
@@ -87,7 +87,6 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   const [hasLiked, setHasLiked] = useState(false);
   const [views, setViews] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [isLoadingTool, setIsLoadingTool] = useState(true);
@@ -482,8 +481,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] items-start">
             <div className="space-y-6">
               <div className="bg-white border border-neutral-200/80 rounded-3xl p-5 md:p-8 shadow-sm">
-                <div className="flex flex-col md:flex-row gap-5 md:items-start md:justify-between mb-6">
-                  <div className="flex items-start gap-4 min-w-0">
+                <div className="flex items-start gap-4 min-w-0 mb-6">
                     <div className="w-14 h-14 shrink-0 bg-purple-50 rounded-2xl flex items-center justify-center">
                       <FontAwesomeIcon icon={tool.icon} className="w-7 h-7 text-purple-600" />
                     </div>
@@ -491,31 +489,6 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                       <h1 className="text-2xl md:text-3xl font-black text-[#0F0A1E] mb-2">{tool.name}</h1>
                       <p className="text-neutral-500 text-sm leading-relaxed max-w-2xl">{tool.desc}</p>
                     </div>
-                  </div>
-
-                  <Tooltip>
-                    <TooltipTrigger
-                      className="self-start p-2 rounded-xl border border-neutral-200 text-neutral-500 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 transition-all cursor-pointer"
-                      onClick={() => {
-                        if (navigator.share) {
-                          navigator.share({
-                            title: tool.name,
-                            text: tool.desc,
-                            url: window.location.href,
-                          }).catch((err) => {
-                            if (err.name !== 'AbortError') console.error(err);
-                          });
-                        } else {
-                          setIsShareModalOpen(true);
-                        }
-                      }}
-                    >
-                      <FontAwesomeIcon icon={faShareNodes} className="w-4 h-4" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Share this tool</p>
-                    </TooltipContent>
-                  </Tooltip>
                 </div>
 
                 <FileToolWorkspace tool={tool} userId={currentUserId} />
@@ -719,31 +692,6 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
           {/* Main Workspace */}
           <div className="lg:col-span-2">
             <div className="bg-white border border-neutral-200/80 rounded-3xl p-5 md:p-10 shadow-sm relative">
-              <div className="absolute top-6 right-6">
-                <Tooltip>
-                  <TooltipTrigger 
-                    className="p-2 rounded-xl border border-neutral-200 text-neutral-500 hover:text-purple-600 hover:border-purple-200 hover:bg-purple-50 transition-all cursor-pointer"
-                    onClick={() => {
-                      if (navigator.share) {
-                        navigator.share({
-                          title: tool.name,
-                          text: tool.desc,
-                          url: window.location.href,
-                        }).catch((err) => {
-                          if (err.name !== 'AbortError') console.error(err);
-                        });
-                      } else {
-                        setIsShareModalOpen(true);
-                      }
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faShareNodes} className="w-4 h-4" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Share this tool</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
 
               {isLoadingTool ? (
                 <div className="flex flex-col md:flex-row gap-6 items-start mb-8">
@@ -787,15 +735,20 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-bold text-neutral-600">Input</label>
-                        <button onClick={() => setInputText('')} className="text-xs font-bold text-neutral-400 hover:text-neutral-900 transition-colors">Clear</button>
+                        <label className="text-sm font-semibold text-neutral-600">Input</label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-neutral-300">{inputText.length} chars</span>
+                          {inputText && <button onClick={() => setInputText('')} className="text-xs font-medium text-neutral-400 hover:text-neutral-700 transition-colors">Clear</button>}
+                        </div>
                       </div>
-                      <textarea
-                        className="w-full h-64 p-4 border border-neutral-200 rounded-xl focus:border-purple-500 outline-none font-mono text-sm resize-none bg-neutral-50/50"
-                        placeholder="Type or paste your input here..."
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                      />
+                      <div className="relative">
+                        <textarea
+                          className="w-full h-64 p-4 border border-neutral-200 rounded-2xl focus:border-purple-400 focus:bg-white focus:ring-3 focus:ring-purple-50 outline-none font-mono text-sm resize-none bg-neutral-50 placeholder-neutral-300 transition-all leading-relaxed"
+                          placeholder="Type or paste your input here…"
+                          value={inputText}
+                          onChange={(e) => setInputText(e.target.value)}
+                        />
+                      </div>
                     </div>
 
                     {toolSlug === 'word-counter' ? (
@@ -832,57 +785,57 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                   ) : (
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-sm font-bold text-neutral-600">Output</label>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => { navigator.clipboard.writeText(outputText); toast.success("Copied!"); }} className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors bg-purple-50 px-3 py-1 rounded-full">Copy Result</button>
+                        <label className="text-sm font-semibold text-neutral-600">Output</label>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(outputText); toast.success('Copied!'); }}
+                            disabled={!outputText}
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-neutral-500 bg-neutral-50 border border-neutral-200 rounded-lg hover:bg-neutral-100 transition-colors disabled:opacity-30"
+                          >
+                            <FontAwesomeIcon icon={faCopy} className="w-3 h-3" /> Copy
+                          </button>
                           {outputText && (
-                            <button onClick={handleDownload} className="text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 transition-colors px-3 py-1 rounded-full flex items-center gap-1 cursor-pointer">
+                            <button
+                              onClick={handleDownload}
+                              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+                            >
                               <FontAwesomeIcon icon={faDownload} className="w-3 h-3" /> Download
                             </button>
                           )}
                         </div>
                       </div>
-                      <div className="w-full h-64 border border-neutral-200 bg-white rounded-xl overflow-hidden relative">
-                        <div className="w-full h-full p-4 overflow-auto font-mono text-sm whitespace-pre-wrap break-all">
-                           <AnimatePresence mode="wait">
-                              {isProcessing ? (
-                                 <motion.div
-                                   key="processing"
-                                   initial={{ opacity: 0, scale: 0.98 }}
-                                   animate={{ opacity: 1, scale: 1 }}
-                                   exit={{ opacity: 0, scale: 0.98 }}
-                                   transition={{ duration: 0.15 }}
-                                   className="absolute inset-0 flex items-center justify-center bg-gradient-to-r from-purple-50/80 via-white to-pink-50/80 animate-gradient-x z-10"
-                                 >
-                                   <div className="flex items-center gap-3">
-                                      <FontAwesomeIcon icon={faSpinner} className="w-5 h-5 text-purple-600 fa-spin shrink-0" />
-                                      <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-neutral-400 to-purple-600 animate-shimmer bg-[length:200%_auto] text-base">
-                                        Computing formatted output...
-                                      </span>
-                                   </div>
-                                 </motion.div>
-                              ) : outputText ? (
-                                 <motion.div
-                                   key={outputText}
-                                   initial={{ opacity: 0, y: 8, filter: 'blur(3px)' }}
-                                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                   exit={{ opacity: 0, y: -8, filter: 'blur(3px)' }}
-                                   transition={{ duration: 0.25, ease: "easeOut" }}
-                                 >
-                                    {outputText}
-                                 </motion.div>
-                              ) : (
-                                 <motion.span
-                                   key="empty"
-                                   initial={{ opacity: 0 }}
-                                   animate={{ opacity: 1 }}
-                                   exit={{ opacity: 0 }}
-                                   className="text-neutral-400 italic flex"
-                                 >
-                                   Result will appear here...
-                                 </motion.span>
-                              )}
-                           </AnimatePresence>
+                      <div className="relative">
+                        <div className="w-full h-64 border border-neutral-200 bg-white rounded-2xl overflow-hidden">
+                          <div className="w-full h-full p-4 overflow-auto font-mono text-sm whitespace-pre-wrap break-words leading-relaxed">
+                             <AnimatePresence mode="wait">
+                                {isProcessing ? (
+                                   <motion.div
+                                     key="processing"
+                                     initial={{ opacity: 0 }}
+                                     animate={{ opacity: 1 }}
+                                     exit={{ opacity: 0 }}
+                                     className="absolute inset-0 flex items-center justify-center bg-white/90 z-10"
+                                   >
+                                     <div className="flex items-center gap-3">
+                                        <FontAwesomeIcon icon={faSpinner} className="w-4 h-4 text-purple-600 fa-spin" />
+                                        <span className="text-sm font-medium text-neutral-500">Processing…</span>
+                                     </div>
+                                   </motion.div>
+                                ) : outputText ? (
+                                   <motion.div
+                                     key={outputText.slice(0,20)}
+                                     initial={{ opacity: 0, y: 4 }}
+                                     animate={{ opacity: 1, y: 0 }}
+                                     transition={{ duration: 0.2 }}
+                                     className="text-neutral-800"
+                                   >
+                                      {outputText}
+                                   </motion.div>
+                                ) : (
+                                   <span className="text-neutral-300 italic">Result will appear here…</span>
+                                )}
+                             </AnimatePresence>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1135,84 +1088,6 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
               >
                 Got it
               </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Share Modal */}
-      <AnimatePresence>
-        {isShareModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-[#0F0A1E]/40 backdrop-blur-sm pointer-events-auto"
-              onClick={() => setIsShareModalOpen(false)}
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white max-w-md w-full rounded-3xl p-8 shadow-2xl relative z-10 pointer-events-auto"
-            >
-              <button 
-                onClick={() => setIsShareModalOpen(false)}
-                className="absolute top-6 right-6 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors cursor-pointer"
-              >
-                <FontAwesomeIcon icon={faXmark} className="w-4 h-4 cursor-pointer" />
-              </button>
-              
-              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-6">
-                <FontAwesomeIcon icon={faShareNodes} className="w-6 h-6 text-blue-600" />
-              </div>
-              
-              <h2 className="font-black text-2xl text-[#0F0A1E] mb-2">Share this tool</h2>
-              <p className="text-neutral-500 text-sm mb-6">Let your friends or colleagues know about this awesome tool.</p>
-              
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <a 
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors cursor-pointer"
-                >
-                  <FontAwesomeIcon icon={faFbBrand} className="w-4 h-4 text-[#1877F2]" />
-                  <span className="text-xs font-bold">Facebook</span>
-                </a>
-                <a 
-                  href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(tool.desc)}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-sky-50 text-sky-500 hover:bg-sky-100 transition-colors cursor-pointer"
-                >
-                  <FontAwesomeIcon icon={faXTwitter} className="w-4 h-4 text-[#000000]" />
-                  <span className="text-xs font-bold">Twitter</span>
-                </a>
-                <a 
-                  href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(window.location.href)}&title=${encodeURIComponent(tool.name)}&summary=${encodeURIComponent(tool.desc)}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors cursor-pointer"
-                >
-                  <FontAwesomeIcon icon={faLinkedin} className="w-6 h-6" />
-                  <span className="text-xs font-bold">LinkedIn</span>
-                </a>
-              </div>
-
-              <div className="flex items-center gap-3 w-full bg-neutral-50 p-2.5 rounded-xl border border-neutral-200">
-                <div className="flex-1 overflow-hidden px-1">
-                  <p className="text-xs text-neutral-500 truncate whitespace-nowrap">{window.location.href}</p>
-                </div>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href);
-                    toast.success("Link copied to clipboard!");
-                    setIsShareModalOpen(false);
-                  }}
-                  className="flex bg-white items-center gap-1.5 py-1.5 px-3 hover:bg-neutral-100 shadow-sm border border-neutral-200 rounded-lg text-neutral-700 text-xs font-bold transition-colors cursor-pointer"
-                >
-                  <FontAwesomeIcon icon={faCopy} className="w-3.5 h-3.5" /> Copy
-                </button>
-              </div>
             </motion.div>
           </div>
         )}

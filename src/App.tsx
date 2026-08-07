@@ -23,6 +23,7 @@ import { AuthCallback } from './components/Pages/AuthCallback';
 import { Profile } from './components/Pages/Profile';
 import { Settings as SettingsPage } from './components/Pages/Settings';
 import { NotFound } from './components/Pages/NotFound';
+import { useRealtimeNotifications } from './hooks/useRealtimeNotifications';
 
 // shadcn / UI components
 import { Toaster } from '@/components/ui/sonner';
@@ -507,30 +508,40 @@ export default function App() {
 
     void loadNotifications();
 
-    if (user?.id) {
-      const channel = `databases.${DATABASE_ID}.collections.notifications.documents`;
-      try {
-        subscription = realtime.subscribe(channel, (event: any) => {
-          const doc = event?.payload;
-          if (!doc || doc.user_id !== user.id) return;
-          void loadNotifications();
-        });
-      } catch (err) {
-        console.error("Realtime subscription failed", err);
-      }
-    }
-
     return () => {
       cancelled = true;
-      try {
-        if (typeof subscription === 'function') {
-          subscription();
-        } else if (subscription && typeof subscription.close === 'function') {
-          subscription.close();
-        }
-      } catch {}
     };
   }, [user?.id]);
+
+  useRealtimeNotifications(user?.id, () => {
+    // When a new realtime notification comes in, reload notifications list
+    if (!user?.id) return;
+    databases.listDocuments(DATABASE_ID, 'notifications', [
+      Query.equal('user_id', user.id),
+      Query.orderDesc('created_at'),
+      Query.limit(20),
+    ]).then(resp => {
+      const localReadNotifs = JSON.parse(localStorage.getItem('qofeno_read_notifs') || '[]');
+      const seenTitles = new Set<string>();
+      const dedupedDocs = (resp.documents || []).filter((doc: any) => {
+        const t = String(doc.title || '');
+        if (seenTitles.has(t)) return false;
+        seenTitles.add(t);
+        return true;
+      });
+      setNotifications(dedupedDocs.map((doc: any) => {
+        const isReadLocal = localReadNotifs.includes(doc.$id);
+        return {
+          id: doc.$id,
+          title: String(doc.title || 'Notification'),
+          message: String(doc.message || ''),
+          time: relativeTime(doc.created_at || doc.$createdAt),
+          read: Boolean(doc.read) || isReadLocal,
+          link: doc.link || undefined,
+        };
+      }));
+    }).catch(() => {});
+  });
 
   const markNotificationRead = async (notificationId: string) => {
     setNotifications((prev) => prev.map((n) => n.id === notificationId ? { ...n, read: true } : n));

@@ -1296,10 +1296,18 @@ const FIELD_TOOLTIPS: Record<string, string> = {
 };
 
 export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: string | null }) {
+  const { user } = useAuth();
+
+  // Plan-based max file size
+  const maxFileSizeBytes = (() => {
+    if (user?.plan === 'teams') return 1_073_741_824; // 1GB
+    if (user?.plan === 'pro') return 524_288_000;     // 500MB
+    return 52_428_800;                                 // 50MB free
+  })();
+  const maxFileSizeLabel = user?.plan === 'teams' ? '1 GB' : user?.plan === 'pro' ? '500 MB' : '50 MB';
   const config = FILE_TOOL_CONFIG[tool.slug as FileToolSlug];
   const inputRef = useRef<HTMLInputElement>(null);
-  const { user } = useAuth();
-  
+
   const [stage, setStage] = useState<Stage>('idle');
   const [files, setFiles] = useState<File[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -1705,7 +1713,11 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
           </button>
 
           <p className="text-xs text-neutral-400 mt-5">
-            Accepts: {acceptedExts === '.pdf' ? '.PDF, PDF/A' : acceptedExts} &middot; up to 500 MB
+            Accepts: {acceptedExts === '.pdf' ? '.PDF, PDF/A' : acceptedExts}
+            {' · '}up to <strong className="text-neutral-600">{maxFileSizeLabel}</strong>
+            {user?.plan === 'free' && (
+              <> &mdash; <span className="text-purple-600 font-semibold">500 MB with Pro ↑</span></>
+            )}
           </p>
         </div>
 
