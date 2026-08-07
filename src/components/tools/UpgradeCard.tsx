@@ -11,8 +11,11 @@ export function UpgradeCard({ toolName = "Pro Tools", onUpgrade }: UpgradeCardPr
   return (
     <div className="sticky top-24 rounded-2xl border border-purple-100/80 bg-gradient-to-b from-purple-50/70 via-white to-white p-5 shadow-sm">
       <div className="flex items-center gap-2.5 mb-3">
-        <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center shadow-sm shrink-0 p-1.5">
-          <img src="/favicon.svg" alt="Q" className="w-full h-full object-contain filter invert" />
+        <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center shadow-sm shrink-0 p-1.5 text-white">
+          <svg viewBox="0 0 228 216" className="w-full h-full fill-white">
+            <path d="M 119 180 A 65.9 65.9 0 1 1 155 151.5 L 143 141 A 49.2 49.2 0 1 0 108 166 Z" />
+            <path d="M 97 134 L 118 134 L 165 183 L 143.5 182.5 Z" />
+          </svg>
         </div>
         <div>
           <span className="text-xs font-bold text-purple-700 uppercase tracking-wider block">Pro Plan</span>
