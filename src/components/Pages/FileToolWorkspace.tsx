@@ -1400,6 +1400,14 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       toast.error(`Unsupported file! Only ${acceptedExts || 'supported format'} files are allowed for ${tool.name || tool.slug}.`);
       return;
     }
+
+    const tooLarge = arr.find(f => f.size > maxFileSizeBytes);
+    if (tooLarge) {
+      const humanSize = humanFileSize(tooLarge.size);
+      toast.error(`"${tooLarge.name}" (${humanSize}) exceeds your ${user?.plan || 'Free'} plan limit of ${maxFileSizeLabel}. Upgrade to Pro for 500 MB uploads.`);
+      return;
+    }
+
     const maxFiles = config.maxFiles || (isMultiple ? 20 : 1);
     setFiles((prev) => {
       const merged = isMultiple ? [...prev, ...arr] : arr.slice(0, 1);
