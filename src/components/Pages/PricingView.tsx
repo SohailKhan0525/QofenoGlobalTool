@@ -104,38 +104,30 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
     <section className="pt-32 md:pt-40 pb-24 px-6 md:px-12 bg-white relative">
       <SEO title="Pricing Plans" description="Upgrade your Qofeno experience. Choose the plan that works for you." />
       
-      {/* Firecracker celebration for Yearly Discount! */}
+      {/* CONFETTI ANIMATION ON SELECTION */}
       <AnimatePresence>
         {showConfetti && (
           <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.3 } }}
-            className="absolute inset-0 pointer-events-none z-0 flex justify-center items-center overflow-hidden"
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center"
           >
-            {confettiParticles.map((p) => (
+            {[...Array(20)].map((_, i) => (
               <motion.div
-                key={p.id}
-                className="absolute w-1 h-8 rounded-full"
-                style={{
-                  backgroundColor: ['#7C3AED', '#EC4899', '#06B6D4', '#FBBF24'][p.id % 4],
-                  boxShadow: '0 0 10px currentColor',
+                key={i}
+                initial={{ y: 0, x: 0, scale: 1, opacity: 1 }}
+                animate={{ 
+                  y: (Math.random() - 0.5) * 600, 
+                  x: (Math.random() - 0.5) * 600,
+                  rotate: Math.random() * 360,
+                  opacity: 0 
                 }}
-                initial={{ 
-                  x: 0, 
-                  y: 0, 
-                  scale: 0, 
-                  rotate: p.angle + 90 
-                }}
-                animate={{
-                  x: p.x,
-                  y: p.y,
-                  scale: [0, 1, 0],
-                }}
-                transition={{
-                  duration: 1 + Math.random() * 0.5,
-                  ease: "easeOut",
-                }}
+                transition={{ duration: 1.5, ease: "easeOut" }}
+                className={cn(
+                  "w-3 h-3 rounded-full absolute",
+                  i % 4 === 0 ? "bg-purple-500" : i % 4 === 1 ? "bg-pink-500" : i % 4 === 2 ? "bg-cyan-400" : "bg-amber-400"
+                )}
               />
             ))}
           </motion.div>
@@ -164,8 +156,16 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
           {/* FREE PLAN */}
           <motion.div 
             whileHover={prefersReduced ? {} : { y: -6 }}
-            className="border border-neutral-200 bg-white text-neutral-900 rounded-3xl p-8 flex flex-col justify-between transition-all"
+            className={cn(
+              "border bg-white text-neutral-900 rounded-3xl p-8 flex flex-col justify-between transition-all relative",
+              currentPlan === 'free' ? "border-2 border-neutral-800 shadow-md" : "border-neutral-200"
+            )}
           >
+            {currentPlan === 'free' && (
+              <div className="absolute top-0 right-6 bg-neutral-900 text-white text-[10px] font-black uppercase px-3 py-1 rounded-b-lg">
+                Your Current Tier
+              </div>
+            )}
             <div>
               <h3 className="font-display text-xl font-bold mb-2">Free</h3>
               <p className="text-sm text-neutral-500 mb-6">Always free for basic files and utility processes.</p>
@@ -175,9 +175,18 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
                 <span className="text-neutral-500 font-semibold ml-1">/mo forever</span>
               </div>
 
-              <button onClick={() => onNavigate && onNavigate('tools')} className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-neutral-100 text-[#0F0A1E] hover:bg-neutral-200 transition-colors cursor-pointer">
-                Start for Free
-              </button>
+              {currentPlan === 'free' ? (
+                <button
+                  disabled
+                  className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-neutral-100 text-neutral-500 border border-neutral-200 cursor-default"
+                >
+                  Current Tier
+                </button>
+              ) : (
+                <button onClick={() => onNavigate && onNavigate('tools')} className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-neutral-100 text-[#0F0A1E] hover:bg-neutral-200 transition-colors cursor-pointer">
+                  Start for Free
+                </button>
+              )}
 
               <ul className="space-y-4">
                 {[`${counts.free || '100'}+ free tools`, 'No login required', 'Server-processed instantly', 'Files deleted after processing'].map((f, i) => (
@@ -193,11 +202,14 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
           {/* PRO PLAN */}
           <motion.div 
             whileHover={prefersReduced ? {} : { y: -8 }}
-            className="border-2 border-purple-600 bg-gradient-to-b from-purple-950 to-[#1A0F33] text-white rounded-3xl p-8 flex flex-col justify-between shadow-2xl relative"
+            className={cn(
+              "border-2 bg-gradient-to-b from-purple-950 to-[#1A0F33] text-white rounded-3xl p-8 flex flex-col justify-between shadow-2xl relative",
+              currentPlan === 'pro' ? "border-amber-400 ring-4 ring-purple-500/30" : "border-purple-600"
+            )}
           >
             <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[11px] font-black uppercase px-4 py-1.5 rounded-b-xl flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-ping" />
-              Most Popular ✦
+              {currentPlan === 'pro' ? 'Your Active Plan ✦' : 'Most Popular ✦'}
             </div>
 
             <div className="mt-4">
@@ -211,12 +223,28 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
                 <span className="text-purple-300 font-semibold ml-1">/{isYearly ? 'mo billed yearly' : 'mo'}</span>
               </div>
 
-              <button 
-                onClick={() => onNavigate && onNavigate(isAuthenticated ? '/checkout/pro?plan=pro' : '/login?redirect=/checkout/pro?plan=pro')} 
-                className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity cursor-pointer"
-              >
-                Get Pro
-              </button>
+              {currentPlan === 'pro' ? (
+                <button
+                  onClick={() => onNavigate && onNavigate('settings?tab=billing')}
+                  className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-amber-400 text-[#0F0A1E] hover:bg-amber-300 transition-colors cursor-pointer"
+                >
+                  Manage Pro Plan
+                </button>
+              ) : currentPlan === 'teams' ? (
+                <button
+                  disabled
+                  className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-purple-900/60 text-purple-200 cursor-default"
+                >
+                  Included in Teams
+                </button>
+              ) : (
+                <button 
+                  onClick={() => onNavigate && onNavigate(isAuthenticated ? '/checkout/pro?plan=pro' : '/login?redirect=/checkout/pro?plan=pro')} 
+                  className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  Get Pro
+                </button>
+              )}
 
               <ul className="space-y-4">
                 {['Everything in Free', `All ${counts.total || '200'}+ tools unlocked`, 'Large file support (up to 500MB)', 'Priority server processing', 'Saved processing history', 'No ads'].map((f, i) => (
@@ -232,8 +260,16 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
           {/* TEAMS PLAN */}
           <motion.div 
             whileHover={prefersReduced ? {} : { y: -6 }}
-            className="border border-neutral-200 bg-[#0F0A1E] text-white rounded-3xl p-8 flex flex-col justify-between transition-all"
+            className={cn(
+              "border bg-[#0F0A1E] text-white rounded-3xl p-8 flex flex-col justify-between transition-all relative",
+              currentPlan === 'teams' ? "border-2 border-emerald-400" : "border-neutral-200"
+            )}
           >
+            {currentPlan === 'teams' && (
+              <div className="absolute top-0 right-6 bg-emerald-500 text-white text-[10px] font-black uppercase px-3 py-1 rounded-b-lg">
+                Your Active Plan
+              </div>
+            )}
             <div>
               <h3 className="font-display text-xl font-bold mb-2">Teams</h3>
               <p className="text-sm text-neutral-400 mb-6 font-medium">Collaborative utilities and higher file limits for standard workgroups.</p>
@@ -245,12 +281,21 @@ export function PricingView({ onNavigate, onGetPro }: { onNavigate?: (p: string)
                 <span className="text-neutral-400 font-semibold ml-1">/{isYearly ? 'mo billed yearly' : 'mo'}</span>
               </div>
 
-              <button 
-                onClick={() => onNavigate && onNavigate(isAuthenticated ? '/checkout/pro?plan=teams' : '/login?redirect=/checkout/pro?plan=teams')} 
-                className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-white text-[#0F0A1E] hover:bg-neutral-250 transition-colors cursor-pointer"
-              >
-                Start Teams Plan
-              </button>
+              {currentPlan === 'teams' ? (
+                <button
+                  onClick={() => onNavigate && onNavigate('settings?tab=billing')}
+                  className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-emerald-400 text-[#0F0A1E] hover:bg-emerald-300 transition-colors cursor-pointer"
+                >
+                  Manage Teams Plan
+                </button>
+              ) : (
+                <button 
+                  onClick={() => onNavigate && onNavigate(isAuthenticated ? '/checkout/pro?plan=teams' : '/login?redirect=/checkout/pro?plan=teams')} 
+                  className="w-full py-4 rounded-xl font-extrabold text-sm mb-8 bg-white text-[#0F0A1E] hover:bg-neutral-250 transition-colors cursor-pointer"
+                >
+                  Start Teams Plan
+                </button>
+              )}
 
               <ul className="space-y-4">
                 {['Everything in Pro', 'Up to 5 team members', 'Shared tool history', '1 GB file size limits', 'Priority technical support'].map((f, i) => (

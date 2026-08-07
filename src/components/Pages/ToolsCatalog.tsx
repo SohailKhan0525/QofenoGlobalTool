@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 import { Skeleton } from "@/components/ui/skeleton";
 import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
-import { account, databases, DATABASE_ID, trackEvent } from '../../lib/qofeno-appwrite';
+import { account, databases, DATABASE_ID, realtime, trackEvent } from '../../lib/qofeno-appwrite';
 import { Query } from 'appwrite';
 import { useAuth } from '../../context/AuthContext';
 
@@ -177,6 +177,27 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
     void loadRemote();
 
     return () => { cancelled = true };
+  }, []);
+
+  useEffect(() => {
+    const channel = `databases.${DATABASE_ID}.collections.tool_views.documents`;
+    let sub: any = null;
+    try {
+      sub = realtime.subscribe(channel, (event: any) => {
+        const doc = event?.payload;
+        if (!doc || !doc.tool_slug) return;
+        setToolViewCounts(prev => ({
+          ...prev,
+          [doc.tool_slug]: Number(doc.count || 0)
+        }));
+      });
+    } catch {}
+    return () => {
+      try {
+        if (typeof sub === 'function') sub();
+        else if (sub && typeof sub.close === 'function') sub.close();
+      } catch {}
+    };
   }, []);
 
   const toggleFavorite = async (e: React.MouseEvent, id: string) => {

@@ -9,7 +9,7 @@ import {
 import { useToolCatalog, FALLBACK_TOOLS } from '../../lib/toolCatalog';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
+import { databases, DATABASE_ID, realtime } from '../../lib/qofeno-appwrite';
 import { Query } from 'appwrite';
 
 interface HomeProps {
@@ -380,7 +380,22 @@ export function Home({ onNavigate, onRequestTool }: HomeProps) {
       }
     }
     void fetchTopUsedTools();
-    return () => { cancelled = true; };
+
+    const channel = `databases.${DATABASE_ID}.collections.tool_views.documents`;
+    let sub: any = null;
+    try {
+      sub = realtime.subscribe(channel, () => {
+        void fetchTopUsedTools();
+      });
+    } catch {}
+
+    return () => {
+      cancelled = true;
+      try {
+        if (typeof sub === 'function') sub();
+        else if (sub && typeof sub.close === 'function') sub.close();
+      } catch {}
+    };
   }, [tools]);
 
   const displayFeatured = liveTopTools.length > 0 ? liveTopTools : featuredTools;
