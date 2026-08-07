@@ -208,14 +208,26 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     let cancelled = false;
     const sendView = async () => {
       try {
-        void trackToolView(toolSlug);
+        await trackToolView(toolSlug);
         await trackEvent('view', toolSlug, currentUserId || undefined);
         if (cancelled) return;
+        
+        // Re-sync stats from Appwrite after recording view
+        try {
+          const viewsResp = await databases.listDocuments(DATABASE_ID, 'tool_views', [
+            Query.equal('tool_slug', toolSlug),
+            Query.limit(1)
+          ]);
+          const viewsDoc = viewsResp.documents?.[0] as any;
+          if (viewsDoc && !cancelled) {
+            setViews(Number(viewsDoc.count || 0));
+            setLikes(Number(viewsDoc.likes || 0));
+          }
+        } catch {}
+
         if (currentUserId) {
-          // mark recently viewed for logged-in users
           await trackEvent('recent', toolSlug, currentUserId);
         } else {
-          // localStorage fallback for anonymous users
           try {
             const rv = JSON.parse(localStorage.getItem('recently_viewed') || '[]');
             const newRv = [toolId, ...rv.filter((id: string) => id !== toolId)].slice(0, 4);
@@ -228,7 +240,7 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     void sendView();
 
     return () => { cancelled = true };
-  }, [toolSlug, currentUserId]);
+  }, [toolSlug, currentUserId, toolId]);
 
   const toggleLike = () => {
     const nextLiked = !hasLiked;
@@ -456,137 +468,6 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     );
   }
 
-  if (isFileTool) {
-    return (
-      <div className="min-h-screen bg-[#FAFAFA] pt-28 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">
-        <SEO title={tool.name} description={tool.desc} schemaMarkup={tool.schemaMarkup} />
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <nav className="flex items-center gap-2 text-sm font-bold text-neutral-500 min-w-0">
-              <button onClick={() => onNavigate('home')} className="hover:text-purple-600 transition-colors cursor-pointer">Home</button>
-              <FontAwesomeIcon icon={faChevronRight} className="w-3.5 h-3.5 shrink-0" />
-              <button onClick={() => onNavigate('tools')} className="hover:text-purple-600 transition-colors cursor-pointer">Tools</button>
-              <FontAwesomeIcon icon={faChevronRight} className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-[#0F0A1E] truncate max-w-[180px] md:max-w-[320px]">{tool.name}</span>
-            </nav>
-
-            <button
-              onClick={() => onNavigate('tools')}
-              className="inline-flex items-center gap-2 text-neutral-500 hover:text-purple-600 transition-colors font-bold text-sm cursor-pointer"
-            >
-              <FontAwesomeIcon icon={faArrowLeft} className="w-4 h-4" /> Back to Tools
-            </button>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] items-start">
-            <div className="space-y-6">
-              <div className="bg-white border border-neutral-200/80 rounded-3xl p-5 md:p-8 shadow-sm">
-                <div className="flex items-start gap-4 min-w-0 mb-6">
-                    <div className="w-14 h-14 shrink-0 bg-purple-50 rounded-2xl flex items-center justify-center">
-                      <FontAwesomeIcon icon={tool.icon} className="w-7 h-7 text-purple-600" />
-                    </div>
-                    <div className="min-w-0">
-                      <h1 className="text-2xl md:text-3xl font-black text-[#0F0A1E] mb-2">{tool.name}</h1>
-                      <p className="text-neutral-500 text-sm leading-relaxed max-w-2xl">{tool.desc}</p>
-                    </div>
-                </div>
-
-                <FileToolWorkspace tool={tool} userId={currentUserId} />
-
-                <div className="mt-6 pt-6 border-t border-neutral-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-neutral-500">
-                    <FontAwesomeIcon icon={faShieldHalved} className={cn("w-4 h-4", user?.plan === 'pro' || user?.plan === 'teams' ? "text-emerald-500" : "text-amber-500")} />
-                    {user?.plan === 'pro' || user?.plan === 'teams'
-                      ? "Pro Retention: Inputs kept 6 days • Results kept 7 days"
-                      : "Free Plan: Results auto-deleted after download"}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsModalOpen(true);
-                      const el = document.getElementById('how-it-works-section');
-                      if (el) el.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                    className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors inline-flex items-center gap-1 cursor-pointer"
-                  >
-                    <FontAwesomeIcon icon={faCirclePlay} className="w-4 h-4" /> How it works
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 shadow-sm">
-                <h3 className="font-bold text-[#0F0A1E] text-sm uppercase tracking-wider mb-4">Tool Stats</h3>
-                <div className="flex justify-between items-center py-3 border-b border-neutral-100">
-                  <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                    <FontAwesomeIcon icon={faEye} className="w-4 h-4" /> Views
-                  </span>
-                  <span className="font-bold text-[#0F0A1E]">{views.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center py-3">
-                  <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                    <FontAwesomeIcon icon={faHeart} className="w-4 h-4 text-red-500" /> Likes
-                  </span>
-                  <LikeButton toolSlug={toolSlug} initialLikes={likes} />
-                </div>
-                <div className="pt-4 border-t border-neutral-100 flex justify-end">
-                  <ShareButton toolName={tool.name} toolSlug={toolSlug} />
-                </div>
-              </div>
-
-              {(!user || user.plan === 'free') && (
-                <UpgradeCard toolName={tool.name} onUpgrade={() => onNavigate('pricing')} />
-              )}
-            </div>
-          </div>
-        </div>
-
-        <AnimatePresence>
-          {isModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-[#0F0A1E]/40 backdrop-blur-sm pointer-events-auto"
-                onClick={() => setIsModalOpen(false)}
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-white max-w-lg w-full rounded-3xl p-8 shadow-2xl relative z-10 pointer-events-auto"
-              >
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="absolute top-6 right-6 p-2 bg-neutral-100 hover:bg-neutral-200 rounded-full text-neutral-500 transition-colors"
-                >
-                  <FontAwesomeIcon icon={faXmark} className="w-4 h-4 cursor-pointer" />
-                </button>
-
-                <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
-                  <FontAwesomeIcon icon={faShieldHalved} className="w-6 h-6 text-purple-600" />
-                </div>
-                <h3 className="font-black text-2xl text-[#0F0A1E] mb-3">Privacy & Security Assured</h3>
-                <p className="text-neutral-500 text-sm leading-relaxed mb-6">
-                  Your data and privacy are strictly protected and never used by us.
-                  Any files you upload are processed securely and deleted automatically
-                  within 30 minutes from our servers.
-                </p>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="w-full bg-[#0F0A1E] hover:bg-neutral-800 text-white font-bold py-3.5 rounded-xl transition-colors cursor-pointer"
-                >
-                  Got it
-                </button>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-32 md:pt-40 pb-24 px-4 md:px-8 select-none overflow-x-hidden relative">
       <SEO title={tool.name} description={tool.desc} schemaMarkup={tool.schemaMarkup} />
@@ -637,8 +518,10 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 </div>
               )}
 
-              {/* Tool Input & Real-time Output Zone */}
-              {isLoadingTool ? (
+              {/* Tool Workspace Zone */}
+              {isFileTool ? (
+                <FileToolWorkspace tool={tool} userId={currentUserId} />
+              ) : isLoadingTool ? (
                 <div className="flex flex-col gap-6">
                   <Skeleton className="w-full h-8 max-w-[200px]" />
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
