@@ -6,7 +6,8 @@ import {
   faSun, faMoon, faDesktop, faEye, faEyeSlash, faDownload,
   faRotateRight, faCalendar, faCircleCheck,
   faArrowUpRightFromSquare, faEnvelope, faRightToBracket, faXmark,
-  faCircleInfo, faCamera, faCrop, faPlus, faMinus, faTrash
+  faCircleInfo, faCamera, faCrop, faPlus, faMinus, faTrash,
+  faWandMagicSparkles, faHardDrive, faStar, faClock, faChevronRight, faBolt
 } from '@fortawesome/free-solid-svg-icons';
 import { account, databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +17,7 @@ import { Query } from 'appwrite';
 import { PlanBadge } from '../PlanBadge';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
 
 type SettingsTab = 'profile' | 'account' | 'appearance' | 'notifications' | 'billing' | 'privacy' | 'danger';
 
@@ -199,6 +201,158 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
   const [showCropModal, setShowCropModal] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+
+  // Profile Dashboard Extra States
+  const [memberSince, setMemberSince] = useState('');
+  const [usageStats, setUsageStats] = useState({ toolsUsed: 0, filesProcessed: 0 });
+  const [likedTools, setLikedTools] = useState<string[]>([]);
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [lastViewedSlug, setLastViewedSlug] = useState<string>('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadProfileDashboardData = async () => {
+      const initDate = user?.$createdAt || user?.createdAt;
+      if (initDate) {
+        const d = new Date(initDate);
+        if (!isNaN(d.getTime())) {
+          setMemberSince(d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+        }
+      }
+
+      if (user?.id) {
+        try {
+          const metaDocs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
+            Query.equal('user_id', user.id),
+            Query.limit(1)
+          ]);
+          if (!cancelled && metaDocs.documents.length > 0) {
+            const doc = metaDocs.documents[0];
+            setUsageStats({
+              toolsUsed: doc.tools_used || 0,
+              filesProcessed: doc.files_processed || 0
+            });
+          }
+        } catch {}
+      }
+
+      let likes: string[] = [];
+      if (user?.id) {
+        try {
+          const likesDocs = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
+            Query.equal('user_id', user.id),
+            Query.limit(100)
+          ]);
+          likes = likesDocs.documents.map((d: any) => String(d.tool_slug || d.tool_id));
+        } catch {}
+      }
+
+      try {
+        const localLikes = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+        if (Array.isArray(localLikes)) {
+          likes = Array.from(new Set([...likes, ...localLikes]));
+        }
+      } catch {}
+      if (!cancelled) setLikedTools(likes);
+
+      let history: any[] = [];
+      if (user?.id) {
+        try {
+          const execDocs = await databases.listDocuments(DATABASE_ID, 'tool_executions', [
+            Query.equal('user_id', user.id),
+            Query.orderDesc('created_at'),
+            Query.limit(20)
+          ]);
+          history = execDocs.documents;
+        } catch {}
+      }
+
+      let localHist: any[] = [];
+      try {
+        const rawLocal = localStorage.getItem('qofeno_tool_history') || localStorage.getItem('recently_viewed');
+        if (rawLocal) {
+          const parsed = JSON.parse(rawLocal);
+          if (Array.isArray(parsed)) {
+            localHist = parsed.map((item: any) => typeof item === 'string' ? { tool_slug: item, created_at: new Date().toISOString() } : item);
+          }
+        }
+      } catch {}
+
+      const mergedHistory = history.length > 0 ? history : localHist;
+      if (!cancelled) {
+        setHistoryItems(mergedHistory);
+      }
+
+      let lastSlug = '';
+      if (user?.id) {
+        try {
+          const rvDocs = await databases.listDocuments(DATABASE_ID, 'recently_viewed', [
+            Query.equal('user_id', user.id),
+            Query.orderDesc('viewed_at'),
+            Query.limit(1)
+          ]);
+          if (rvDocs.documents.length > 0) {
+            lastSlug = String(rvDocs.documents[0].tool_slug || '');
+          }
+        } catch {}
+      }
+
+      if (!lastSlug) {
+        try {
+          const rawRv = localStorage.getItem('recently_viewed');
+          if (rawRv) {
+            const parsed = JSON.parse(rawRv);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              lastSlug = typeof parsed[0] === 'string' ? parsed[0] : parsed[0].tool_slug || parsed[0].id;
+            }
+          }
+        } catch {}
+      }
+
+      if (!lastSlug && mergedHistory.length > 0) {
+        lastSlug = mergedHistory[0].tool_slug || mergedHistory[0].tool_id;
+      }
+
+      if (!cancelled && lastSlug) {
+        setLastViewedSlug(lastSlug);
+      }
+    };
+
+    void loadProfileDashboardData();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const handleClearToolExecutions = async () => {
+    try {
+      if (user?.id) {
+        for (const item of historyItems) {
+          if (item.$id) {
+            await databases.deleteDocument(DATABASE_ID, 'tool_executions', item.$id).catch(() => {});
+          }
+        }
+      }
+      localStorage.removeItem('qofeno_tool_history');
+      localStorage.removeItem('recently_viewed');
+      setHistoryItems([]);
+      setLastViewedSlug('');
+      toast.success("Tool execution history cleared.");
+    } catch {
+      toast.error("Failed to clear history.");
+    }
+  };
+
+  const { tools: catalogFetched } = useToolCatalog();
+  const catalogTools = catalogFetched.length > 0 ? catalogFetched : FALLBACK_TOOLS;
+
+  const favoritedToolsList = catalogTools.filter(t => likedTools.includes(t.id) || likedTools.includes(t.slug));
+  const lastToolObj = lastViewedSlug
+    ? catalogTools.find(t => t.id === lastViewedSlug || t.slug === lastViewedSlug)
+    : (historyItems[0] ? catalogTools.find(t => t.id === historyItems[0].tool_slug || t.id === historyItems[0].tool_id) : favoritedToolsList[0] || catalogTools[0]);
+  const totalRunsCount = Math.max(usageStats.toolsUsed, historyItems.length);
+  const userPlan = user?.plan || 'free';
+  const maxUpload = userPlan === 'teams' ? '1 GB' : (userPlan === 'pro' ? '500 MB' : '50 MB');
+  const queueSpeed = userPlan === 'teams' ? 'Dedicated Priority Node' : (userPlan === 'pro' ? 'Priority Speed' : 'Standard Queue');
 
   useEffect(() => {
     if (user?.avatarUrl) {
@@ -902,6 +1056,179 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
                         : 'Save Changes'}
                     </button>
                   </form>
+
+                  {/* STATS OVERVIEW GRID */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 my-8 pt-6 border-t border-neutral-100">
+                    <div className="bg-neutral-50/80 border border-neutral-200/80 rounded-2xl p-4 text-center">
+                      <div className="w-8 h-8 rounded-xl bg-purple-100/80 flex items-center justify-center text-purple-600 mx-auto mb-2">
+                        <FontAwesomeIcon icon={faWandMagicSparkles} className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="block text-2xl font-black text-[#0F0A1E]">{totalRunsCount}</span>
+                      <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Total Runs</span>
+                    </div>
+
+                    <div className="bg-neutral-50/80 border border-neutral-200/80 rounded-2xl p-4 text-center">
+                      <div className="w-8 h-8 rounded-xl bg-indigo-100/80 flex items-center justify-center text-indigo-600 mx-auto mb-2">
+                        <FontAwesomeIcon icon={faHardDrive} className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="block text-2xl font-black text-[#0F0A1E]">{maxUpload}</span>
+                      <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Max Upload Limit</span>
+                    </div>
+
+                    <div className="bg-neutral-50/80 border border-neutral-200/80 rounded-2xl p-4 text-center">
+                      <div className="w-8 h-8 rounded-xl bg-amber-100/80 flex items-center justify-center text-amber-600 mx-auto mb-2">
+                        <FontAwesomeIcon icon={faStar} className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="block text-2xl font-black text-[#0F0A1E]">{likedTools.length}</span>
+                      <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Saved Favorites</span>
+                    </div>
+
+                    <div className="bg-neutral-50/80 border border-neutral-200/80 rounded-2xl p-4 text-center">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-100/80 flex items-center justify-center text-emerald-600 mx-auto mb-2">
+                        <FontAwesomeIcon icon={faBolt} className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="block text-xs font-bold text-emerald-700 truncate mt-1">{queueSpeed}</span>
+                      <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider block mt-1">Processing Queue</span>
+                    </div>
+                  </div>
+
+                  {/* LAST VIEWED / QUICK RESUME BANNER */}
+                  {lastToolObj && (
+                    <div className="bg-gradient-to-r from-purple-900 to-[#1a0f3a] text-white rounded-2xl p-6 my-8 shadow-md relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+                      <div className="relative z-10 space-y-1 text-center md:text-left">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                          <FontAwesomeIcon icon={faClock} className="w-3 h-3" /> Last Viewed Tool
+                        </div>
+                        <h3 className="text-lg font-black">{lastToolObj.name}</h3>
+                        <p className="text-purple-200/80 text-xs max-w-lg">{lastToolObj.desc}</p>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          localStorage.setItem('selected_tool_id', lastToolObj.id);
+                          handleNavigate(`tool`);
+                        }}
+                        className="relative z-10 px-5 py-3 bg-white hover:bg-purple-50 text-purple-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow shrink-0 flex items-center gap-2"
+                      >
+                        Open Tool <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* HISTORY LOG & FAVORITES GRID */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 my-8 pt-4 border-t border-neutral-100">
+                    {/* EXECUTION HISTORY (2 COLS) */}
+                    <div className="lg:col-span-2 bg-neutral-50/60 border border-neutral-200/80 rounded-2xl p-6 space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-neutral-200/60">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                            <FontAwesomeIcon icon={faClock} className="w-3.5 h-3.5" />
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-black text-[#0F0A1E]">Tool Execution History</h3>
+                            <p className="text-[11px] text-neutral-400 font-medium">Your recent operations and processes</p>
+                          </div>
+                        </div>
+                        {historyItems.length > 0 && (
+                          <button 
+                            onClick={handleClearToolExecutions}
+                            className="text-xs text-neutral-400 hover:text-red-600 font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <FontAwesomeIcon icon={faTrash} className="w-3 h-3" /> Clear History
+                          </button>
+                        )}
+                      </div>
+
+                      {historyItems.length > 0 ? (
+                        <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                          {historyItems.map((item, idx) => {
+                            const toolMatch = catalogTools.find(t => t.id === item.tool_slug || t.id === item.tool_id);
+                            const toolTitle = toolMatch?.name || item.tool_name || item.tool_slug || 'Tool Process';
+                            const dateStr = item.created_at || item.$createdAt ? new Date(item.created_at || item.$createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recently';
+
+                            return (
+                              <div 
+                                key={item.$id || idx}
+                                onClick={() => {
+                                  if (toolMatch) {
+                                    localStorage.setItem('selected_tool_id', toolMatch.id);
+                                    handleNavigate(`tool`);
+                                  }
+                                }}
+                                className="p-3 rounded-xl border border-neutral-200/60 hover:border-purple-300 bg-white transition-all flex items-center justify-between cursor-pointer group"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-8 h-8 rounded-lg bg-neutral-100 border border-neutral-200 flex items-center justify-center text-purple-600 shrink-0 group-hover:scale-105 transition-transform">
+                                    <FontAwesomeIcon icon={faWandMagicSparkles} className="w-3.5 h-3.5" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="text-xs font-bold text-[#0F0A1E] truncate group-hover:text-purple-600 transition-colors">{toolTitle}</h4>
+                                    <span className="text-[10px] text-neutral-400 font-medium">{dateStr}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/60 uppercase tracking-wider">
+                                    Completed
+                                  </span>
+                                  <FontAwesomeIcon icon={faChevronRight} className="w-3 h-3 text-neutral-300 group-hover:text-purple-600 transition-colors" />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-10 bg-white border border-dashed border-neutral-200 rounded-xl space-y-1.5">
+                          <FontAwesomeIcon icon={faClock} className="w-6 h-6 text-neutral-300 mx-auto" />
+                          <p className="text-xs font-bold text-neutral-600">No execution history yet</p>
+                          <p className="text-[11px] text-neutral-400">Tools you run will automatically log execution history here.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* FAVORITED / STARRED TOOLS (1 COL) */}
+                    <div className="bg-neutral-50/60 border border-neutral-200/80 rounded-2xl p-6 space-y-4">
+                      <div className="flex items-center gap-2 pb-3 border-b border-neutral-200/60">
+                        <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                          <FontAwesomeIcon icon={faStar} className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-black text-[#0F0A1E]">Starred Tools</h3>
+                          <p className="text-[11px] text-neutral-400 font-medium">{favoritedToolsList.length} saved favorites</p>
+                        </div>
+                      </div>
+
+                      {favoritedToolsList.length > 0 ? (
+                        <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                          {favoritedToolsList.map((tool) => (
+                            <div 
+                              key={tool.id}
+                              onClick={() => {
+                                localStorage.setItem('selected_tool_id', tool.id);
+                                handleNavigate(`tool`);
+                              }}
+                              className="p-3 rounded-xl border border-neutral-200/60 hover:border-amber-300 bg-white transition-all flex items-center justify-between cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                                  <FontAwesomeIcon icon={faStar} className="w-3.5 h-3.5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-bold text-[#0F0A1E] truncate group-hover:text-amber-600 transition-colors">{tool.name}</h4>
+                                  <span className="text-[10px] text-neutral-400 block truncate">{tool.subcategory}</span>
+                                </div>
+                              </div>
+                              <FontAwesomeIcon icon={faChevronRight} className="w-3 h-3 text-neutral-300 group-hover:text-amber-600 transition-colors" />
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-10 bg-white border border-dashed border-neutral-200 rounded-xl space-y-1.5">
+                          <FontAwesomeIcon icon={faStar} className="w-6 h-6 text-neutral-300 mx-auto" />
+                          <p className="text-xs font-bold text-neutral-600">No starred tools</p>
+                          <p className="text-[11px] text-neutral-400">Click the heart icon on any tool card to star it for quick everyday access.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
