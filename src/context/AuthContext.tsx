@@ -147,8 +147,8 @@ function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
     if (provider === 'email') provider = 'google';
   }
 
-  const name = String(raw.prefs?.display_name || raw.name || raw.email || 'User');
-  const avatarUrl = String(raw.prefs?.avatarUrl || raw.prefs?.avatar_url || '');
+  const name = String(raw.prefs?.display_name || raw.prefs?.name || raw.name || (rawEmail ? rawEmail.split('@')[0] : 'User'));
+  const avatarUrl = String(raw.prefs?.avatarUrl || raw.prefs?.avatar_url || raw.prefs?.avatar || (typeof window !== 'undefined' ? localStorage.getItem('qofeno_avatar_url') || '' : ''));
 
   return {
     id: String(raw.$id || raw.id || ''),

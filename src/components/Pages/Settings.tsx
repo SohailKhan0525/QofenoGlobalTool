@@ -661,6 +661,12 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
       if (isAuthenticated) {
         try {
           await account.updateName(trimmedName);
+          const currentPrefs = await account.getPrefs().catch(() => ({}));
+          await account.updatePrefs({
+            ...currentPrefs,
+            display_name: trimmedName,
+            name: trimmedName
+          });
           await refreshSession().catch(() => {});
         } catch (err: any) {
           console.warn("Appwrite updateName remote sync failed, persisting locally:", err);
