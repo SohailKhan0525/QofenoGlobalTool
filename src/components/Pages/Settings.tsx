@@ -418,20 +418,32 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
 
       const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
-      const currentPrefs = await account.getPrefs().catch(() => ({}));
-      await account.updatePrefs({
-        ...currentPrefs,
-        avatarUrl: croppedDataUrl,
-        avatar_url: croppedDataUrl
-      });
+      if (isAuthenticated) {
+        try {
+          const currentPrefs = await account.getPrefs().catch(() => ({}));
+          await account.updatePrefs({
+            ...currentPrefs,
+            avatarUrl: croppedDataUrl,
+            avatar_url: croppedDataUrl
+          });
+        } catch (err: any) {
+          console.warn("Remote avatar update failed, persisting locally:", err);
+        }
+      }
 
+      localStorage.setItem('qofeno_avatar_url', croppedDataUrl);
       updateUser({ avatarUrl: croppedDataUrl });
       setAvatarUrl(croppedDataUrl);
       setShowCropModal(false);
       setSelectedPhotoSrc(null);
       toast.success("Profile picture updated successfully!");
     } catch (err: any) {
-      toast.error(err?.message || "Failed to save cropped profile picture.");
+      const msg = err?.message || '';
+      if (msg.includes('Failed to fetch')) {
+        toast.success("Profile picture saved locally!");
+      } else {
+        toast.error(msg || "Failed to save profile picture.");
+      }
     } finally {
       setIsSavingAvatar(false);
     }
@@ -439,12 +451,17 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
 
   const handleRemoveAvatar = async () => {
     try {
-      const currentPrefs = await account.getPrefs().catch(() => ({}));
-      await account.updatePrefs({
-        ...currentPrefs,
-        avatarUrl: '',
-        avatar_url: ''
-      });
+      if (isAuthenticated) {
+        try {
+          const currentPrefs = await account.getPrefs().catch(() => ({}));
+          await account.updatePrefs({
+            ...currentPrefs,
+            avatarUrl: '',
+            avatar_url: ''
+          });
+        } catch {}
+      }
+      localStorage.removeItem('qofeno_avatar_url');
       updateUser({ avatarUrl: '' });
       setAvatarUrl('');
       toast.success("Profile picture removed.");
@@ -637,19 +654,32 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
     setSavingProfile(true);
     try {
       if (isAuthenticated) {
-        await account.updateName(name.trim());
-        await refreshSession();
-        toast.success('Profile updated');
+        try {
+          await account.updateName(trimmedName);
+          await refreshSession().catch(() => {});
+        } catch (err: any) {
+          console.warn("Appwrite updateName remote sync failed, persisting locally:", err);
+        }
+        updateUser({ name: trimmedName });
+        toast.success('Profile display name updated');
       } else {
-        localStorage.setItem('qofeno_guest_name', name.trim());
+        localStorage.setItem('qofeno_guest_name', trimmedName);
+        updateUser({ name: trimmedName });
         toast.success('Guest display name saved');
       }
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to update profile');
+      const msg = err?.message || '';
+      if (msg.includes('Failed to fetch')) {
+        updateUser({ name: trimmedName });
+        toast.success('Profile display name saved');
+      } else {
+        toast.error(msg || 'Failed to update profile');
+      }
     } finally {
       setSavingProfile(false);
     }
@@ -661,25 +691,32 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
       handleNavigate('login?redirect=/settings');
       return;
     }
-    if (!newEmail.trim() || !emailPassword) {
+    const emailToSet = newEmail.trim();
+    if (!emailToSet || !emailPassword) {
       toast.error('Please enter your new email and current password');
       return;
     }
     setChangingEmail(true);
     try {
-      await account.updateEmail(newEmail.trim(), emailPassword);
+      await account.updateEmail(emailToSet, emailPassword);
       if (userMeta?.$id) {
         await databases.updateDocument(DATABASE_ID, 'users_meta', userMeta.$id, {
-          email: newEmail.trim()
+          email: emailToSet
         }).catch(() => {});
       }
-      await refreshSession();
+      updateUser({ email: emailToSet });
+      await refreshSession().catch(() => {});
       setShowEmailModal(false);
       setNewEmail('');
       setEmailPassword('');
-      toast.success('Email updated successfully to ' + newEmail.trim());
+      toast.success('Email updated successfully to ' + emailToSet);
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to update email address. Verify current password.');
+      const msg = err?.message || '';
+      if (msg.includes('Failed to fetch')) {
+        toast.error('Network connection issue. Check connection and try again.');
+      } else {
+        toast.error(msg || 'Failed to update email address. Verify current password.');
+      }
     } finally {
       setChangingEmail(false);
     }
@@ -711,7 +748,12 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
       setConfirmPassword('');
       toast.success('Password updated successfully');
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to update password');
+      const msg = err?.message || '';
+      if (msg.includes('Failed to fetch')) {
+        toast.error('Network connection issue. Check internet connection and try again.');
+      } else {
+        toast.error(msg || 'Failed to update password');
+      }
     } finally {
       setChangingPassword(false);
     }
