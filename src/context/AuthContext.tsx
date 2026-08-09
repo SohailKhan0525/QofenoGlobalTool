@@ -461,27 +461,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const session = await account.createEmailPasswordSession(email, password);
-    if (session && session.secret) {
-      persistSession(session.secret);
+    try {
+      const session = await account.createEmailPasswordSession(email, password);
+      if (session && session.secret) {
+        persistSession(session.secret);
+      }
+      void ensurePersistentJWT();
+      await refreshSession().catch(() => {});
+    } catch (err: any) {
+      const msg = String(err?.message || err || '');
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('cloud.appwrite.io') || msg.includes('fetch')) {
+        throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');
+      }
+      if (msg.includes('Invalid credentials') || msg.includes('user_invalid_credentials') || msg.includes('invalid credentials')) {
+        throw new Error('Invalid email or password. Please verify your credentials and try again.');
+      }
+      throw err;
     }
-    void ensurePersistentJWT();
-    await refreshSession();
   }, [refreshSession]);
 
   const signup = useCallback(async (name: string, email: string, password: string) => {
-    await account.create(ID.unique(), email, password, name);
-    const session = await account.createEmailPasswordSession(email, password);
-    if (session && session.secret) {
-      persistSession(session.secret);
-    }
-    void ensurePersistentJWT();
     try {
-      await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
-    } catch (e) {
-      console.warn('[Auth] Verification email skipped (non-fatal):', e);
+      await account.create(ID.unique(), email, password, name);
+      const session = await account.createEmailPasswordSession(email, password);
+      if (session && session.secret) {
+        persistSession(session.secret);
+      }
+      void ensurePersistentJWT();
+      try {
+        await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
+      } catch (e) {
+        console.warn('[Auth] Verification email skipped (non-fatal):', e);
+      }
+      await refreshSession().catch(() => {});
+    } catch (err: any) {
+      const msg = String(err?.message || err || '');
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('cloud.appwrite.io') || msg.includes('fetch')) {
+        throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');
+      }
+      if (msg.includes('user_already_exists') || msg.includes('already exists')) {
+        throw new Error('An account with this email address already exists. Please sign in instead.');
+      }
+      throw err;
     }
-    await refreshSession();
   }, [refreshSession]);
 
   const logout = useCallback(async () => {

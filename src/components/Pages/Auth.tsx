@@ -43,8 +43,22 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup'; onNavigat
     }
   }, []);
 
+  function sanitizeAuthError(msg: string): string {
+    if (!msg) return 'Authentication failed. Please try again.';
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('cloud.appwrite.io') || msg.includes('fetch')) {
+      return 'Unable to connect to authentication server. Please check your internet connection and try again.';
+    }
+    if (msg.includes('Invalid credentials') || msg.includes('user_invalid_credentials') || msg.includes('Invalid email or password')) {
+      return 'Invalid email or password. Please verify your details and try again.';
+    }
+    if (msg.includes('user_already_exists') || msg.includes('already exists')) {
+      return 'An account with this email address already exists. Please sign in instead.';
+    }
+    return msg.replace(/\(https?:\/\/[^\)]+\)/g, '').replace(/cloud\.appwrite\.io/g, '').trim();
+  }
+
   function triggerError(msg: string) {
-    setErrorMessage(msg);
+    setErrorMessage(sanitizeAuthError(msg));
     setShake(true);
     setTimeout(() => setShake(false), 500);
   }
