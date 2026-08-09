@@ -46,6 +46,11 @@ const SESSION_STORAGE_KEY = 'qofeno_session_secret';
 
 function getCachedUser(): AuthUser | null {
   if (typeof window === 'undefined') return null;
+  const hasSessionSecret = Boolean(window.localStorage.getItem(SESSION_STORAGE_KEY));
+  if (!hasSessionSecret) {
+    window.localStorage.removeItem(CACHED_USER_KEY);
+    return null;
+  }
   try {
     const raw = window.localStorage.getItem(CACHED_USER_KEY);
     if (raw) {
