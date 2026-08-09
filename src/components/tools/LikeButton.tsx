@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHeart as faHeartSolid } from '@fortawesome/free-solid-svg-icons';
-import { faHeart as faHeartRegular } from '@fortawesome/free-regular-svg-icons';
+import { faThumbsUp as faThumbsUpSolid, faHeart as faHeartSolid } from '@fortawesome/free-solid-svg-icons';
+import { faThumbsUp as faThumbsUpRegular, faHeart as faHeartRegular } from '@fortawesome/free-regular-svg-icons';
 import { useAuth } from '../../context/AuthContext';
 import { databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
 import { Query, ID } from 'appwrite';
@@ -19,11 +19,11 @@ function formatCount(count: number): string {
   return count.toString();
 }
 
+/** ── PUBLIC LIKES BUTTON (Thumbs Up) ────────────────────────────────── */
 export function LikeButton({ toolSlug, initialLikes = 0, onLikeChange }: LikeButtonProps) {
-  const { user } = useAuth();
   const [liked, setLiked] = useState<boolean>(() => {
-    const likes = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
-    return Array.isArray(likes) && likes.includes(toolSlug);
+    const userLikes = JSON.parse(localStorage.getItem('qofeno_public_likes') || '[]');
+    return Array.isArray(userLikes) && userLikes.includes(toolSlug);
   });
   const [count, setCount] = useState<number>(() => {
     const saved = localStorage.getItem(`qofeno_likes_count_${toolSlug}`);
@@ -39,22 +39,6 @@ export function LikeButton({ toolSlug, initialLikes = 0, onLikeChange }: LikeBut
       localStorage.setItem(`qofeno_likes_count_${toolSlug}`, String(initialLikes));
     }
   }, [initialLikes, toolSlug]);
-
-  useEffect(() => {
-    const likes = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
-    const isLikedLocal = Array.isArray(likes) && likes.includes(toolSlug);
-    setLiked(isLikedLocal);
-
-    if (user) {
-      databases.listDocuments(DATABASE_ID, 'tool_likes', [
-        Query.equal('user_id', user.id),
-        Query.equal('tool_slug', toolSlug),
-        Query.limit(1)
-      ]).then((r) => {
-        if (r.total > 0) setLiked(true);
-      }).catch(() => {});
-    }
-  }, [user, toolSlug]);
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -74,47 +58,15 @@ export function LikeButton({ toolSlug, initialLikes = 0, onLikeChange }: LikeBut
     setLoading(true);
     localStorage.setItem(`qofeno_likes_count_${toolSlug}`, String(nextCount));
 
-    const likesArray: string[] = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+    const userLikes: string[] = JSON.parse(localStorage.getItem('qofeno_public_likes') || '[]');
     const updatedLikes = nextLiked
-      ? Array.from(new Set([...likesArray, toolSlug]))
-      : likesArray.filter((slug) => slug !== toolSlug);
-    localStorage.setItem('qofeno_likes', JSON.stringify(updatedLikes));
+      ? Array.from(new Set([...userLikes, toolSlug]))
+      : userLikes.filter((slug) => slug !== toolSlug);
+    localStorage.setItem('qofeno_public_likes', JSON.stringify(updatedLikes));
 
     if (onLikeChange) onLikeChange(nextCount, nextLiked);
 
     try {
-      if (user) {
-        const existing = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
-          Query.equal('user_id', user.id),
-          Query.equal('tool_slug', toolSlug),
-          Query.limit(1)
-        ]);
-
-        if (nextLiked) {
-          if (existing.total === 0) {
-            await databases.createDocument(DATABASE_ID, 'tool_likes', ID.unique(), {
-              user_id: user.id,
-              tool_slug: toolSlug,
-              created_at: new Date().toISOString()
-            });
-          }
-        } else {
-          if (existing.total > 0) {
-            await databases.deleteDocument(DATABASE_ID, 'tool_likes', existing.documents[0].$id);
-          }
-        }
-      } else {
-        const likes: string[] = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
-        if (nextLiked) {
-          if (!likes.includes(toolSlug)) likes.push(toolSlug);
-        } else {
-          const idx = likes.indexOf(toolSlug);
-          if (idx > -1) likes.splice(idx, 1);
-        }
-        localStorage.setItem('qofeno_likes', JSON.stringify(likes));
-      }
-
-      // Update tool_views count/likes record if exists
       const viewDocs = await databases.listDocuments(DATABASE_ID, 'tool_views', [
         Query.equal('tool_slug', toolSlug),
         Query.limit(1)
@@ -132,7 +84,7 @@ export function LikeButton({ toolSlug, initialLikes = 0, onLikeChange }: LikeBut
         });
       }
     } catch (err) {
-      console.warn("Failed to persist like state:", err);
+      console.warn("Failed to persist public like state:", err);
     } finally {
       setLoading(false);
     }
@@ -149,11 +101,11 @@ export function LikeButton({ toolSlug, initialLikes = 0, onLikeChange }: LikeBut
             transition={{ duration: 0.15 }}
             className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm border ${
               liked
-                ? "bg-pink-50 text-pink-600 border-pink-200"
+                ? "bg-purple-50 text-purple-600 border-purple-200"
                 : "bg-neutral-100 text-neutral-600 border-neutral-200"
             }`}
           >
-            {liked ? "Added to favourites" : "Removed from favourites"}
+            {liked ? "Liked tool 👍" : "Unliked tool"}
           </motion.span>
         )}
       </AnimatePresence>
@@ -164,16 +116,116 @@ export function LikeButton({ toolSlug, initialLikes = 0, onLikeChange }: LikeBut
         disabled={loading}
         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-[0.97] cursor-pointer ${
           liked
+            ? "bg-purple-50 text-purple-600 border border-purple-200/80 shadow-sm"
+            : "bg-neutral-50 text-neutral-600 border border-neutral-200/70 hover:border-purple-200 hover:text-purple-600"
+        }`}
+        title={liked ? "Unlike tool" : "Like tool"}
+      >
+        <FontAwesomeIcon
+          icon={liked ? faThumbsUpSolid : faThumbsUpRegular}
+          className={`w-3.5 h-3.5 ${liked ? "text-purple-600" : "text-neutral-400 group-hover:text-purple-600"}`}
+        />
+        <span>{formatCount(count)}</span>
+      </button>
+    </div>
+  );
+}
+
+/** ── PERSONAL FAVORITES BUTTON (Heart) ────────────────────────────────── */
+export function FavoriteButton({ toolSlug, showLabel = false }: { toolSlug: string; showLabel?: boolean }) {
+  const { user } = useAuth();
+  const [isFav, setIsFav] = useState<boolean>(() => {
+    const favs = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+    return Array.isArray(favs) && favs.includes(toolSlug);
+  });
+  const [showToast, setShowToast] = useState<boolean>(false);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const favs = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+    setIsFav(Array.isArray(favs) && favs.includes(toolSlug));
+  }, [toolSlug]);
+
+  const handleToggleFav = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    const nextFav = !isFav;
+    setIsFav(nextFav);
+
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setShowToast(true);
+    toastTimeoutRef.current = setTimeout(() => {
+      setShowToast(false);
+    }, 1500);
+
+    const favsArray: string[] = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+    const updatedFavs = nextFav
+      ? Array.from(new Set([...favsArray, toolSlug]))
+      : favsArray.filter((slug) => slug !== toolSlug);
+    localStorage.setItem('qofeno_likes', JSON.stringify(updatedFavs));
+
+    try {
+      if (user?.id) {
+        const existing = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
+          Query.equal('user_id', user.id),
+          Query.equal('tool_slug', toolSlug),
+          Query.limit(1)
+        ]);
+
+        if (nextFav) {
+          if (existing.total === 0) {
+            await databases.createDocument(DATABASE_ID, 'tool_likes', ID.unique(), {
+              user_id: user.id,
+              tool_slug: toolSlug,
+              created_at: new Date().toISOString()
+            });
+          }
+        } else {
+          if (existing.total > 0) {
+            await databases.deleteDocument(DATABASE_ID, 'tool_likes', existing.documents[0].$id);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Failed to persist favourite state:", err);
+    }
+  };
+
+  return (
+    <div className="relative inline-flex items-center gap-2">
+      <AnimatePresence>
+        {showToast && (
+          <motion.span
+            initial={{ opacity: 0, x: -8, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: -8, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm border ${
+              isFav
+                ? "bg-pink-50 text-pink-600 border-pink-200"
+                : "bg-neutral-100 text-neutral-600 border-neutral-200"
+            }`}
+          >
+            {isFav ? "Added to favourites" : "Removed from favourites"}
+          </motion.span>
+        )}
+      </AnimatePresence>
+
+      <button
+        type="button"
+        onClick={handleToggleFav}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-[0.97] cursor-pointer ${
+          isFav
             ? "bg-pink-50 text-pink-600 border border-pink-200/80 shadow-sm"
             : "bg-neutral-50 text-neutral-600 border border-neutral-200/70 hover:border-pink-200 hover:text-pink-600"
         }`}
-        title={liked ? "Remove from favourites" : "Add to favourites"}
+        title={isFav ? "Remove from favourites" : "Add to favourites"}
       >
         <FontAwesomeIcon
-          icon={liked ? faHeartSolid : faHeartRegular}
-          className={`w-3.5 h-3.5 ${liked ? "text-pink-600" : "text-neutral-400 group-hover:text-pink-600"}`}
+          icon={isFav ? faHeartSolid : faHeartRegular}
+          className={`w-3.5 h-3.5 ${isFav ? "text-pink-600" : "text-neutral-400 group-hover:text-pink-600"}`}
         />
-        <span>{formatCount(count)}</span>
+        {showLabel && <span>{isFav ? "Favorited" : "Favorite"}</span>}
       </button>
     </div>
   );

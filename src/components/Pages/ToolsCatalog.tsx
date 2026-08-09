@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMagnifyingGlass, faFire, faWandMagicSparkles, faSliders, faChevronDown, faChevronRight, faCheck, faHeart, faGear, faEye } from '@fortawesome/free-solid-svg-icons';
+import { faMagnifyingGlass, faFire, faWandMagicSparkles, faSliders, faChevronDown, faChevronRight, faCheck, faHeart, faGear, faEye, faThumbsUp } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
@@ -9,6 +9,7 @@ import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
 import { account, databases, DATABASE_ID, realtime, trackEvent } from '../../lib/qofeno-appwrite';
 import { Query } from 'appwrite';
 import { useAuth } from '../../context/AuthContext';
+import { FavoriteButton } from '../tools/LikeButton';
 
 const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -698,8 +699,8 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                                     {formatCardCount(cardViews)} views
                                   </span>
 
-                                  <span className="flex items-center gap-1.5 hover:text-pink-600 transition-colors">
-                                    <FontAwesomeIcon icon={faHeart} className="w-3.5 h-3.5 text-pink-500 fill-current" />
+                                  <span className="flex items-center gap-1.5 hover:text-purple-600 transition-colors">
+                                    <FontAwesomeIcon icon={faThumbsUp} className="w-3.5 h-3.5 text-purple-600" />
                                     {formatCardCount(cardLikes)} likes
                                   </span>
                                 </div>

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCloudArrowUp, faCircleCheck, faArrowLeft, faShieldHalved, faDownload,
-  faHeart, faEye, faCirclePlay, faCircleQuestion, faXmark, faChevronDown,
+  faHeart, faEye, faThumbsUp, faCirclePlay, faCircleQuestion, faXmark, faChevronDown,
   faSpinner, faChevronRight, faExpand, faFileLines,
   faCopy, faMagnifyingGlass, faRocket,
 } from '@fortawesome/free-solid-svg-icons';
@@ -27,7 +27,7 @@ import { useAuth } from '../../context/AuthContext';
 import { PayPalButton } from '../PayPal/PayPalButton';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { UpgradeCard } from '../tools/UpgradeCard';
-import { LikeButton } from '../tools/LikeButton';
+import { LikeButton, FavoriteButton } from '../tools/LikeButton';
 import { ShareButton } from '../tools/ShareButton';
 import { trackToolView } from '../../lib/toolCatalog';
 
@@ -833,15 +833,21 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
                 <>
                   <div className="flex justify-between items-center py-3 border-b border-neutral-100">
                     <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                      <FontAwesomeIcon icon={faEye} className="w-4 h-4" /> Views
+                      <FontAwesomeIcon icon={faEye} className="w-4 h-4 text-neutral-400" /> Views
                     </span>
                     <span className="font-bold text-[#0F0A1E]">{views.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center py-3">
+                  <div className="flex justify-between items-center py-3 border-b border-neutral-100">
                     <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
-                      <FontAwesomeIcon icon={faHeart} className="w-4 h-4 text-red-500" /> Likes
+                      <FontAwesomeIcon icon={faThumbsUp} className="w-4 h-4 text-purple-600" /> Likes
                     </span>
                     <LikeButton toolSlug={toolSlug} initialLikes={likes} />
+                  </div>
+                  <div className="flex justify-between items-center py-3">
+                    <span className="text-neutral-500 text-sm font-medium flex items-center gap-2">
+                      <FontAwesomeIcon icon={faHeart} className="w-4 h-4 text-pink-500" /> Favorite
+                    </span>
+                    <FavoriteButton toolSlug={toolSlug} showLabel />
                   </div>
                   <div className="pt-4 border-t border-neutral-100 flex justify-end">
                     <ShareButton toolName={tool.name} toolSlug={toolSlug} />
