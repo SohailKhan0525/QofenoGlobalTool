@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMagnifyingGlass, faFire, faWandMagicSparkles, faSliders, faChevronDown, faChevronRight, faCheck, faHeart, faGear } from '@fortawesome/free-solid-svg-icons';
+import { faMagnifyingGlass, faFire, faWandMagicSparkles, faSliders, faChevronDown, faChevronRight, faCheck, faHeart, faGear, faEye } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
@@ -65,6 +65,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   const [showSidebar, setShowSidebar] = useState(false);
   const [popularToolSlugs, setPopularToolSlugs] = useState<string[]>([]);
   const [toolViewCounts, setToolViewCounts] = useState<Record<string, number>>({});
+  const [toolLikeCounts, setToolLikeCounts] = useState<Record<string, number>>({});
   const [favToast, setFavToast] = useState<{ id: string; isFav: boolean } | null>(null);
   const favToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -147,12 +148,15 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
         const viewsRes = await databases.listDocuments(DATABASE_ID, 'tool_views', [Query.orderDesc('count'), Query.limit(1000)]);
         const popularSlugs = (viewsRes.documents || []).map((d: any) => String(d.tool_slug));
         const countsMap: Record<string, number> = {};
+        const likesMap: Record<string, number> = {};
         (viewsRes.documents || []).forEach((d: any) => {
           countsMap[d.tool_slug] = Number(d.count || 0);
+          likesMap[d.tool_slug] = Number(d.likes || 0);
         });
         if (!cancelled) {
           setPopularToolSlugs(popularSlugs);
           setToolViewCounts(countsMap);
+          setToolLikeCounts(likesMap);
         }
       } catch (err) {
         console.error("Failed to load popular tool views", err);
@@ -592,10 +596,17 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
               {filteredTools.map((tool) => {
                 const ToolIcon = tool.icon;
                 const cardViews = toolViewCounts[tool.slug] || toolViewCounts[tool.id] || Number(localStorage.getItem(`qofeno_views_count_${tool.slug}`) || localStorage.getItem(`qofeno_views_count_${tool.id}`) || '0');
+                const cardLikes = toolLikeCounts[tool.slug] || toolLikeCounts[tool.id] || Number(localStorage.getItem(`qofeno_likes_count_${tool.slug}`) || localStorage.getItem(`qofeno_likes_count_${tool.id}`) || '0');
+
+                const formatCardCount = (n: number) => {
+                  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+                  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+                  return n.toString();
+                };
 
                 return (
-                            <div
-                              key={tool.id}
+                  <div
+                    key={tool.id}
                               onClick={() => {
                                 if (tool.is_coming_soon) return;
                                 localStorage.setItem('selected_tool_id', tool.id);
@@ -681,13 +692,15 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                                 <h3 className="text-lg font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors mb-2 truncate max-w-full tool-card-title">{tool.name}</h3>
                                 <p className="text-sm text-neutral-500 leading-relaxed line-clamp-2 min-h-[40px] overflow-hidden text-ellipsis tool-card-desc">{tool.desc}</p>
                                 
-                                <div className="flex items-center gap-3 text-xs text-neutral-400 font-bold mt-4 pt-4 border-t border-neutral-100">
-                                  <span className="flex items-center gap-1">
-                                    <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    {cardViews} views
+                                <div className="flex items-center justify-between text-xs text-neutral-400 font-bold mt-4 pt-4 border-t border-neutral-100">
+                                  <span className="flex items-center gap-1.5 hover:text-purple-600 transition-colors">
+                                    <FontAwesomeIcon icon={faEye} className="w-3.5 h-3.5 text-neutral-400" />
+                                    {formatCardCount(cardViews)} views
+                                  </span>
+
+                                  <span className="flex items-center gap-1.5 hover:text-pink-600 transition-colors">
+                                    <FontAwesomeIcon icon={faHeart} className="w-3.5 h-3.5 text-pink-500 fill-current" />
+                                    {formatCardCount(cardLikes)} likes
                                   </span>
                                 </div>
                               </div>
