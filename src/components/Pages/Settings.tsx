@@ -1297,13 +1297,15 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
                   ) : (
                     <>
                       {user?.isOAuth ? (
-                        <div className="p-4 bg-neutral-50 border border-neutral-200/80 rounded-2xl max-w-sm mb-10 space-y-1.5">
-                          <div className="flex items-center gap-2 text-neutral-800 font-bold text-xs">
-                            <FontAwesomeIcon icon={faLock} className="text-neutral-400 w-3.5 h-3.5" />
-                            Password Managed by OAuth
+                        <div className="p-5 bg-purple-50/80 border border-purple-200/80 rounded-2xl max-w-md mb-10 space-y-2 shadow-xs">
+                          <div className="flex items-center gap-2.5 text-neutral-900 font-bold text-sm">
+                            <div className="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0">
+                              <FontAwesomeIcon icon={faLock} className="w-3.5 h-3.5" />
+                            </div>
+                            Password Managed by {user.provider && user.provider !== 'email' ? user.provider.toUpperCase() : 'Google / GitHub'} OAuth
                           </div>
-                          <p className="text-xs text-neutral-500 leading-relaxed">
-                            Your account is authenticated via {user.provider ? user.provider.toUpperCase() : 'Google / GitHub'} OAuth. Password changes are managed securely through your login provider.
+                          <p className="text-xs text-neutral-500 leading-relaxed pl-9.5">
+                            You signed in using {user.provider && user.provider !== 'email' ? user.provider.toUpperCase() : 'Google or GitHub'} OAuth. Password updates and credential changes are managed directly by your identity provider and are disabled for social logins.
                           </p>
                         </div>
                       ) : (

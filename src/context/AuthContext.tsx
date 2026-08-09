@@ -109,13 +109,31 @@ function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
   
   let provider = 'email';
   let isOAuth = false;
+
   if (Array.isArray(raw.targets)) {
-    const hasOAuth = raw.targets.some((t: any) => t.providerType === 'oauth2' || t.provider);
-    if (hasOAuth) isOAuth = true;
+    const oauthTarget = raw.targets.find((t: any) => t.providerType === 'oauth2' || t.provider || t.providerType === 'google' || t.providerType === 'github');
+    if (oauthTarget) {
+      isOAuth = true;
+      provider = String(oauthTarget.provider || oauthTarget.providerType || 'oauth');
+    }
   }
   if (raw.provider) {
-    provider = String(raw.provider);
-    if (provider !== 'email') isOAuth = true;
+    provider = String(raw.provider).toLowerCase();
+    if (provider !== 'email' && provider !== 'email/password') {
+      isOAuth = true;
+    }
+  }
+
+  const storedOauth = typeof window !== 'undefined' ? localStorage.getItem('qofeno_oauth_provider') : null;
+  if (storedOauth) {
+    isOAuth = true;
+    provider = storedOauth;
+  }
+
+  if (raw.passwordUpdate === 0 || raw.passwordUpdate === null || raw.passwordUpdate === undefined) {
+    if (raw.accessedAt && !raw.passwordUpdate) {
+      isOAuth = true;
+    }
   }
 
   const name = String(raw.prefs?.display_name || raw.name || raw.email || 'User');
