@@ -1635,6 +1635,21 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
 
       setResult(response);
       setStage('done');
+
+      // Log successful execution to local history (only when tool is actually executed)
+      try {
+        const existing = JSON.parse(localStorage.getItem('qofeno_tool_history') || '[]');
+        const newRecord = {
+          $id: `exec_${Date.now()}`,
+          tool_slug: tool.slug,
+          tool_id: tool.id,
+          created_at: new Date().toISOString(),
+          status: 'completed'
+        };
+        const updated = [newRecord, ...existing.filter((item: any) => item.tool_slug !== tool.slug)].slice(0, 20);
+        localStorage.setItem('qofeno_tool_history', JSON.stringify(updated));
+      } catch {}
+
       toast.success('Processing complete!');
     } catch (err: any) {
       const rawMsg = String(err?.message || '');

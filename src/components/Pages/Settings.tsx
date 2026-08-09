@@ -270,7 +270,7 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
 
       let localHist: any[] = [];
       try {
-        const rawLocal = localStorage.getItem('qofeno_tool_history') || localStorage.getItem('recently_viewed');
+        const rawLocal = localStorage.getItem('qofeno_tool_history');
         if (rawLocal) {
           const parsed = JSON.parse(rawLocal);
           if (Array.isArray(parsed)) {

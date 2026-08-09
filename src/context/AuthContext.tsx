@@ -322,15 +322,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return resolved;
     }
 
-    const cached = getCachedUser();
-    if (cached) {
-      setUserRef.current(cached);
-    } else {
-      setUserRef.current(null);
-      setCachedUser(null);
-    }
+    // No valid session on Appwrite — clear state & cached user completely
+    clearPersistedSession();
+    setCachedUser(null);
+    setUserRef.current(null);
     setIsLoading(false);
-    return cached;
+    return null;
   }, []);
 
   const exchangeOAuthToken = useCallback(async (): Promise<OAuthExchangeResult> => {
