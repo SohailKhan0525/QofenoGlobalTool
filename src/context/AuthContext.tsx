@@ -110,30 +110,41 @@ function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
   let provider = 'email';
   let isOAuth = false;
 
+  // 1. Check Appwrite targets array
   if (Array.isArray(raw.targets)) {
     const oauthTarget = raw.targets.find((t: any) => t.providerType === 'oauth2' || t.provider || t.providerType === 'google' || t.providerType === 'github');
     if (oauthTarget) {
       isOAuth = true;
-      provider = String(oauthTarget.provider || oauthTarget.providerType || 'oauth');
-    }
-  }
-  if (raw.provider) {
-    provider = String(raw.provider).toLowerCase();
-    if (provider !== 'email' && provider !== 'email/password') {
-      isOAuth = true;
+      provider = String(oauthTarget.provider || oauthTarget.providerType || 'google');
     }
   }
 
+  // 2. Check provider property
+  if (raw.provider) {
+    const p = String(raw.provider).toLowerCase();
+    if (p !== 'email' && p !== 'email/password') {
+      isOAuth = true;
+      provider = p;
+    }
+  }
+
+  // 3. Check passwordUpdate (Appwrite sets passwordUpdate to 0 or empty for OAuth accounts)
+  if (!raw.passwordUpdate || raw.passwordUpdate === 0 || raw.passwordUpdate === '0') {
+    isOAuth = true;
+  }
+
+  // 4. Check stored local OAuth flag
   const storedOauth = typeof window !== 'undefined' ? localStorage.getItem('qofeno_oauth_provider') : null;
   if (storedOauth) {
     isOAuth = true;
-    provider = storedOauth;
+    if (provider === 'email') provider = storedOauth;
   }
 
-  if (raw.passwordUpdate === 0 || raw.passwordUpdate === null || raw.passwordUpdate === undefined) {
-    if (raw.accessedAt && !raw.passwordUpdate) {
-      isOAuth = true;
-    }
+  // 5. Fallback for Google OAuth email accounts or URL params
+  const rawEmail = String(raw.email || '');
+  if (rawEmail.endsWith('@gmail.com') || rawEmail.endsWith('@googlemail.com')) {
+    isOAuth = true;
+    if (provider === 'email') provider = 'google';
   }
 
   const name = String(raw.prefs?.display_name || raw.name || raw.email || 'User');
@@ -142,7 +153,7 @@ function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
   return {
     id: String(raw.$id || raw.id || ''),
     name,
-    email: String(raw.email || ''),
+    email: rawEmail,
     emailVerification: Boolean(raw.emailVerification),
     plan,
     createdAt: created,

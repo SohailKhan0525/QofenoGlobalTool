@@ -887,6 +887,13 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
     { id: 'danger', label: 'Danger Zone', icon: faTriangleExclamation, danger: true },
   ];
 
+  const isOAuthUser = Boolean(
+    user?.isOAuth || 
+    (user?.provider && user.provider !== 'email' && user.provider !== 'email/password') || 
+    (typeof window !== 'undefined' && localStorage.getItem('qofeno_oauth_provider')) ||
+    (user?.email && (user.email.toLowerCase().endsWith('@gmail.com') || user.email.toLowerCase().endsWith('@googlemail.com')))
+  );
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-28 md:pt-36 pb-24 px-4 md:px-8">
       <SEO title="Settings — Qofeno" description="Manage your Qofeno profile, security, billing, and preferences." />
@@ -1029,23 +1036,23 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
                         {(avatarUrl || user?.avatarUrl) && (
                           <button
                             type="button"
-                            onClick={handleRemoveAvatar}
-                            className="px-3.5 py-2 bg-white border border-neutral-200 hover:border-red-200 text-neutral-600 hover:text-red-600 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                            onClick={() => void handleRemoveAvatar()}
+                            className="px-3.5 py-2 bg-white border border-neutral-200 hover:bg-red-50 hover:border-red-200 text-red-600 text-xs font-bold rounded-xl transition-all cursor-pointer inline-flex items-center gap-1.5"
                           >
-                            Remove Photo
+                            <FontAwesomeIcon icon={faTrash} className="w-3.5 h-3.5" />
+                            Remove
                           </button>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <form onSubmit={handleSaveProfile} className="space-y-4 max-w-sm">
+                  <form onSubmit={handleSaveProfile} className="space-y-5 max-w-lg">
                     <SettingsInput
                       label="Display Name"
                       value={name}
                       onChange={setName}
-                      placeholder="Your full name"
-                      autoComplete="name"
+                      placeholder="e.g. Sohail Khan"
                     />
                     
                     <div className="space-y-1.5">
@@ -1056,24 +1063,24 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
                           value={user?.email || ''}
                           disabled
                           placeholder={isAuthenticated ? '' : 'Not signed in'}
-                          className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-neutral-200 bg-neutral-100 text-neutral-500 cursor-not-allowed outline-none"
+                          className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-neutral-200 bg-neutral-100 text-neutral-500 cursor-not-allowed outline-none font-medium"
                         />
                         {isAuthenticated && (
-                          user?.isOAuth ? (
+                          isOAuthUser ? (
                             <button
                               type="button"
                               disabled
                               title="Email address is managed by Google/GitHub login and cannot be changed here."
-                              className="px-3 py-2.5 bg-neutral-100 border border-neutral-200 text-neutral-400 text-xs font-semibold rounded-xl cursor-not-allowed shrink-0 flex items-center gap-1.5 opacity-75"
+                              className="px-3.5 py-2.5 bg-neutral-100 border border-neutral-200/80 text-neutral-400 text-xs font-bold rounded-xl cursor-not-allowed shrink-0 flex items-center gap-1.5 opacity-75 shadow-none"
                             >
                               <FontAwesomeIcon icon={faLock} className="w-3 h-3 text-neutral-400" />
-                              OAuth Managed
+                              {user?.provider && user.provider !== 'email' ? user.provider.toUpperCase() : 'OAuth'} Managed
                             </button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => setShowEmailModal(true)}
-                              className="px-3 py-2.5 bg-white border border-neutral-200 hover:border-purple-300 text-neutral-700 hover:text-purple-600 text-xs font-semibold rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer"
+                              className="px-3.5 py-2.5 bg-white border border-neutral-200 hover:border-purple-300 text-neutral-700 hover:text-purple-600 text-xs font-bold rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
                             >
                               Change Email
                             </button>
