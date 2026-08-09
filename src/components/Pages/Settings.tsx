@@ -1303,7 +1303,7 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
                     </div>
                   ) : (
                     <>
-                      {user?.isOAuth ? (
+                      {isOAuthUser ? (
                         <div className="p-5 bg-purple-50/80 border border-purple-200/80 rounded-2xl max-w-md mb-10 space-y-2 shadow-xs">
                           <div className="flex items-center gap-2.5 text-neutral-900 font-bold text-sm">
                             <div className="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0">
