@@ -2,8 +2,13 @@ import { Account, Client, Databases, Functions, Realtime, Storage, Query } from 
 import { captureException } from './sentry';
 
 
+const sanitizeEndpoint = (url?: string) => {
+  if (!url) return 'https://cloud.appwrite.io/v1';
+  return url.replace(/fra\.cloud\.appwrite\.io/g, 'cloud.appwrite.io');
+};
+
 const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
-const endpoint = env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+const endpoint = sanitizeEndpoint(env.VITE_APPWRITE_ENDPOINT);
 const projectId = env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 
 export const DATABASE_ID = env.VITE_APPWRITE_DATABASE_ID || 'qofeno_db';
@@ -111,7 +116,7 @@ export const FUNCTION_IDS = {
   wordToPdf                : env.VITE_APPWRITE_FUNCTION_WORD_TO_PDF_ID || 'word-to-pdf',
 };
 
-const primaryEndpoint = env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
+const primaryEndpoint = sanitizeEndpoint(env.VITE_APPWRITE_ENDPOINT);
 const secondaryEndpoint = 'https://cloud.appwrite.io/v1';
 
 export const client = new Client().setEndpoint(primaryEndpoint).setProject(projectId);

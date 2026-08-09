@@ -22,13 +22,12 @@ export function Profile({ onNavigate }: { onNavigate?: (path: string) => void })
   const [usageStats, setUsageStats] = useState({ toolsUsed: 0, filesProcessed: 0 });
   const [likedTools, setLikedTools] = useState<string[]>([]);
   const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [lastViewedSlug, setLastViewedSlug] = useState<string>('');
 
   useEffect(() => {
     let cancelled = false;
 
     const loadProfileData = async () => {
-      if (!user?.id) return;
-      
       const initDate = user?.$createdAt || user?.createdAt;
       if (initDate) {
         const d = new Date(initDate);
@@ -37,65 +36,130 @@ export function Profile({ onNavigate }: { onNavigate?: (path: string) => void })
         }
       }
 
-      try {
-        // Load users_meta stats
-        const metaDocs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
-          Query.equal('user_id', user.id),
-          Query.limit(1)
-        ]);
-        
-        if (!cancelled && metaDocs.documents.length > 0) {
-          const doc = metaDocs.documents[0];
-          setUsageStats({
-            toolsUsed: doc.tools_used || 0,
-            filesProcessed: doc.files_processed || 0
-          });
-        }
-      } catch (err) {
-        console.error("Failed to load users_meta", err);
-      } finally {
-        if (!cancelled) setLoadingMeta(false);
+      // 1. Users Meta
+      if (user?.id) {
+        try {
+          const metaDocs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
+            Query.equal('user_id', user.id),
+            Query.limit(1)
+          ]);
+          
+          if (!cancelled && metaDocs.documents.length > 0) {
+            const doc = metaDocs.documents[0];
+            setUsageStats({
+              toolsUsed: doc.tools_used || 0,
+              filesProcessed: doc.files_processed || 0
+            });
+          }
+        } catch {}
+      }
+
+      // 2. Liked / Favorites Tools
+      let likes: string[] = [];
+      if (user?.id) {
+        try {
+          const likesDocs = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
+            Query.equal('user_id', user.id),
+            Query.limit(100)
+          ]);
+          likes = likesDocs.documents.map((d: any) => String(d.tool_slug || d.tool_id));
+        } catch {}
       }
 
       try {
-        // Load Liked tools
-        const likesDocs = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
-          Query.equal('user_id', user.id),
-          Query.limit(100)
-        ]);
-        if (!cancelled) {
-          setLikedTools(likesDocs.documents.map((d: any) => d.tool_slug));
+        const localLikes = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+        if (Array.isArray(localLikes)) {
+          likes = Array.from(new Set([...likes, ...localLikes]));
+        }
+      } catch {}
+      if (!cancelled) setLikedTools(likes);
+
+      // 3. Execution History
+      let history: any[] = [];
+      if (user?.id) {
+        try {
+          const execDocs = await databases.listDocuments(DATABASE_ID, 'tool_executions', [
+            Query.equal('user_id', user.id),
+            Query.orderDesc('created_at'),
+            Query.limit(20)
+          ]);
+          history = execDocs.documents;
+        } catch {}
+      }
+
+      let localHist: any[] = [];
+      try {
+        const rawLocal = localStorage.getItem('qofeno_tool_history') || localStorage.getItem('recently_viewed');
+        if (rawLocal) {
+          const parsed = JSON.parse(rawLocal);
+          if (Array.isArray(parsed)) {
+            localHist = parsed.map((item: any) => typeof item === 'string' ? { tool_slug: item, created_at: new Date().toISOString() } : item);
+          }
         }
       } catch {}
 
-      try {
-        // Load Execution History
-        const execDocs = await databases.listDocuments(DATABASE_ID, 'tool_executions', [
-          Query.equal('user_id', user.id),
-          Query.orderDesc('created_at'),
-          Query.limit(10)
-        ]);
-        if (!cancelled) {
-          setHistoryItems(execDocs.documents);
-        }
-      } catch {}
+      const mergedHistory = history.length > 0 ? history : localHist;
+      if (!cancelled) {
+        setHistoryItems(mergedHistory);
+      }
+
+      // 4. Last Viewed Tool
+      let lastSlug = '';
+      if (user?.id) {
+        try {
+          const rvDocs = await databases.listDocuments(DATABASE_ID, 'recently_viewed', [
+            Query.equal('user_id', user.id),
+            Query.orderDesc('viewed_at'),
+            Query.limit(1)
+          ]);
+          if (rvDocs.documents.length > 0) {
+            lastSlug = String(rvDocs.documents[0].tool_slug || '');
+          }
+        } catch {}
+      }
+
+      if (!lastSlug) {
+        try {
+          const rawRv = localStorage.getItem('recently_viewed');
+          if (rawRv) {
+            const parsed = JSON.parse(rawRv);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              lastSlug = typeof parsed[0] === 'string' ? parsed[0] : parsed[0].tool_slug || parsed[0].id;
+            }
+          }
+        } catch {}
+      }
+
+      if (!lastSlug && mergedHistory.length > 0) {
+        lastSlug = mergedHistory[0].tool_slug || mergedHistory[0].tool_id;
+      }
+
+      if (!cancelled && lastSlug) {
+        setLastViewedSlug(lastSlug);
+      }
+
+      if (!cancelled) setLoadingMeta(false);
     };
 
-    if (user) {
-      void loadProfileData();
-    }
+    void loadProfileData();
 
     return () => { cancelled = true; };
   }, [user]);
 
   const handleClearHistory = async () => {
-    if (!historyItems.length) return;
     try {
-      for (const item of historyItems) {
-        await databases.deleteDocument(DATABASE_ID, 'tool_executions', item.$id).catch(() => {});
+      if (user?.id) {
+        for (const item of historyItems) {
+          if (item.$id) {
+            await databases.deleteDocument(DATABASE_ID, 'tool_executions', item.$id).catch(() => {});
+          }
+        }
       }
+      localStorage.removeItem('qofeno_tool_history');
+      localStorage.removeItem('recently_viewed');
       setHistoryItems([]);
-      toast.success("Tool history cleared.");
+      setLastViewedSlug('');
+      toast.success("Tool execution history cleared.");
     } catch {
       toast.error("Failed to clear history.");
     }
@@ -143,9 +207,11 @@ export function Profile({ onNavigate }: { onNavigate?: (path: string) => void })
   const { tools: catalogFetched } = useToolCatalog();
   const catalogTools = catalogFetched.length > 0 ? catalogFetched : FALLBACK_TOOLS;
 
-  const favoritedToolsList = catalogTools.filter(t => likedTools.includes(t.id));
-  const lastExecutedItem = historyItems[0];
-  const lastToolObj = lastExecutedItem ? catalogTools.find(t => t.id === lastExecutedItem.tool_slug || t.id === lastExecutedItem.tool_id) : favoritedToolsList[0] || catalogTools[0];
+  const favoritedToolsList = catalogTools.filter(t => likedTools.includes(t.id) || likedTools.includes(t.slug));
+  const lastToolObj = lastViewedSlug
+    ? catalogTools.find(t => t.id === lastViewedSlug || t.slug === lastViewedSlug)
+    : (historyItems[0] ? catalogTools.find(t => t.id === historyItems[0].tool_slug || t.id === historyItems[0].tool_id) : favoritedToolsList[0] || catalogTools[0]);
+  const totalRunsCount = Math.max(usageStats.toolsUsed, historyItems.length);
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pt-28 pb-24 px-4 select-none relative font-sans">
@@ -195,7 +261,7 @@ export function Profile({ onNavigate }: { onNavigate?: (path: string) => void })
             <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 mx-auto mb-2">
               <FontAwesomeIcon icon={faWandMagicSparkles} className="w-4 h-4" />
             </div>
-            <span className="block text-2xl font-black text-[#0F0A1E]">{usageStats.toolsUsed}</span>
+            <span className="block text-2xl font-black text-[#0F0A1E]">{totalRunsCount}</span>
             <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Total Runs</span>
           </div>
 

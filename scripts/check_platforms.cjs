@@ -9,7 +9,7 @@ async function main() {
     }
   }
 
-  const endpoint = 'https://fra.cloud.appwrite.io/v1';
+  const endpoint = 'https://cloud.appwrite.io/v1';
   const projectId = '69c58725000ef2b43f18';
 
   const res = await fetch(`${endpoint}/projects/${projectId}/platforms`, {
