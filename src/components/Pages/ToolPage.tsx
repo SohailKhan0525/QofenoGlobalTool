@@ -91,13 +91,20 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [isLoadingTool, setIsLoadingTool] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [docSearchQuery, setDocSearchQuery] = useState('');
 
-  // Fetch tool data
-  const toolId = localStorage.getItem('selected_tool_id') || 'json-formatter';
-  const tool = tools.find(t => t.id === toolId) || FALLBACK_TOOLS.find(t => t.id === toolId) || tools[0] || FALLBACK_TOOLS[0];
+  // Fetch tool data from URL pathname first, then localStorage fallback
+  const urlSlug = typeof window !== 'undefined' ? window.location.pathname.split('/').filter(Boolean)[1] : null;
+  const storedId = localStorage.getItem('selected_tool_id');
+  const targetIdOrSlug = urlSlug || storedId || 'json-formatter';
+  const tool = tools.find(t => t.id === targetIdOrSlug || t.slug === targetIdOrSlug)
+            || FALLBACK_TOOLS.find(t => t.id === targetIdOrSlug || t.slug === targetIdOrSlug)
+            || tools[0]
+            || FALLBACK_TOOLS[0];
+  const toolId = tool.id;
   const toolSlug = tool.slug || tool.id;
 
-  const FAQs = getFAQsForCategory(tool.category, tool.name);
+  const FAQs = getFAQsForCategory(tool?.category || 'PDF & Documents', tool?.name || 'Tool');
 
   useEffect(() => {
     const syncUser = async () => {
@@ -117,7 +124,10 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     const timer = setTimeout(() => {
       setIsLoadingTool(false);
     }, 800);
-    
+
+    return () => clearTimeout(timer);
+  }, [toolId, user?.id]);
+
   const handleShare = async () => {
     if (navigator.share) {
       try {
@@ -137,39 +147,61 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     }
   };
 
-  return () => clearTimeout(timer);
-  }, [toolId, user?.id]);
-
   useEffect(() => {
     let cancelled = false;
 
+    // 1. Instant local storage read for immediate state recovery on load
+    const today = new Date().toISOString().slice(0, 10);
+    const viewedDateKey = `qofeno_viewed_date_${toolSlug}`;
+    const lastViewedDate = localStorage.getItem(viewedDateKey);
+
+    const localLikesArray = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+    const isLikedLocally = Array.isArray(localLikesArray) && localLikesArray.includes(toolSlug);
+    setHasLiked(isLikedLocally);
+
+    const storedLikesCount = Number(localStorage.getItem(`qofeno_likes_count_${toolSlug}`) || '0');
+    setLikes(storedLikesCount);
+
+    // 2. Realtime View count: increment ONCE per user per tool per day
+    let currentViews = Number(localStorage.getItem(`qofeno_views_count_${toolSlug}`) || '0');
+
+    if (lastViewedDate !== today) {
+      currentViews = currentViews + 1;
+      localStorage.setItem(`qofeno_views_count_${toolSlug}`, String(currentViews));
+      localStorage.setItem(viewedDateKey, today);
+    }
+    setViews(currentViews);
+
+    // 3. Appwrite DB sync
     const syncStats = async () => {
       try {
+        if (lastViewedDate !== today) {
+          await trackToolView(toolSlug);
+        }
         const viewsResp = await databases.listDocuments(DATABASE_ID, 'tool_views', [Query.equal('tool_slug', toolSlug), Query.limit(1)]);
         const viewsDoc = viewsResp.documents?.[0] as any;
 
         if (cancelled) return;
-        setViews(Number(viewsDoc?.count || 0));
-        setLikes(Number(viewsDoc?.likes || 0));
+        if (viewsDoc) {
+          const dbViews = Number(viewsDoc.count || currentViews);
+          const dbLikes = Number(viewsDoc.likes || storedLikesCount);
+          setViews(dbViews);
+          setLikes(dbLikes);
+          localStorage.setItem(`qofeno_views_count_${toolSlug}`, String(dbViews));
+          localStorage.setItem(`qofeno_likes_count_${toolSlug}`, String(dbLikes));
+        }
 
         if (currentUserId) {
           const userLikes = await databases.listDocuments(DATABASE_ID, 'tool_likes', [
             Query.equal('tool_slug', toolSlug),
             Query.equal('user_id', currentUserId),
           ]);
-          if (!cancelled) {
-            setHasLiked(userLikes.total > 0);
+          if (!cancelled && userLikes.total > 0) {
+            setHasLiked(true);
           }
-        } else if (!cancelled) {
-          const likedTools = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
-          setHasLiked(Array.isArray(likedTools) && likedTools.includes(toolSlug));
         }
       } catch {
-        if (!cancelled) {
-          setViews(0);
-          setLikes(0);
-          setHasLiked(false);
-        }
+        // Retain non-zero local values on error
       }
     };
 
@@ -204,64 +236,24 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
     };
   }, [toolSlug]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const sendView = async () => {
-      try {
-        await trackToolView(toolSlug);
-        await trackEvent('view', toolSlug, currentUserId || undefined);
-        if (cancelled) return;
-        
-        // Re-sync stats from Appwrite after recording view
-        try {
-          const viewsResp = await databases.listDocuments(DATABASE_ID, 'tool_views', [
-            Query.equal('tool_slug', toolSlug),
-            Query.limit(1)
-          ]);
-          const viewsDoc = viewsResp.documents?.[0] as any;
-          if (viewsDoc && !cancelled) {
-            setViews(Number(viewsDoc.count || 0));
-            setLikes(Number(viewsDoc.likes || 0));
-          }
-        } catch {}
-
-        if (currentUserId) {
-          await trackEvent('recent', toolSlug, currentUserId);
-        } else {
-          try {
-            const rv = JSON.parse(localStorage.getItem('recently_viewed') || '[]');
-            const newRv = [toolId, ...rv.filter((id: string) => id !== toolId)].slice(0, 4);
-            localStorage.setItem('recently_viewed', JSON.stringify(newRv));
-          } catch {}
-        }
-      } catch {}
-    };
-
-    void sendView();
-
-    return () => { cancelled = true };
-  }, [toolSlug, currentUserId, toolId]);
-
   const toggleLike = () => {
     const nextLiked = !hasLiked;
     setHasLiked(nextLiked);
-    setLikes((prev) => Math.max(0, prev + (hasLiked ? -1 : 1)));
+    const newLikesCount = Math.max(0, likes + (nextLiked ? 1 : -1));
+    setLikes(newLikesCount);
 
-    if (!currentUserId) {
-      const likedTools = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
-      const asArray = Array.isArray(likedTools) ? likedTools : [];
-      const updated = nextLiked
-        ? Array.from(new Set([...asArray, toolSlug]))
-        : asArray.filter((slug: string) => slug !== toolSlug);
-      localStorage.setItem('qofeno_likes', JSON.stringify(updated));
-    }
+    localStorage.setItem(`qofeno_likes_count_${toolSlug}`, String(newLikesCount));
+    const likedTools = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+    const asArray = Array.isArray(likedTools) ? likedTools : [];
+    const updated = nextLiked
+      ? Array.from(new Set([...asArray, toolSlug]))
+      : asArray.filter((slug: string) => slug !== toolSlug);
+    localStorage.setItem('qofeno_likes', JSON.stringify(updated));
 
-    const eventType = hasLiked ? 'unlike' : 'like';
-    void trackEvent(eventType, toolSlug, currentUserId || undefined).catch(() => {
-      // Revert optimistic update only on request failure.
-      setHasLiked(hasLiked);
-      setLikes((prev) => Math.max(0, prev + (hasLiked ? 1 : -1)));
-    });
+    toast.success(nextLiked ? 'Added to liked tools!' : 'Removed from liked tools');
+
+    const eventType = nextLiked ? 'like' : 'unlike';
+    void trackEvent(eventType, toolSlug, currentUserId || undefined).catch(() => {});
   };
 
   const [inputText, setInputText] = useState('');
@@ -472,6 +464,14 @@ export function ToolPage({ onNavigate }: { onNavigate: (page: string) => void })
       window.clearTimeout(timer);
     };
   }, [inputText, actionMode, caseMode, toolSlug]);
+
+  const getInstructions = (id: string) => {
+    return [
+      { q: `How to start using ${tool.name}?`, a: `Simply input or upload your data into the workspace above. ${tool.name} processes everything instantly with real-time feedback.` },
+      { q: `Is ${tool.name} free to use?`, a: `Yes, ${tool.name} offers free daily processing for all guest and registered users, with Pro upgrades available for unlimited batch processing.` },
+      { q: `Is my input data safe?`, a: `Absolute privacy. All conversions and calculations happen locally inside your browser sandbox or encrypted volatile memory.` }
+    ];
+  };
 
   const getFaq = (id: string) => {
     if (id === 'json-formatter') {

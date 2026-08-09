@@ -10,11 +10,15 @@ export type AuthUser = {
   email: string;
   emailVerification?: boolean;
   plan: AuthPlan;
+  createdAt?: string;
+  $createdAt?: string;
+  provider?: string;
+  isOAuth?: boolean;
 };
 
 export type OAuthExchangeResult =
   | { ok: true;  user: AuthUser }
-  | { ok: false; reason: 'no_token' | 'create_session_failed' | 'get_account_failed'; detail: string };
+  | { ok: false; reason: 'no_token' | 'create_session_failed' | 'get_account_failed' | 'exception'; detail: string };
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -45,8 +49,12 @@ function getCachedUser(): AuthUser | null {
     const raw = window.localStorage.getItem(CACHED_USER_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && (parsed.id || parsed.$id) && parsed.email) {
-        return parsed;
+      if (parsed && typeof parsed === 'object' && parsed.id) {
+        const email = String(parsed.email || '').trim().toLowerCase();
+        if (email !== 'sohailkhannn.0525@gmail.com' && parsed.plan !== 'free') {
+          parsed.plan = 'free';
+        }
+        return parsed as AuthUser;
       }
     }
   } catch {}
@@ -65,40 +73,62 @@ function setCachedUser(u: AuthUser | null) {
 }
 
 async function loadPlan(userId: string, rawUser?: any): Promise<AuthPlan> {
-  const email = String(rawUser?.email || '').toLowerCase();
-  const labels: string[] = Array.isArray(rawUser?.labels) ? rawUser.labels : [];
+  const email = String(rawUser?.email || '').trim().toLowerCase();
 
-  if (
-    email.includes('sohailkhannn') ||
-    email.includes('mohdzaheeruddin') ||
-    labels.includes('owner') ||
-    labels.includes('teams') ||
-    labels.includes('pro')
-  ) {
+  // Founder account check — exact email match only
+  if (email === 'sohailkhannn.0525@gmail.com') {
     return 'teams';
   }
 
+  // Database subscription plan check for registered users
   try {
     const docs = await databases.listDocuments(DATABASE_ID, 'users_meta', [
       Query.equal('user_id', userId),
       Query.limit(1),
     ]);
-    const plan = String(docs.documents?.[0]?.plan || 'free').toLowerCase();
-    if (plan === 'pro') return 'pro';
-    if (plan === 'teams') return 'teams';
-    return 'free';
-  } catch {
-    return 'free';
-  }
+    if (docs && docs.documents && docs.documents.length > 0) {
+      const doc = docs.documents[0];
+      const plan = String(doc.plan || 'free').toLowerCase();
+      const expiresAt = doc.plan_expires_at ? new Date(doc.plan_expires_at).getTime() : null;
+
+      if (expiresAt && expiresAt < Date.now()) {
+        return 'free';
+      }
+
+      if (plan === 'pro') return 'pro';
+      if (plan === 'teams') return 'teams';
+    }
+  } catch {}
+
+  return 'free';
 }
 
-function toAuthUser(raw: any, plan: AuthPlan): AuthUser {
+function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
+  const created = String(raw.$createdAt || raw.createdAt || raw.created_at || new Date().toISOString());
+  
+  let provider = 'email';
+  let isOAuth = false;
+  if (Array.isArray(raw.targets)) {
+    const hasOAuth = raw.targets.some((t: any) => t.providerType === 'oauth2' || t.provider);
+    if (hasOAuth) isOAuth = true;
+  }
+  if (raw.provider) {
+    provider = String(raw.provider);
+    if (provider !== 'email') isOAuth = true;
+  }
+
+  const name = String(raw.prefs?.display_name || raw.name || raw.email || 'User');
+
   return {
     id: String(raw.$id || raw.id || ''),
-    name: String(raw.name || raw.email || 'User'),
+    name,
     email: String(raw.email || ''),
     emailVerification: Boolean(raw.emailVerification),
     plan,
+    createdAt: created,
+    $createdAt: created,
+    provider,
+    isOAuth,
   };
 }
 
@@ -181,16 +211,23 @@ async function directCreateSession(userId: string, secret: string): Promise<any>
 
 async function directGetAccount(sessionSecret: string): Promise<any> {
   let lastErr: any = null;
+  const isJWT = sessionSecret.startsWith('ey');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+  };
+  if (isJWT) {
+    headers['X-Appwrite-JWT'] = sessionSecret;
+  } else {
+    headers['X-Appwrite-Session'] = sessionSecret;
+  }
+
   for (const ep of ENDPOINTS) {
     try {
       const res = await fetch(`${ep}/account`, {
         method: 'GET',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Appwrite-Project': APPWRITE_PROJECT_ID,
-          'X-Appwrite-Session': sessionSecret,
-        },
+        headers,
       });
 
       const text = await res.text();
@@ -270,66 +307,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = getTokenFromUrl();
       let rawUser: any = null;
 
-      // 1. Try account.get() first (if session is already active)
-      try {
-        rawUser = await account.get();
-      } catch {}
-
-      // 2. If no active session and token parameters exist in URL, perform server-side session exchange
-      if (!rawUser && token) {
-        // Primary Attempt: Server-side token exchanger (creates a full JWT session via Server API key)
+      // 1. Immediate token binding if URL contains secret
+      if (token) {
+        if (token.rawSecret.startsWith('ey')) {
+          persistSession(token.rawSecret);
+        } else if (token.secret) {
+          persistSession(token.secret);
+        }
         try {
-          const exec = await functions.createExecution(
-            'auth-webhook',
-            JSON.stringify({ action: 'exchange_token', userId: token.userId, secret: token.rawSecret })
-          );
-          if (exec && exec.responseBody) {
-            const parsed = JSON.parse(exec.responseBody);
-            if (parsed.ok && parsed.sessionSecret) {
-              persistSession(parsed.sessionSecret);
-              rawUser = parsed.user;
+          rawUser = await directGetAccount(token.rawSecret);
+        } catch {}
+
+        if (!rawUser && token.secret) {
+          try {
+            rawUser = await directGetAccount(token.secret);
+          } catch {}
+        }
+      }
+
+      // 2. Try standard account.get()
+      if (!rawUser) {
+        try {
+          rawUser = await account.get();
+        } catch {}
+      }
+
+      // 3. Perform session creation attempts if user is still not resolved
+      if (!rawUser && token) {
+        // Attempt A: account.createSession with extracted secret
+        if (token.secret) {
+          try {
+            const session = await account.createSession(token.userId, token.secret);
+            if (session && session.secret) {
+              persistSession(session.secret);
             }
-          }
-        } catch (e1) {
-          console.warn('[Auth] Server token exchange execution error:', e1);
+          } catch (eA) {}
         }
 
-        // Fallback Attempt 1: Client SDK createSession using rawSecret (full JWT string)
-        if (!rawUser) {
+        // Attempt B: account.createSession with rawSecret
+        if (!rawUser && token.rawSecret) {
           try {
             const session = await account.createSession(token.userId, token.rawSecret);
             if (session && session.secret) {
               persistSession(session.secret);
             }
-          } catch (e2) {}
+          } catch (eB) {}
         }
 
-        // Fallback Attempt 2: Client direct REST createSession using rawSecret
-        if (!rawUser) {
+        // Attempt C: directCreateSession with extracted secret
+        if (!rawUser && token.secret) {
+          try {
+            const session = await directCreateSession(token.userId, token.secret);
+            if (session && session.secret) {
+              persistSession(session.secret);
+            }
+          } catch (eC) {}
+        }
+
+        // Attempt D: directCreateSession with rawSecret
+        if (!rawUser && token.rawSecret) {
           try {
             const session = await directCreateSession(token.userId, token.rawSecret);
             if (session && session.secret) {
               persistSession(session.secret);
             }
-          } catch (e3) {}
+          } catch (eD) {}
         }
 
-        // Query account after session creation attempts
-        if (!rawUser) {
-          try {
-            rawUser = await account.get();
-          } catch (e4) {
-            const secret = typeof window !== 'undefined' ? window.localStorage.getItem(SESSION_STORAGE_KEY) : null;
-            if (secret) {
-              try {
-                rawUser = await directGetAccount(secret);
-              } catch (e5) {}
-            }
+        // Re-query account after session creation attempts
+        try {
+          rawUser = await account.get();
+        } catch (e1) {
+          if (token.rawSecret) {
+            try { rawUser = await directGetAccount(token.rawSecret); } catch {}
+          }
+          if (!rawUser && token.secret) {
+            try { rawUser = await directGetAccount(token.secret); } catch {}
           }
         }
       }
 
-      // 3. Resolve user profile if rawUser is available
+      // 4. Resolve user profile if rawUser was fetched
       if (rawUser) {
         cleanTokenFromUrl();
         void ensurePersistentJWT();
@@ -341,7 +399,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: true, user: resolved };
       }
 
-      // 4. Check cached user as fallback
+      // 5. Fallback to cached user if present
       const cached = getCachedUser();
       if (cached) {
         cleanTokenFromUrl();
@@ -353,6 +411,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ok: false,
         reason: 'get_account_failed',
         detail: 'Could not resolve authenticated account from session or token.',
+      };
+    } catch (err: any) {
+      console.error('[Auth] exchangeOAuthToken error:', err);
+      return {
+        ok: false,
+        reason: 'exception',
+        detail: err.message || 'An unexpected error occurred during sign-in.',
       };
     } finally {
       setIsLoading(false);

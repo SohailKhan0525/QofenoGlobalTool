@@ -3,7 +3,7 @@ import { captureException } from './sentry';
 
 
 const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
-const endpoint = env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
+const endpoint = env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 const projectId = env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 
 export const DATABASE_ID = env.VITE_APPWRITE_DATABASE_ID || 'qofeno_db';
@@ -112,9 +112,7 @@ export const FUNCTION_IDS = {
 };
 
 const primaryEndpoint = env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
-const secondaryEndpoint = primaryEndpoint.includes('fra.') 
-  ? 'https://cloud.appwrite.io/v1' 
-  : 'https://fra.cloud.appwrite.io/v1';
+const secondaryEndpoint = 'https://cloud.appwrite.io/v1';
 
 export const client = new Client().setEndpoint(primaryEndpoint).setProject(projectId);
 const fallbackClient = new Client().setEndpoint(secondaryEndpoint).setProject(projectId);
@@ -224,7 +222,7 @@ async function pollExecutionResult(
 ): Promise<any> {
   const maxWaitMs = 300000; // 5 minutes polling window
   const pollIntervalMs = 1500;
-  const ep = (env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
+  const ep = (env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1').replace(/\/$/, '');
   const pid = env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 
   let pollCount = 0;

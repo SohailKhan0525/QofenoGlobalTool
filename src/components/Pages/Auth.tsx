@@ -11,6 +11,7 @@ import { cn } from '../../lib/utils';
 import { SEO } from '../../components/SEO';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
 
 // Get the post-auth redirect target fresh from the URL every time it's needed.
 function getTarget() {
@@ -70,8 +71,12 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup'; onNavigat
     try {
       if (isLogin) {
         await login(email.trim(), password);
+        toast.success('Welcome back!', { description: 'You are now signed in.' });
       } else {
         await signup(name.trim(), email.trim(), password);
+        toast.success(`Welcome to Qofeno, ${name.trim().split(' ')[0]}! 🎉`, {
+          description: 'Your account is ready. Check your inbox to verify your email.',
+        });
       }
       // If we get here, auth succeeded — navigate to the target
       onNavigate(target);

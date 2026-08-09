@@ -13,7 +13,7 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { exchangeOAuthToken } = useAuth();
+  const { exchangeOAuthToken, createOAuthSession } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [result, setResult] = useState<OAuthExchangeResult | null>(null);
   const ranRef = useRef(false);
@@ -81,28 +81,38 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
                 <FontAwesomeIcon icon={faCircleXmark} className="h-8 w-8 text-rose-500" />
               </div>
             </div>
-            <h1 className="text-xl font-black text-[#0F0A1E]">Sign-in failed</h1>
+            <h1 className="text-xl font-black text-[#0F0A1E]">OAuth Session Expired</h1>
+            <p className="mt-1 text-xs text-neutral-500">This callback token has expired or is invalid. Please sign in again to continue.</p>
 
-            {/* Diagnostic info — helps identify root cause */}
-            {result && 'reason' in result && (
-              <div className="mt-4 rounded-xl bg-neutral-50 border border-neutral-200 p-3 text-left text-xs text-neutral-600 space-y-1">
-                <p><span className="font-bold">Reason:</span> {REASON_LABELS[result.reason] ?? result.reason}</p>
-                <p className="break-all"><span className="font-bold">Detail:</span> {result.detail}</p>
-              </div>
-            )}
-
-            <button
-              onClick={() => {
-                const redirect = getRedirectTarget(window.location.search);
-                onNavigate(`/login?redirect=${encodeURIComponent(redirect)}`);
-              }}
-              className="mt-5 w-full rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 py-3 text-sm font-bold text-white shadow-lg shadow-purple-500/20 hover:from-purple-700 hover:to-indigo-700 transition-all cursor-pointer"
-            >
-              Try Signing In Again
-            </button>
-            <p className="mt-3 text-xs text-neutral-400">
-              Please share the info above with support.
-            </p>
+            <div className="mt-5 space-y-2">
+              <button
+                onClick={() => {
+                  const redirect = getRedirectTarget(window.location.search);
+                  createOAuthSession('google', redirect);
+                }}
+                className="w-full rounded-xl bg-purple-600 hover:bg-purple-700 py-3 text-sm font-bold text-white shadow-lg shadow-purple-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                Sign in with Google
+              </button>
+              <button
+                onClick={() => {
+                  const redirect = getRedirectTarget(window.location.search);
+                  createOAuthSession('github', redirect);
+                }}
+                className="w-full rounded-xl bg-neutral-900 hover:bg-black py-3 text-sm font-bold text-white shadow-lg shadow-neutral-900/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                Sign in with GitHub
+              </button>
+              <button
+                onClick={() => {
+                  const redirect = getRedirectTarget(window.location.search);
+                  onNavigate(`/login?redirect=${encodeURIComponent(redirect)}`);
+                }}
+                className="w-full rounded-xl bg-neutral-100 hover:bg-neutral-200 py-2.5 text-xs font-semibold text-neutral-700 transition-all cursor-pointer"
+              >
+                Back to Sign In Page
+              </button>
+            </div>
           </>
         )}
       </motion.div>

@@ -60,12 +60,22 @@ export function Profile() {
     const loadFullProfile = async () => {
       if (!user?.id) return;
       
+      const initDate = user?.$createdAt || user?.createdAt;
+      if (initDate) {
+        const d = new Date(initDate);
+        if (!isNaN(d.getTime())) {
+          setMemberSince(d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+        }
+      }
+
       try {
         // Fetch full Appwrite Auth details (like $createdAt)
         const fullAcc = await account.get();
-        if (!cancelled && fullAcc.$createdAt) {
-          const date = new Date(fullAcc.$createdAt);
-          setMemberSince(date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+        if (!cancelled && (fullAcc.$createdAt || (fullAcc as any).registration)) {
+          const date = new Date(fullAcc.$createdAt || (fullAcc as any).registration);
+          if (!isNaN(date.getTime())) {
+            setMemberSince(date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
+          }
         }
       } catch (err) {
         console.error("Failed to load auth metadata", err);
@@ -129,6 +139,7 @@ export function Profile() {
 
     if (user) {
       setFullName(user.name);
+      setDisplayName(user.name);
       void loadFullProfile();
     }
 
@@ -138,29 +149,42 @@ export function Profile() {
   // Handle updates
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim()) {
+    const targetName = (displayName.trim() || fullName.trim());
+    if (!targetName) {
       setNameShake(true);
       setTimeout(() => setNameShake(false), 500);
-      toast.error("Full name cannot be empty.");
+      toast.error("Name cannot be empty.");
       return;
     }
 
     setIsUpdatingName(true);
     try {
-      await account.updateName(fullName.trim());
+      await account.updateName(targetName);
       
       const currentPrefs = await account.getPrefs().catch(() => ({}));
       await account.updatePrefs({
         ...currentPrefs,
-        display_name: displayName.trim() || fullName.trim()
+        display_name: targetName
       });
+
+      if (userMetaId) {
+        await databases.updateDocument(DATABASE_ID, 'users_meta', userMetaId, {
+          display_name: targetName
+        }).catch(() => {});
+      } else if (user?.id) {
+        await databases.createDocument(DATABASE_ID, 'users_meta', 'unique()', {
+          user_id: user.id,
+          display_name: targetName,
+          created_at: new Date().toISOString()
+        }).catch(() => {});
+      }
       
       await refreshSession();
-      toast.success("Name updated successfully!");
+      toast.success("Display name updated successfully!");
     } catch (err: any) {
       setNameShake(true);
       setTimeout(() => setNameShake(false), 500);
-      toast.error(err.message || "Failed to update name.");
+      toast.error(err.message || "Failed to update display name.");
     } finally {
       setIsUpdatingName(false);
     }
@@ -209,11 +233,16 @@ export function Profile() {
     setIsUpdatingEmail(true);
     try {
       await account.updateEmail(newEmail.trim(), emailPassword);
+      if (userMetaId) {
+        await databases.updateDocument(DATABASE_ID, 'users_meta', userMetaId, {
+          email: newEmail.trim()
+        }).catch(() => {});
+      }
       setIsEmailDialogOpen(false);
       setNewEmail('');
       setEmailPassword('');
       await refreshSession();
-      toast.success("Email updated successfully! Please re-verify if required.");
+      toast.success("Email updated successfully!");
     } catch (err: any) {
       setEmailShake(true);
       setTimeout(() => setEmailShake(false), 500);
@@ -441,18 +470,39 @@ export function Profile() {
               </h2>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <button 
-                  onClick={() => setIsEmailDialogOpen(true)}
-                  className="flex-1 py-4 bg-neutral-50 border border-neutral-200 hover:bg-purple-50/20 hover:border-purple-200 text-[#0F0A1E] font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-                >
-                  <FontAwesomeIcon icon={faEnvelope} className="w-4.5 h-4.5 text-purple-600" /> Change Email
-                </button>
-                <button 
-                  onClick={() => setIsPassDialogOpen(true)}
-                  className="flex-1 py-4 bg-neutral-50 border border-neutral-200 hover:bg-purple-50/20 hover:border-purple-200 text-[#0F0A1E] font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
-                >
-                  <FontAwesomeIcon icon={faKey} className="w-4.5 h-4.5 text-purple-600" /> Change Password
-                </button>
+                {user?.isOAuth ? (
+                  <>
+                    <button 
+                      disabled
+                      title="Email address is managed by Google/GitHub login and cannot be changed here."
+                      className="flex-1 py-4 bg-neutral-100 border border-neutral-200 text-neutral-400 font-bold text-sm rounded-2xl cursor-not-allowed flex items-center justify-center gap-2.5 opacity-60 pointer-events-none"
+                    >
+                      <FontAwesomeIcon icon={faLock} className="w-4 h-4 text-neutral-400" /> Email Managed by OAuth
+                    </button>
+                    <button 
+                      disabled
+                      title="Password is managed by Google/GitHub login and cannot be changed."
+                      className="flex-1 py-4 bg-neutral-100 border border-neutral-200 text-neutral-400 font-bold text-sm rounded-2xl cursor-not-allowed flex items-center justify-center gap-2.5 opacity-60 pointer-events-none"
+                    >
+                      <FontAwesomeIcon icon={faLock} className="w-4 h-4 text-neutral-400" /> Password Managed by OAuth
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      onClick={() => setIsEmailDialogOpen(true)}
+                      className="flex-1 py-4 bg-neutral-50 border border-neutral-200 hover:bg-purple-50/20 hover:border-purple-200 text-[#0F0A1E] font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                    >
+                      <FontAwesomeIcon icon={faEnvelope} className="w-4.5 h-4.5 text-purple-600" /> Change Email
+                    </button>
+                    <button 
+                      onClick={() => setIsPassDialogOpen(true)}
+                      className="flex-1 py-4 bg-neutral-50 border border-neutral-200 hover:bg-purple-50/20 hover:border-purple-200 text-[#0F0A1E] font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2.5 cursor-pointer"
+                    >
+                      <FontAwesomeIcon icon={faKey} className="w-4.5 h-4.5 text-purple-600" /> Change Password
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 

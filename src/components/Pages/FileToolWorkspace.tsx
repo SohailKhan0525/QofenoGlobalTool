@@ -1618,7 +1618,7 @@ export function FileToolWorkspace({ tool, userId }: { tool: ToolCard; userId?: s
       trackFileProcessed(tool.slug, files[0]?.size || 0, response.duration_ms || 1000, true);
 
       // Resolve download URL from file_id if needed
-      const ep = (import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
+      const ep = (import.meta.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1').replace(/\/$/, '');
       const pid = import.meta.env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 
       if (!response.download_url && response.file_id) {

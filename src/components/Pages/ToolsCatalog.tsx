@@ -579,84 +579,86 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filteredTools.map((tool) => {
-                    const ToolIcon = tool.icon;
-                    return (
-                      <div
-                        key={tool.id}
-                        onClick={() => {
-                          if (tool.is_coming_soon) return;
-                          localStorage.setItem('selected_tool_id', tool.id);
-                          onNavigate('tool');
-                        }}
-                        className={cn(
-                          "group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer flex flex-col transition-all duration-300 relative",
-                          !prefersReduced && !tool.is_coming_soon && "hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98]",
-                          tool.is_coming_soon && "opacity-75 bg-neutral-50/50 border-neutral-200/80 cursor-default"
-                        )}
-                      >
-                        <div className="absolute top-6 right-6 flex items-center gap-1.5 z-10">
-                          {tool.is_coming_soon ? (
-                            <span className="bg-neutral-200 text-neutral-600 text-[10px] font-black tracking-wider px-2.5 py-0.5 rounded-md shadow-sm">
-                              COMING SOON
-                            </span>
-                          ) : (
-                            <>
-                              <button 
-                                onClick={(e) => toggleFavorite(e, tool.id)}
-                                className={cn(
-                                  "p-1.5 rounded-full transition-colors cursor-pointer",
-                                  favorites.includes(tool.id) ? "bg-pink-100 text-pink-600" : "bg-neutral-100 text-neutral-400 hover:text-pink-600 hover:bg-pink-50"
-                                )}
-                              >
-                                <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", favorites.includes(tool.id) && "fill-current")} />
-                              </button>
-                              {((tool.is_new_until && new Date(tool.is_new_until) > new Date()) || (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew)) && (
-                                <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                                  <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                  NEW
-                                </span>
-                              )}
-                              {tool.isPopular && (
-                                <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                                  <FontAwesomeIcon icon={faFire} className="w-3.5 h-3.5 fill-current text-amber-500" />
-                                  POP
-                                </span>
-                              )}
-                              {tool.type === 'Pro' && (
-                                <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-extrabold px-2.5 py-0.5 rounded-md shadow-sm">
-                                  PRO
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
+              {filteredTools.map((tool) => {
+                const ToolIcon = tool.icon;
+                const cardViews = toolViewCounts[tool.slug] || toolViewCounts[tool.id] || Number(localStorage.getItem(`qofeno_views_count_${tool.slug}`) || localStorage.getItem(`qofeno_views_count_${tool.id}`) || '0');
 
-                        <div>
-                          <ImageWithFallback src={tool.imageUrl} icon={ToolIcon} alt={tool.name} />
-                          
-                          <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1 flex items-center gap-2">
-                            {tool.subcategory}
-                            <span className="flex items-center gap-1 text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
-                              <FontAwesomeIcon icon={faGear} className="w-3 h-3" /> Server-processed
-                            </span>
-                          </div>
-                          <h3 className="text-lg font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors mb-2 truncate max-w-full tool-card-title">{tool.name}</h3>
-                          <p className="text-sm text-neutral-500 leading-relaxed line-clamp-2 min-h-[40px] overflow-hidden text-ellipsis tool-card-desc">{tool.desc}</p>
-                          
-                          <div className="flex items-center gap-3 text-xs text-neutral-400 font-bold mt-4 pt-4 border-t border-neutral-100">
-                            <span className="flex items-center gap-1">
-                              <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                              {tool.runs} views
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                return (
+                            <div
+                              key={tool.id}
+                              onClick={() => {
+                                if (tool.is_coming_soon) return;
+                                localStorage.setItem('selected_tool_id', tool.id);
+                                onNavigate('tool');
+                              }}
+                              className={cn(
+                                "group bg-white border border-neutral-200/50 rounded-3xl p-6 hover:shadow-xl hover:shadow-purple-500/10 cursor-pointer flex flex-col transition-all duration-300 relative",
+                                !prefersReduced && !tool.is_coming_soon && "hover:-translate-y-1.5 hover:scale-[1.02] active:scale-[0.98]",
+                                tool.is_coming_soon && "opacity-75 bg-neutral-50/50 border-neutral-200/80 cursor-default"
+                              )}
+                            >
+                              <div className="absolute top-6 right-6 flex items-center gap-1.5 z-10">
+                                {tool.is_coming_soon ? (
+                                  <span className="bg-neutral-200 text-neutral-600 text-[10px] font-black tracking-wider px-2.5 py-0.5 rounded-md shadow-sm">
+                                    COMING SOON
+                                  </span>
+                                ) : (
+                                  <>
+                                    <button 
+                                      onClick={(e) => toggleFavorite(e, tool.id)}
+                                      className={cn(
+                                        "p-1.5 rounded-full transition-colors cursor-pointer",
+                                        favorites.includes(tool.id) ? "bg-pink-100 text-pink-600" : "bg-neutral-100 text-neutral-400 hover:text-pink-600 hover:bg-pink-50"
+                                      )}
+                                    >
+                                      <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", favorites.includes(tool.id) && "fill-current")} />
+                                    </button>
+                                    {((tool.is_new_until && new Date(tool.is_new_until) > new Date()) || (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew)) && (
+                                      <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                        NEW
+                                      </span>
+                                    )}
+                                    {tool.isPopular && (
+                                      <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                        <FontAwesomeIcon icon={faFire} className="w-3.5 h-3.5 fill-current text-amber-500" />
+                                        POP
+                                      </span>
+                                    )}
+                                    {tool.type === 'Pro' && (
+                                      <span className="bg-gradient-to-r from-amber-400 to-amber-500 text-amber-950 text-[10px] font-extrabold px-2.5 py-0.5 rounded-md shadow-sm">
+                                        PRO
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+
+                              <div>
+                                <ImageWithFallback src={tool.imageUrl} icon={ToolIcon} alt={tool.name} />
+                                
+                                <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-1 flex items-center gap-2">
+                                  {tool.subcategory}
+                                  <span className="flex items-center gap-1 text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
+                                    <FontAwesomeIcon icon={faGear} className="w-3 h-3" /> Server-processed
+                                  </span>
+                                </div>
+                                <h3 className="text-lg font-bold text-[#0F0A1E] group-hover:text-purple-600 transition-colors mb-2 truncate max-w-full tool-card-title">{tool.name}</h3>
+                                <p className="text-sm text-neutral-500 leading-relaxed line-clamp-2 min-h-[40px] overflow-hidden text-ellipsis tool-card-desc">{tool.desc}</p>
+                                
+                                <div className="flex items-center gap-3 text-xs text-neutral-400 font-bold mt-4 pt-4 border-t border-neutral-100">
+                                  <span className="flex items-center gap-1">
+                                    <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    {cardViews} views
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
             </div>
 
             {filteredTools.length === 0 && (

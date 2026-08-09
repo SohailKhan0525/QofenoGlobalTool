@@ -6,6 +6,7 @@ import { account } from '../../lib/qofeno-appwrite';
 
 export function ResetPassword({ onNavigate }: { onNavigate: (page: string) => void }) {
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -24,10 +25,11 @@ export function ResetPassword({ onNavigate }: { onNavigate: (page: string) => vo
   const checks = {
     length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
-    special: /[^A-Za-z0-9]/.test(password)
+    special: /[^A-Za-z0-9]/.test(password),
+    match: password.length > 0 && password === confirmPassword
   };
 
-  const allPassed = checks.length && checks.uppercase && checks.special;
+  const allPassed = checks.length && checks.uppercase && checks.special && checks.match;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +37,11 @@ export function ResetPassword({ onNavigate }: { onNavigate: (page: string) => vo
 
     if (!userId || !secret) {
       setError("Invalid or expired password reset link.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -85,6 +92,20 @@ export function ResetPassword({ onNavigate }: { onNavigate: (page: string) => vo
               </div>
             </label>
 
+            <label className="block space-y-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">Confirm New Password</span>
+              <div className="relative">
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-xl border border-neutral-200 bg-neutral-50 py-3.5 pl-11 pr-4 text-sm text-neutral-800 outline-none transition-all focus:border-purple-600 focus:bg-white"
+                  placeholder="••••••••"
+                />
+                <FontAwesomeIcon icon={faLock} className="absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-neutral-400" />
+              </div>
+            </label>
+
             {/* Password Strength Checklist */}
             <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 space-y-2">
               <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Password Requirements</p>
@@ -102,6 +123,11 @@ export function ResetPassword({ onNavigate }: { onNavigate: (page: string) => vo
               <div className="flex items-center gap-2 text-sm">
                 <FontAwesomeIcon icon={checks.special ? faCircleCheck : faCircleXmark} className={checks.special ? "text-green-500" : "text-neutral-300"} />
                 <span className={checks.special ? "text-neutral-800 font-medium" : "text-neutral-500"}>At least one special character</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm">
+                <FontAwesomeIcon icon={checks.match ? faCircleCheck : faCircleXmark} className={checks.match ? "text-green-500" : "text-neutral-300"} />
+                <span className={checks.match ? "text-neutral-800 font-medium" : "text-neutral-500"}>Passwords match</span>
               </div>
             </div>
 

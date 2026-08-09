@@ -23,7 +23,7 @@ async function updatePagesEnv() {
           env_vars: {
             AZURE_PROCESSOR_URL: { value: azureUrl },
             VITE_AZURE_PROCESSOR_URL: { value: azureUrl },
-            VITE_APPWRITE_ENDPOINT: { value: process.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1' },
+            VITE_APPWRITE_ENDPOINT: { value: process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1' },
             VITE_APPWRITE_PROJECT_ID: { value: process.env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18' }
           }
         }

@@ -20,29 +20,36 @@ function formatCount(count: number): string {
 
 export function LikeButton({ toolSlug, initialLikes = 0, onLikeChange }: LikeButtonProps) {
   const { user } = useAuth();
-  const [liked, setLiked] = useState<boolean>(false);
-  const [count, setCount] = useState<number>(initialLikes);
+  const [liked, setLiked] = useState<boolean>(() => {
+    const likes = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+    return Array.isArray(likes) && likes.includes(toolSlug);
+  });
+  const [count, setCount] = useState<number>(() => {
+    const saved = localStorage.getItem(`qofeno_likes_count_${toolSlug}`);
+    return saved ? Number(saved) : (initialLikes || 0);
+  });
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    setCount(initialLikes);
-  }, [initialLikes]);
+    if (initialLikes > 0) {
+      setCount(initialLikes);
+      localStorage.setItem(`qofeno_likes_count_${toolSlug}`, String(initialLikes));
+    }
+  }, [initialLikes, toolSlug]);
 
   useEffect(() => {
+    const likes = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+    const isLikedLocal = Array.isArray(likes) && likes.includes(toolSlug);
+    setLiked(isLikedLocal);
+
     if (user) {
       databases.listDocuments(DATABASE_ID, 'tool_likes', [
         Query.equal('user_id', user.id),
         Query.equal('tool_slug', toolSlug),
         Query.limit(1)
       ]).then((r) => {
-        setLiked(r.total > 0);
-      }).catch(() => {
-        const likes = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
-        setLiked(likes.includes(toolSlug));
-      });
-    } else {
-      const likes = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
-      setLiked(likes.includes(toolSlug));
+        if (r.total > 0) setLiked(true);
+      }).catch(() => {});
     }
   }, [user, toolSlug]);
 
@@ -55,6 +62,14 @@ export function LikeButton({ toolSlug, initialLikes = 0, onLikeChange }: LikeBut
     const nextCount = nextLiked ? count + 1 : Math.max(0, count - 1);
     setLiked(nextLiked);
     setCount(nextCount);
+    localStorage.setItem(`qofeno_likes_count_${toolSlug}`, String(nextCount));
+
+    const likesArray: string[] = JSON.parse(localStorage.getItem('qofeno_likes') || '[]');
+    const updatedLikes = nextLiked
+      ? Array.from(new Set([...likesArray, toolSlug]))
+      : likesArray.filter((slug) => slug !== toolSlug);
+    localStorage.setItem('qofeno_likes', JSON.stringify(updatedLikes));
+
     if (onLikeChange) onLikeChange(nextCount, nextLiked);
 
     try {

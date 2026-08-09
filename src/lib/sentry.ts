@@ -1,68 +1,60 @@
-// src/lib/sentry.ts
-import * as Sentry from "@sentry/react";
+/**
+ * Sentry error monitoring — initialized only when VITE_SENTRY_DSN is set.
+ * Get your DSN from: sentry.io ? Your Project ? Settings ? Client Keys (DSN)
+ *
+ * Add to .env.local:  VITE_SENTRY_DSN=https://abc@o123.ingest.sentry.io/456
+ */
 
-const SENTRY_DSN =
-  (typeof import.meta !== "undefined" && import.meta.env?.VITE_SENTRY_DSN) ||
-  (typeof import.meta !== "undefined" && import.meta.env?.NEXT_PUBLIC_SENTRY_DSN) ||
-  "https://74d8b9d370d3cd9cfc174c8af65ce5c2@o4511564830081024.ingest.de.sentry.io/4511800246534224";
+const DSN = import.meta.env.VITE_SENTRY_DSN as string | undefined;
 
-export function initSentry() {
-  if (!SENTRY_DSN) return;
+let _sentry: typeof import('@sentry/browser') | null = null;
 
+export async function initSentry() {
+  if (!DSN) {
+    return;
+  }
   try {
+    const Sentry = await import('@sentry/browser');
+    _sentry = Sentry;
     Sentry.init({
-      dsn: SENTRY_DSN,
-      tracesSampleRate: 1.0,
-      sampleRate: 1.0,
-      environment: typeof import.meta !== "undefined" ? (import.meta.env.MODE || "production") : "production",
-      beforeSend(event) {
-        return event;
-      }
+      dsn: DSN,
+      environment: import.meta.env.MODE,
+      release: `qofeno@${import.meta.env.VITE_APP_VERSION || 'unknown'}`,
+      tracesSampleRate: 0.1,
+      replaysOnErrorSampleRate: 1.0,
+      replaysSessionSampleRate: 0.0,
+      integrations: [],
+      ignoreErrors: [
+        'ResizeObserver loop limit exceeded',
+        'Non-Error promise rejection captured',
+        /chrome-extension/,
+      ],
     });
-    console.log("[Qofeno] Sentry initialized successfully.");
   } catch (err) {
-    console.warn("[Qofeno] Sentry initialization warning:", err);
+    console.warn('[Sentry] Failed to initialize:', err);
   }
 }
 
-export function captureException(error: any, context?: Record<string, any>) {
+export function captureException(error: Error, context?: Record<string, unknown>) {
+  if (!_sentry) return;
   try {
-    const errToCapture = typeof error === 'string' ? new Error(error) : (error || new Error('Unknown error'));
-    if (SENTRY_DSN) {
-      Sentry.captureException(errToCapture, { extra: context });
-      void Sentry.flush(2000);
-    }
-  } catch {
-    console.error("[Qofeno Error]", error, context);
-  }
+    _sentry.withScope((scope) => {
+      if (context) {
+        Object.entries(context).forEach(([k, v]) => scope.setExtra(k, v));
+      }
+      _sentry!.captureException(error);
+    });
+  } catch {}
+}
 
-  // Dual HTTP envelope fallback to guarantee 100% immediate event ingestion in Sentry dashboard & email alerts
+export function setSentryUser(user: { id: string; email?: string; plan?: string } | null) {
+  if (!_sentry) return;
   try {
-    const match = SENTRY_DSN.match(/https:\/\/([^@]+)@([^/]+)\/(\d+)/);
-    if (match) {
-      const [, publicKey, host, projectId] = match;
-      const sentryIngestUrl = `https://${host}/api/${projectId}/envelope/`;
-      const eventId = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
-      const envelopeHeader = JSON.stringify({ event_id: eventId, sent_at: new Date().toISOString() });
-      const itemHeader = JSON.stringify({ type: 'event', content_type: 'application/json' });
-      const message = typeof error === 'string' ? error : (error?.message || 'Qofeno Exception');
-      const itemPayload = JSON.stringify({
-        event_id: eventId,
-        message,
-        level: 'error',
-        environment: 'production',
-        extra: context || {}
-      });
-      const envelope = `${envelopeHeader}\n${itemHeader}\n${itemPayload}\n`;
-
-      fetch(sentryIngestUrl, {
-        method: 'POST',
-        headers: {
-          'X-Sentry-Auth': `Sentry sentry_version=7, sentry_client=qofeno-web/1.0, sentry_key=${publicKey}`,
-          'Content-Type': 'application/x-sentry-envelope'
-        },
-        body: envelope
-      }).catch(() => {});
+    if (user) {
+      _sentry.setUser({ id: user.id, email: user.email, plan: user.plan });
+    } else {
+      _sentry.setUser(null);
     }
   } catch {}
 }
+

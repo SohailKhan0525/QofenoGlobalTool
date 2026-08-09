@@ -12714,9 +12714,10 @@ export function useToolCatalog(): ToolCatalogState {
 
 export async function trackToolView(toolSlug: string): Promise<void> {
   if (!toolSlug || typeof window === 'undefined') return;
-  const key = `qofeno_viewed_${toolSlug}`;
-  if (sessionStorage.getItem(key)) return;
-  sessionStorage.setItem(key, "1");
+  const today = new Date().toISOString().slice(0, 10);
+  const key = `qofeno_viewed_${toolSlug}_${today}`;
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, "1");
 
   try {
     const existing = await databases.listDocuments(DATABASE_ID, "tool_views", [

@@ -1,3 +1,10 @@
 User-agent: *
 Allow: /
+Disallow: /profile
+Disallow: /settings
+Disallow: /checkout/
+Disallow: /payment
+Disallow: /auth-callback
+Disallow: /api/
+
 Sitemap: https://qofeno-labs.pages.dev/sitemap.xml

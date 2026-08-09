@@ -414,7 +414,6 @@ export default function App() {
     const syncRoute = () => {
       const route = parseRoute(window.location.pathname, window.location.search);
       if (route.page === 'tool' && route.toolSlug) {
-        setCurrentToolSlug(route.toolSlug);
         localStorage.setItem('selected_tool_id', route.toolSlug);
       }
       // Redirect /upgrade → /checkout/pro
@@ -434,6 +433,9 @@ export default function App() {
         setActiveTabState(nextRoute.page);
         return;
       }
+      if (route.page === 'tool' && route.toolSlug) {
+        localStorage.setItem('selected_tool_id', route.toolSlug);
+      }
       setActiveTabState(route.page);
     };
 
@@ -445,7 +447,7 @@ export default function App() {
   useEffect(() => {
     if (isAuthLoading) return;
     const route = parseRoute(window.location.pathname, window.location.search);
-    if (['profile', 'settings', 'payment'].includes(route.page) && !isAuthenticated) {
+    if (['profile', 'payment'].includes(route.page) && !isAuthenticated) {
       const redirect = `${window.location.pathname}${window.location.search}`;
       window.history.replaceState({}, '', `/login?redirect=${encodeURIComponent(redirect)}`);
       setActiveTabState('login');
@@ -581,6 +583,7 @@ export default function App() {
     await logout();
     localStorage.removeItem('appwrite_user_id');
     localStorage.removeItem('isLoggedIn');
+    toast.success("You've been signed out", { description: "See you next time!" });
     window.history.pushState({}, '', '/');
     setActiveTabState('home');
   };
@@ -1248,7 +1251,7 @@ export default function App() {
         <ErrorBoundary onReset={() => setActiveTab('home')}>
           <AnimatePresence mode="wait">
             <motion.div
-              key={activeTab}
+              key={activeTab === 'tool' ? window.location.pathname : activeTab}
               variants={getPageVariants(activeTab)}
               initial="initial"
               animate="animate"
@@ -1276,7 +1279,7 @@ export default function App() {
               {activeTab === 'auth-callback' && <AuthCallback onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'dashboard' && <Profile />}  {/* dashboard redirects to profile */}
               {activeTab === 'profile' && <Profile />}
-              {activeTab === 'settings' && <SettingsPage />}
+              {activeTab === 'settings' && <SettingsPage onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'coming-soon' && <ComingSoon onBack={() => setActiveTab('home')} />}
               {activeTab === 'terms' && <Terms />}
               {activeTab === 'policy' && <Policy />}

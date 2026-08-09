@@ -4,10 +4,11 @@ import {
   faUser, faShieldHalved, faSliders, faBell, faCreditCard,
   faLock, faTriangleExclamation, faSpinner, faCheck, faLaptop,
   faSun, faMoon, faDesktop, faEye, faEyeSlash, faDownload,
-  faTrash, faRotateRight, faCalendar, faCircleCheck,
-  faArrowUpRightFromSquare, faChevronRight,
+  faRotateRight, faCalendar, faCircleCheck,
+  faArrowUpRightFromSquare, faEnvelope, faRightToBracket, faXmark,
+  faCircleInfo
 } from '@fortawesome/free-solid-svg-icons';
-import { account, databases, DATABASE_ID, realtime } from '../../lib/qofeno-appwrite';
+import { account, databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { SEO } from '../../components/SEO';
@@ -40,6 +41,7 @@ type SubscriptionDoc = {
 };
 
 type UserMetaDoc = {
+  $id?: string;
   plan: string;
   plan_expires_at: string | null;
   payment_ref: string | null;
@@ -54,6 +56,7 @@ type UserMetaDoc = {
 function Toggle({ checked, onChange, disabled = false }: { checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <button
+      type="button"
       role="switch"
       aria-checked={checked}
       disabled={disabled}
@@ -182,13 +185,19 @@ function formatBytes(bytes: number): string {
 
 /* ─── Main Component ──────────────────────────────────── */
 
-export function Settings() {
-  const { user, refreshSession } = useAuth();
+export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }) {
+  const { user, isAuthenticated, isLoading: isAuthLoading, refreshSession } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
 
   // Profile
   const [name, setName] = useState(user?.name || '');
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Email update dialog
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [changingEmail, setChangingEmail] = useState(false);
 
   // Account / Security
   const [oldPassword, setOldPassword] = useState('');
@@ -205,10 +214,18 @@ export function Settings() {
   );
 
   // Notifications (4 toggles)
-  const [notifyUpdates, setNotifyUpdates] = useState(true);
-  const [notifyUsage, setNotifyUsage] = useState(true);
-  const [notifySecurity, setNotifySecurity] = useState(true);
-  const [notifyNewTools, setNotifyNewTools] = useState(false);
+  const [notifyUpdates, setNotifyUpdates] = useState(
+    () => localStorage.getItem('pref_notify_updates') !== 'false'
+  );
+  const [notifyUsage, setNotifyUsage] = useState(
+    () => localStorage.getItem('pref_notify_usage') !== 'false'
+  );
+  const [notifySecurity, setNotifySecurity] = useState(
+    () => localStorage.getItem('pref_notify_security') !== 'false'
+  );
+  const [notifyNewTools, setNotifyNewTools] = useState(
+    () => localStorage.getItem('pref_notify_new_tools') === 'true'
+  );
   const [savingNotify, setSavingNotify] = useState(false);
   const notifyDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -216,6 +233,7 @@ export function Settings() {
   const [subscription, setSubscription] = useState<SubscriptionDoc | null>(null);
   const [userMeta, setUserMeta] = useState<UserMetaDoc | null>(null);
   const [loadingBilling, setLoadingBilling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // Privacy
   const [downloadingData, setDownloadingData] = useState(false);
@@ -226,6 +244,14 @@ export function Settings() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
 
+  const handleNavigate = (page: string) => {
+    if (onNavigate) {
+      onNavigate(page);
+    } else {
+      window.location.href = page;
+    }
+  };
+
   // Read URL tab param
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get('tab');
@@ -235,10 +261,14 @@ export function Settings() {
   }, []);
 
   // Sync name from user
-  useEffect(() => { if (user?.name) setName(user.name); }, [user]);
+  useEffect(() => {
+    if (user?.name) setName(user.name);
+    else if (!isAuthenticated) setName('Guest User');
+  }, [user, isAuthenticated]);
 
   // Load notification prefs
   useEffect(() => {
+    if (!isAuthenticated) return;
     let cancelled = false;
     account.getPrefs().then(prefs => {
       if (cancelled) return;
@@ -248,27 +278,63 @@ export function Settings() {
       if ('notify_new_tools' in prefs) setNotifyNewTools(Boolean(prefs.notify_new_tools));
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, []);
+  }, [isAuthenticated]);
 
-  // Load sessions when Account tab opens
+  // Load sessions when user is authenticated
   useEffect(() => {
-    if (activeTab !== 'account') return;
+    if (!isAuthenticated) {
+      setSessions([]);
+      return;
+    }
     let cancelled = false;
     setLoadingSessions(true);
-    account.listSessions().then(list => {
-      if (!cancelled) setSessions(list.sessions.map((s: any) => ({
-        $id: s.$id,
-        osName: s.osName || 'Unknown OS',
-        clientName: s.clientName || 'Unknown Browser',
-        clientVersion: s.clientVersion || '',
-        ip: s.ip || 'Unknown IP',
-        country: s.countryName || s.country || '',
-        current: s.current,
-        $createdAt: s.$createdAt,
-      })));
-    }).catch(() => {}).finally(() => { if (!cancelled) setLoadingSessions(false); });
+    account.listSessions()
+      .then(list => {
+        if (cancelled) return;
+        if (list && list.sessions && list.sessions.length > 0) {
+          setSessions(list.sessions.map((s: any) => ({
+            $id: s.$id || 'current',
+            osName: s.osName || 'Web Browser',
+            clientName: s.clientName || (s.provider ? String(s.provider).toUpperCase() : 'Appwrite Session'),
+            clientVersion: s.clientVersion || '',
+            ip: s.ip || 'Client Connection',
+            country: s.countryName || s.country || '',
+            current: Boolean(s.current),
+            $createdAt: s.$createdAt || new Date().toISOString(),
+          })));
+        } else {
+          setSessions([{
+            $id: 'current',
+            osName: 'Current Desktop Browser',
+            clientName: user?.isOAuth ? `${user.provider?.toUpperCase() || 'OAuth'} Active Session` : 'Qofeno Web Client',
+            clientVersion: 'v2.0',
+            ip: 'Active Client Session',
+            country: '',
+            current: true,
+            $createdAt: user?.$createdAt || user?.createdAt || new Date().toISOString(),
+          }]);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSessions([{
+            $id: 'current',
+            osName: 'Current Desktop Browser',
+            clientName: user?.isOAuth ? `${user.provider?.toUpperCase() || 'OAuth'} Active Session` : 'Qofeno Web Client',
+            clientVersion: 'v2.0',
+            ip: 'Active Client Session',
+            country: '',
+            current: true,
+            $createdAt: user?.$createdAt || user?.createdAt || new Date().toISOString(),
+          }]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingSessions(false);
+      });
+
     return () => { cancelled = true; };
-  }, [activeTab]);
+  }, [isAuthenticated, user]);
 
   // Load billing when Billing tab opens
   useEffect(() => {
@@ -301,7 +367,6 @@ export function Settings() {
     } else if (theme === 'light') {
       root.classList.remove('dark');
     } else {
-      // system
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (isDark) root.classList.add('dark');
       else root.classList.remove('dark');
@@ -315,9 +380,14 @@ export function Settings() {
     if (!name.trim()) return;
     setSavingProfile(true);
     try {
-      await account.updateName(name.trim());
-      await refreshSession();
-      toast.success('Profile updated');
+      if (isAuthenticated) {
+        await account.updateName(name.trim());
+        await refreshSession();
+        toast.success('Profile updated');
+      } else {
+        localStorage.setItem('qofeno_guest_name', name.trim());
+        toast.success('Guest display name saved');
+      }
     } catch (err: any) {
       toast.error(err?.message || 'Failed to update profile');
     } finally {
@@ -325,8 +395,42 @@ export function Settings() {
     }
   };
 
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      handleNavigate('login?redirect=/settings');
+      return;
+    }
+    if (!newEmail.trim() || !emailPassword) {
+      toast.error('Please enter your new email and current password');
+      return;
+    }
+    setChangingEmail(true);
+    try {
+      await account.updateEmail(newEmail.trim(), emailPassword);
+      if (userMeta?.$id) {
+        await databases.updateDocument(DATABASE_ID, 'users_meta', userMeta.$id, {
+          email: newEmail.trim()
+        }).catch(() => {});
+      }
+      await refreshSession();
+      setShowEmailModal(false);
+      setNewEmail('');
+      setEmailPassword('');
+      toast.success('Email updated successfully to ' + newEmail.trim());
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update email address. Verify current password.');
+    } finally {
+      setChangingEmail(false);
+    }
+  };
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      handleNavigate('login?redirect=/settings');
+      return;
+    }
     if (!oldPassword || !newPassword) {
       toast.error('Fill both current and new password fields');
       return;
@@ -356,13 +460,22 @@ export function Settings() {
   const handleThemeChange = (t: 'light' | 'dark' | 'system') => {
     setTheme(t);
     localStorage.setItem('qofeno_theme', t);
-    // prefs save (best-effort)
-    account.getPrefs().then(prefs => account.updatePrefs({ ...prefs, theme: t })).catch(() => {});
+    toast.success(`Theme switched to ${t} mode`);
+    if (isAuthenticated) {
+      account.getPrefs().then(prefs => account.updatePrefs({ ...prefs, theme: t })).catch(() => {});
+    }
   };
 
   const saveNotifyPrefs = useCallback((updates: boolean, usage: boolean, security: boolean, newTools: boolean) => {
+    localStorage.setItem('pref_notify_updates', String(updates));
+    localStorage.setItem('pref_notify_usage', String(usage));
+    localStorage.setItem('pref_notify_security', String(security));
+    localStorage.setItem('pref_notify_new_tools', String(newTools));
+    toast.success('Preferences saved');
+
     if (notifyDebounceRef.current) clearTimeout(notifyDebounceRef.current);
     notifyDebounceRef.current = setTimeout(async () => {
+      if (!isAuthenticated) return;
       setSavingNotify(true);
       try {
         const prefs = await account.getPrefs();
@@ -374,12 +487,12 @@ export function Settings() {
           notify_new_tools: newTools,
         });
       } catch {
-        toast.error('Failed to save preferences');
+        // quiet fallback
       } finally {
         setSavingNotify(false);
       }
     }, 400);
-  }, []);
+  }, [isAuthenticated]);
 
   const handleRevokeSession = async (sessionId: string) => {
     setRevokingSession(sessionId);
@@ -397,20 +510,33 @@ export function Settings() {
   const handleExportData = async () => {
     setDownloadingData(true);
     try {
-      const [uDoc, prefs] = await Promise.all([account.get(), account.getPrefs()]);
-      const exportObj = {
-        user: { id: uDoc.$id, name: uDoc.name, email: uDoc.email },
-        plan: user?.plan,
-        preferences: prefs,
-        meta: userMeta,
+      let exportObj: any = {
         exportedAt: new Date().toISOString(),
+        theme,
+        notifications: {
+          updates: notifyUpdates,
+          usage: notifyUsage,
+          security: notifySecurity,
+          newTools: notifyNewTools,
+        },
       };
+
+      if (isAuthenticated) {
+        const [uDoc, prefs] = await Promise.all([account.get(), account.getPrefs()]);
+        exportObj.user = { id: uDoc.$id, name: uDoc.name, email: uDoc.email };
+        exportObj.plan = user?.plan;
+        exportObj.preferences = prefs;
+        exportObj.meta = userMeta;
+      } else {
+        exportObj.mode = 'Guest';
+      }
+
       const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
-      const a = Object.assign(document.createElement('a'), { href: url, download: `qofeno-data-${uDoc.$id}.json` });
+      const a = Object.assign(document.createElement('a'), { href: url, download: `qofeno-settings-${Date.now()}.json` });
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('Data exported');
+      toast.success('Data exported successfully');
     } catch {
       toast.error('Export failed');
     } finally {
@@ -423,7 +549,7 @@ export function Settings() {
     try {
       localStorage.removeItem('recently_viewed');
       localStorage.removeItem('qofeno_likes');
-      toast.success('Local history cleared');
+      toast.success('Local history and cache cleared');
     } catch {
       toast.error('Failed to clear history');
     } finally {
@@ -464,24 +590,70 @@ export function Settings() {
       <SEO title="Settings — Qofeno" description="Manage your Qofeno profile, security, billing, and preferences." />
 
       <div className="max-w-5xl mx-auto">
+        
+        {/* Guest Mode Top Banner */}
+        {!isAuthLoading && !isAuthenticated && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-purple-500/10 via-fuchsia-500/10 to-purple-500/5 border border-purple-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0">
+                <FontAwesomeIcon icon={faCircleInfo} className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-neutral-900">Browsing Settings in Guest Mode</p>
+                <p className="text-[11px] text-neutral-500 mt-0.5">
+                  Sign in or create a free account to sync display profile, active sessions, and subscriptions across devices.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleNavigate('login?redirect=/settings')}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 flex items-center gap-1.5 cursor-pointer"
+            >
+              <FontAwesomeIcon icon={faRightToBracket} className="w-3.5 h-3.5" />
+              Sign in
+            </button>
+          </div>
+        )}
+
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-neutral-900">Settings</h1>
           <p className="text-sm text-neutral-400 mt-1">Manage your account and workspace preferences.</p>
         </div>
 
+        {/* Mobile Horizontal Sub-Nav */}
+        <div className="md:hidden flex items-center gap-2 overflow-x-auto pb-4 mb-4 scrollbar-none">
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border',
+                activeTab === item.id
+                  ? item.danger
+                    ? 'bg-red-50 border-red-200 text-red-600'
+                    : 'bg-purple-600 border-purple-600 text-white shadow-sm'
+                  : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'
+              )}
+            >
+              <FontAwesomeIcon icon={item.icon} className="w-3.5 h-3.5" />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-start">
-          {/* Left Sidebar Nav */}
-          <nav className="bg-white border border-neutral-200/80 rounded-2xl p-2 shadow-sm md:sticky md:top-28 space-y-0.5">
+          {/* Desktop Left Sidebar Nav */}
+          <nav className="hidden md:block bg-white border border-neutral-200/80 rounded-2xl p-2 shadow-sm sticky top-28 space-y-0.5">
             {navItems.map(item => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left cursor-pointer',
                   activeTab === item.id
                     ? item.danger
-                      ? 'bg-red-50 text-red-600'
-                      : 'bg-purple-50 text-purple-700'
+                      ? 'bg-red-50 text-red-600 font-semibold'
+                      : 'bg-purple-50 text-purple-700 font-semibold'
                     : item.danger
                       ? 'text-red-500 hover:bg-red-50/60'
                       : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
@@ -501,7 +673,7 @@ export function Settings() {
             ))}
           </nav>
 
-          {/* Main Content */}
+          {/* Main Content Card */}
           <AnimatePresence mode="wait">
             <motion.main
               key={activeTab}
@@ -509,7 +681,7 @@ export function Settings() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.15 }}
-              className="bg-white border border-neutral-200/80 rounded-2xl p-6 md:p-8 shadow-sm"
+              className="bg-white border border-neutral-200/80 rounded-2xl p-6 md:p-8 shadow-sm min-h-[460px]"
             >
 
               {/* ── PROFILE ── */}
@@ -520,11 +692,11 @@ export function Settings() {
                   {/* Avatar row */}
                   <div className="flex items-center gap-4 mb-8">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center text-white text-xl font-bold shadow-md flex-shrink-0">
-                      {(user?.name || 'U').slice(0, 1).toUpperCase()}
+                      {(user?.name || 'Guest').slice(0, 1).toUpperCase()}
                     </div>
                     <div>
-                      <p className="font-semibold text-neutral-900">{user?.name || 'User'}</p>
-                      <p className="text-sm text-neutral-400">{user?.email}</p>
+                      <p className="font-semibold text-neutral-900">{user?.name || 'Guest User'}</p>
+                      <p className="text-sm text-neutral-400">{user?.email || 'Sign in to connect email'}</p>
                       <div className="mt-1.5">
                         <PlanBadge plan={user?.plan || 'free'} />
                       </div>
@@ -539,19 +711,51 @@ export function Settings() {
                       placeholder="Your full name"
                       autoComplete="name"
                     />
-                    <SettingsInput
-                      label="Email Address"
-                      value={user?.email || ''}
-                      disabled
-                      hint="Email changes are not supported. Contact support if needed."
-                    />
+                    
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-neutral-600">Email Address</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="email"
+                          value={user?.email || ''}
+                          disabled
+                          placeholder={isAuthenticated ? '' : 'Not signed in'}
+                          className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-neutral-200 bg-neutral-100 text-neutral-500 cursor-not-allowed outline-none"
+                        />
+                        {isAuthenticated && (
+                          user?.isOAuth ? (
+                            <button
+                              type="button"
+                              disabled
+                              title="Email address is managed by Google/GitHub login and cannot be changed here."
+                              className="px-3 py-2.5 bg-neutral-100 border border-neutral-200 text-neutral-400 text-xs font-semibold rounded-xl cursor-not-allowed shrink-0 flex items-center gap-1.5 opacity-75"
+                            >
+                              <FontAwesomeIcon icon={faLock} className="w-3 h-3 text-neutral-400" />
+                              OAuth Managed
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setShowEmailModal(true)}
+                              className="px-3 py-2.5 bg-white border border-neutral-200 hover:border-purple-300 text-neutral-700 hover:text-purple-600 text-xs font-semibold rounded-xl transition-all whitespace-nowrap shrink-0 cursor-pointer"
+                            >
+                              Change Email
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </div>
+
                     <SettingsRow label="Member since" last>
-                      <span className="text-sm text-neutral-500">{formatDate(userMeta?.created_at)}</span>
+                      <span className="text-sm text-neutral-500">
+                        {isAuthenticated ? formatDate(user?.$createdAt || user?.createdAt || userMeta?.created_at || new Date().toISOString()) : 'Guest session'}
+                      </span>
                     </SettingsRow>
+
                     <button
                       type="submit"
                       disabled={savingProfile || !name.trim()}
-                      className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50"
+                      className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                     >
                       {savingProfile
                         ? <><FontAwesomeIcon icon={faSpinner} className="fa-spin mr-2" />Saving…</>
@@ -566,64 +770,95 @@ export function Settings() {
                 <div>
                   <SectionHeader title="Account & Security" subtitle="Manage your password and active login sessions." />
 
-                  <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm mb-10">
-                    <h3 className="text-sm font-semibold text-neutral-700">Change Password</h3>
-                    <SettingsInput label="Current Password" value={oldPassword} onChange={setOldPassword} type="password" placeholder="••••••••" autoComplete="current-password" />
-                    <SettingsInput label="New Password" value={newPassword} onChange={setNewPassword} type="password" placeholder="At least 8 characters" autoComplete="new-password" />
-                    <PasswordStrength password={newPassword} />
-                    <SettingsInput label="Confirm New Password" value={confirmPassword} onChange={setConfirmPassword} type="password" placeholder="Repeat new password" autoComplete="new-password" />
-                    <button
-                      type="submit"
-                      disabled={changingPassword || !oldPassword || !newPassword || newPassword !== confirmPassword}
-                      className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {changingPassword
-                        ? <><FontAwesomeIcon icon={faSpinner} className="fa-spin mr-2" />Updating…</>
-                        : 'Update Password'}
-                    </button>
-                  </form>
-
-                  <div>
-                    <h3 className="text-sm font-semibold text-neutral-700 mb-4">Active Sessions</h3>
-                    {loadingSessions ? (
-                      <div className="flex items-center gap-2 text-sm text-neutral-400 py-4">
-                        <FontAwesomeIcon icon={faSpinner} className="fa-spin" /> Loading sessions…
-                      </div>
-                    ) : sessions.length === 0 ? (
-                      <p className="text-sm text-neutral-400">No session information available.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {sessions.map(s => (
-                          <div key={s.$id} className="flex items-center justify-between p-4 bg-neutral-50 border border-neutral-150 rounded-xl">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
-                                <FontAwesomeIcon icon={faLaptop} className="text-neutral-400 w-4 h-4" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-semibold text-neutral-800 truncate">
-                                  {s.clientName} {s.clientVersion && `${s.clientVersion}`} · {s.osName}
-                                </p>
-                                <p className="text-xs text-neutral-400">{s.ip}{s.country ? ` · ${s.country}` : ''} · {formatDate(s.$createdAt)}</p>
-                              </div>
-                            </div>
-                            {s.current ? (
-                              <span className="flex-shrink-0 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold">
-                                Current
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => handleRevokeSession(s.$id)}
-                                disabled={revokingSession === s.$id}
-                                className="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-red-50 border border-neutral-200 hover:border-red-200 text-neutral-600 hover:text-red-600 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
-                              >
-                                {revokingSession === s.$id ? <FontAwesomeIcon icon={faSpinner} className="fa-spin" /> : 'Revoke'}
-                              </button>
-                            )}
+                  {!isAuthenticated ? (
+                    <div className="p-6 bg-neutral-50 border border-neutral-200 rounded-2xl max-w-md text-center space-y-3">
+                      <FontAwesomeIcon icon={faShieldHalved} className="w-8 h-8 text-neutral-400 mx-auto" />
+                      <h3 className="text-base font-bold text-neutral-800">Password & Sessions Locked</h3>
+                      <p className="text-xs text-neutral-500 leading-relaxed">
+                        Security controls and multi-device session management are available for registered Qofeno accounts.
+                      </p>
+                      <button
+                        onClick={() => handleNavigate('login?redirect=/settings?tab=account')}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl cursor-pointer inline-flex items-center gap-1.5"
+                      >
+                        <FontAwesomeIcon icon={faRightToBracket} className="w-3.5 h-3.5" />
+                        Sign in to access security
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {user?.isOAuth ? (
+                        <div className="p-4 bg-neutral-50 border border-neutral-200/80 rounded-2xl max-w-sm mb-10 space-y-1.5">
+                          <div className="flex items-center gap-2 text-neutral-800 font-bold text-xs">
+                            <FontAwesomeIcon icon={faLock} className="text-neutral-400 w-3.5 h-3.5" />
+                            Password Managed by OAuth
                           </div>
-                        ))}
+                          <p className="text-xs text-neutral-500 leading-relaxed">
+                            Your account is authenticated via {user.provider ? user.provider.toUpperCase() : 'Google / GitHub'} OAuth. Password changes are managed securely through your login provider.
+                          </p>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm mb-10">
+                          <h3 className="text-sm font-semibold text-neutral-700">Change Password</h3>
+                          <SettingsInput label="Current Password" value={oldPassword} onChange={setOldPassword} type="password" placeholder="••••••••" autoComplete="current-password" />
+                          <SettingsInput label="New Password" value={newPassword} onChange={setNewPassword} type="password" placeholder="At least 8 characters" autoComplete="new-password" />
+                          <PasswordStrength password={newPassword} />
+                          <SettingsInput label="Confirm New Password" value={confirmPassword} onChange={setConfirmPassword} type="password" placeholder="Repeat new password" autoComplete="new-password" />
+                          <button
+                            type="submit"
+                            disabled={changingPassword || !oldPassword || !newPassword || newPassword !== confirmPassword}
+                            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                          >
+                            {changingPassword
+                              ? <><FontAwesomeIcon icon={faSpinner} className="fa-spin mr-2" />Updating…</>
+                              : 'Update Password'}
+                          </button>
+                        </form>
+                      )}
+
+                      <div>
+                        <h3 className="text-sm font-semibold text-neutral-700 mb-4">Active Sessions</h3>
+                        {loadingSessions ? (
+                          <div className="flex items-center gap-2 text-sm text-neutral-400 py-4">
+                            <FontAwesomeIcon icon={faSpinner} className="fa-spin" /> Loading sessions…
+                          </div>
+                        ) : sessions.length === 0 ? (
+                          <p className="text-sm text-neutral-400">No session information available.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {sessions.map(s => (
+                              <div key={s.$id} className="flex items-center justify-between p-4 bg-neutral-50 border border-neutral-150 rounded-xl">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-8 h-8 rounded-lg bg-white border border-neutral-200 flex items-center justify-center flex-shrink-0">
+                                    <FontAwesomeIcon icon={faLaptop} className="text-neutral-400 w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-neutral-800 truncate">
+                                      {s.clientName} {s.clientVersion && `${s.clientVersion}`} · {s.osName}
+                                    </p>
+                                    <p className="text-xs text-neutral-400">{s.ip}{s.country ? ` · ${s.country}` : ''} · {formatDate(s.$createdAt)}</p>
+                                  </div>
+                                </div>
+                                {s.current ? (
+                                  <span className="flex-shrink-0 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold">
+                                    Current
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => handleRevokeSession(s.$id)}
+                                    disabled={revokingSession === s.$id}
+                                    className="flex-shrink-0 px-3 py-1.5 bg-white hover:bg-red-50 border border-neutral-200 hover:border-red-200 text-neutral-600 hover:text-red-600 rounded-lg text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer"
+                                  >
+                                    {revokingSession === s.$id ? <FontAwesomeIcon icon={faSpinner} className="fa-spin" /> : 'Revoke'}
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -642,9 +877,9 @@ export function Settings() {
                         key={item.id}
                         onClick={() => handleThemeChange(item.id)}
                         className={cn(
-                          'flex flex-col items-center justify-center gap-2.5 p-5 rounded-2xl border-2 transition-all',
+                          'flex flex-col items-center justify-center gap-2.5 p-5 rounded-2xl border-2 transition-all cursor-pointer',
                           theme === item.id
-                            ? 'border-purple-500 bg-purple-50/80 text-purple-700'
+                            ? 'border-purple-500 bg-purple-50/80 text-purple-700 font-semibold'
                             : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50'
                         )}
                       >
@@ -713,7 +948,7 @@ export function Settings() {
                       {/* Plan card */}
                       <div className={cn(
                         'p-5 rounded-2xl border',
-                        user?.plan === 'free'
+                        user?.plan === 'free' || !user?.plan
                           ? 'bg-neutral-50 border-neutral-200'
                           : 'bg-gradient-to-br from-purple-50 to-white border-purple-100'
                       )}>
@@ -727,7 +962,7 @@ export function Settings() {
                           <PlanBadge plan={user?.plan || 'free'} />
                         </div>
 
-                        {user?.plan === 'free' ? (
+                        {user?.plan === 'free' || !user?.plan ? (
                           <p className="text-sm text-neutral-500 leading-relaxed mb-4">
                             You are on the Free plan — 50MB file limit, standard processing, access to free tools only.
                           </p>
@@ -769,20 +1004,31 @@ export function Settings() {
                         )}
 
                         <div className="flex flex-wrap gap-2">
-                          {user?.plan === 'free' ? (
-                            <a href="/pricing" className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-all active:scale-[0.98]">
-                              Upgrade to Pro — $11/mo
-                            </a>
-                          ) : (
-                            <a
-                              href="https://www.paypal.com/billing/subscriptions"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl transition-all"
+                          {user?.plan === 'free' || !user?.plan ? (
+                            <button
+                              onClick={() => handleNavigate('pricing')}
+                              className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition-all active:scale-[0.98] cursor-pointer"
                             >
-                              Manage via PayPal
-                              <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3.5 h-3.5 text-neutral-400" />
-                            </a>
+                              Upgrade to Pro — $11/mo
+                            </button>
+                          ) : (
+                            <>
+                              <a
+                                href="https://www.paypal.com/billing/subscriptions"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl transition-all cursor-pointer"
+                              >
+                                Manage via PayPal
+                                <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3.5 h-3.5 text-neutral-400" />
+                              </a>
+                              <button
+                                onClick={() => setShowCancelModal(true)}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-red-50 border border-neutral-200 hover:border-red-200 text-red-600 text-sm font-semibold rounded-xl transition-all cursor-pointer"
+                              >
+                                Cancel Subscription
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -816,11 +1062,11 @@ export function Settings() {
                   <SectionHeader title="Privacy & Data" subtitle="Export your data or clear local history." />
 
                   <div className="space-y-0 divide-y divide-neutral-100 max-w-lg">
-                    <SettingsRow label="Export Personal Data" description="Download a JSON copy of your account, preferences, and metadata.">
+                    <SettingsRow label="Export Personal Data" description="Download a JSON copy of your account preferences, theme, and local metadata.">
                       <button
                         onClick={handleExportData}
                         disabled={downloadingData}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl transition-all disabled:opacity-50 cursor-pointer"
                       >
                         {downloadingData
                           ? <FontAwesomeIcon icon={faSpinner} className="fa-spin w-4 h-4" />
@@ -833,7 +1079,7 @@ export function Settings() {
                       <button
                         onClick={handleClearHistory}
                         disabled={clearingHistory}
-                        className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl transition-all disabled:opacity-50 cursor-pointer"
                       >
                         <FontAwesomeIcon icon={faRotateRight} className="w-4 h-4 text-neutral-400" />
                         Clear Cache
@@ -845,7 +1091,7 @@ export function Settings() {
                     <p className="text-xs text-blue-700 leading-relaxed">
                       <strong>Data retention:</strong> Free users — files auto-deleted after download.
                       Pro/Teams users — input files kept 6 days, result files kept 7 days.
-                      We never sell or share your data. See our <a href="/privacy" className="underline">Privacy Policy</a>.
+                      We never sell or share your data. See our <button onClick={() => handleNavigate('policy')} className="underline font-semibold cursor-pointer">Privacy Policy</button>.
                     </p>
                   </div>
                 </div>
@@ -856,77 +1102,39 @@ export function Settings() {
                 <div>
                   <SectionHeader title="Danger Zone" subtitle="Irreversible actions. Proceed with extreme caution." />
 
-                  <div className="p-5 bg-red-50/60 border border-red-200 rounded-2xl space-y-3 max-w-md">
-                    <div className="flex items-center gap-2 text-red-700 font-semibold text-sm">
-                      <FontAwesomeIcon icon={faTriangleExclamation} className="w-4 h-4" />
-                      Delete Account
-                    </div>
-                    <p className="text-xs text-red-600 leading-relaxed">
-                      Permanently delete your account, subscriptions, preferences, and all associated data.
-                      This cannot be undone.
-                    </p>
-                    <button
-                      onClick={() => setShowDeleteModal(true)}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-all active:scale-[0.98]"
-                    >
-                      Delete Account…
-                    </button>
-                  </div>
-
-                  {/* Delete confirmation modal */}
-                  <AnimatePresence>
-                    {showDeleteModal && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-                        onClick={() => setShowDeleteModal(false)}
+                  {!isAuthenticated ? (
+                    <div className="p-6 bg-red-50/40 border border-red-200/70 rounded-2xl max-w-md text-center space-y-3">
+                      <FontAwesomeIcon icon={faTriangleExclamation} className="w-8 h-8 text-red-500 mx-auto" />
+                      <h3 className="text-base font-bold text-neutral-900">Account Deletion Unavailable</h3>
+                      <p className="text-xs text-neutral-600 leading-relaxed">
+                        You are currently in guest mode. Sign in to your account if you wish to manage account termination.
+                      </p>
+                      <button
+                        onClick={() => handleNavigate('login?redirect=/settings?tab=danger')}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl cursor-pointer inline-flex items-center gap-1.5"
                       >
-                        <motion.div
-                          initial={{ scale: 0.95, opacity: 0, y: 8 }}
-                          animate={{ scale: 1, opacity: 1, y: 0 }}
-                          exit={{ scale: 0.95, opacity: 0 }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-                          onClick={e => e.stopPropagation()}
-                          className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
-                              <FontAwesomeIcon icon={faTriangleExclamation} className="w-5 h-5 text-red-600" />
-                            </div>
-                            <h3 className="text-base font-bold text-neutral-900">Delete your account?</h3>
-                          </div>
-                          <p className="text-sm text-neutral-500 leading-relaxed">
-                            This is permanent. Type <strong className="text-red-600 font-bold">DELETE</strong> below to confirm.
-                          </p>
-                          <input
-                            type="text"
-                            value={deleteConfirmText}
-                            onChange={e => setDeleteConfirmText(e.target.value)}
-                            placeholder="Type DELETE"
-                            className="w-full px-3.5 py-2.5 border border-red-200 focus:border-red-400 rounded-xl text-sm outline-none font-mono transition-colors"
-                          />
-                          <div className="flex gap-2 justify-end">
-                            <button
-                              onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
-                              className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              onClick={handleDeleteAccount}
-                              disabled={deleteConfirmText.toUpperCase() !== 'DELETE' || deletingAccount}
-                              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50"
-                            >
-                              {deletingAccount ? <FontAwesomeIcon icon={faSpinner} className="fa-spin mr-1.5" /> : null}
-                              Confirm Delete
-                            </button>
-                          </div>
-                        </motion.div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        <FontAwesomeIcon icon={faRightToBracket} className="w-3.5 h-3.5" />
+                        Sign in to account
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-5 bg-red-50/60 border border-red-200 rounded-2xl space-y-3 max-w-md">
+                      <div className="flex items-center gap-2 text-red-700 font-semibold text-sm">
+                        <FontAwesomeIcon icon={faTriangleExclamation} className="w-4 h-4" />
+                        Delete Account
+                      </div>
+                      <p className="text-xs text-red-600 leading-relaxed">
+                        Permanently delete your account, subscriptions, preferences, and all associated data.
+                        This cannot be undone.
+                      </p>
+                      <button
+                        onClick={() => setShowDeleteModal(true)}
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-all active:scale-[0.98] cursor-pointer"
+                      >
+                        Delete Account…
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -934,6 +1142,254 @@ export function Settings() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Change Email Modal */}
+      <AnimatePresence>
+        {showEmailModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowEmailModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4 relative"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600">
+                    <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-base font-bold text-neutral-900">Change Email Address</h3>
+                </div>
+                <button onClick={() => setShowEmailModal(false)} className="text-neutral-400 hover:text-neutral-600 cursor-pointer">
+                  <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleChangeEmail} className="space-y-4">
+                <SettingsInput
+                  label="New Email Address"
+                  type="email"
+                  value={newEmail}
+                  onChange={setNewEmail}
+                  placeholder="newemail@example.com"
+                  autoComplete="email"
+                />
+                <SettingsInput
+                  label="Current Password"
+                  type="password"
+                  value={emailPassword}
+                  onChange={setEmailPassword}
+                  placeholder="Confirm with current password"
+                  autoComplete="current-password"
+                />
+                <div className="flex gap-2 justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailModal(false)}
+                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={changingEmail || !newEmail || !emailPassword}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 cursor-pointer"
+                  >
+                    {changingEmail ? <FontAwesomeIcon icon={faSpinner} className="fa-spin mr-1.5" /> : null}
+                    Update Email
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cancel Subscription Modal */}
+      <AnimatePresence>
+        {showCancelModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowCancelModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-bold text-neutral-900">Cancel Subscription</h3>
+              </div>
+              <p className="text-sm text-neutral-600 leading-relaxed">
+                Cancelling your subscription will keep your Pro benefits active until the end of your billing cycle ({formatDate(subscription?.current_period_end)}). Afterwards, your account will revert to the Free plan.
+              </p>
+              <div className="flex gap-2 justify-end pt-2">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl cursor-pointer"
+                >
+                  Keep Subscription
+                </button>
+                <a
+                  href="https://www.paypal.com/billing/subscriptions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  Manage on PayPal
+                  <FontAwesomeIcon icon={faArrowUpRightFromSquare} className="w-3 h-3" />
+                </a>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Change Email Modal */}
+      <AnimatePresence>
+        {showEmailModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowEmailModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4 relative"
+            >
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="absolute top-4 right-4 text-neutral-400 hover:text-neutral-700"
+              >
+                <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faEnvelope} className="w-5 h-5" />
+                </div>
+                <h3 className="text-base font-bold text-neutral-900">Change Email Address</h3>
+              </div>
+              <form onSubmit={handleChangeEmail} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-600 mb-1">New Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={newEmail}
+                    onChange={e => setNewEmail(e.target.value)}
+                    placeholder="new@example.com"
+                    className="w-full px-3.5 py-2.5 border border-neutral-200 focus:border-purple-500 rounded-xl text-sm outline-none font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-600 mb-1">Current Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={emailPassword}
+                    onChange={e => setEmailPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    className="w-full px-3.5 py-2.5 border border-neutral-200 focus:border-purple-500 rounded-xl text-sm outline-none font-medium"
+                  />
+                </div>
+                <div className="flex gap-2 justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailModal(false)}
+                    className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={changingEmail || !newEmail.trim() || !emailPassword}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 cursor-pointer"
+                  >
+                    {changingEmail ? <FontAwesomeIcon icon={faSpinner} className="fa-spin mr-1.5" /> : null}
+                    Update Email
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Account Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faTriangleExclamation} className="w-5 h-5 text-red-600" />
+                </div>
+                <h3 className="text-base font-bold text-neutral-900">Delete your account?</h3>
+              </div>
+              <p className="text-sm text-neutral-500 leading-relaxed">
+                This is permanent. Type <strong className="text-red-600 font-bold">DELETE</strong> below to confirm.
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+                placeholder="Type DELETE"
+                className="w-full px-3.5 py-2.5 border border-red-200 focus:border-red-400 rounded-xl text-sm outline-none font-mono transition-colors"
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
+                  className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText.toUpperCase() !== 'DELETE' || deletingAccount}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 cursor-pointer"
+                >
+                  {deletingAccount ? <FontAwesomeIcon icon={faSpinner} className="fa-spin mr-1.5" /> : null}
+                  Confirm Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
