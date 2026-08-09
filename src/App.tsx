@@ -590,9 +590,16 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    setShowProfileMenu(false);
     await logout();
-    localStorage.removeItem('appwrite_user_id');
-    localStorage.removeItem('isLoggedIn');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('appwrite_user_id');
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('qofeno_oauth_provider');
+      localStorage.removeItem('qofeno_cached_user');
+      localStorage.removeItem('qofeno_session_secret');
+      localStorage.removeItem('qofeno_avatar_url');
+    }
     toast.success("You've been signed out", { description: "See you next time!" });
     window.history.pushState({}, '', '/');
     setActiveTabState('home');

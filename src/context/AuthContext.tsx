@@ -526,6 +526,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try { await account.deleteSession('current'); } catch {}
     clearPersistedSession();
     setUserRef.current(null);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('qofeno_oauth_provider');
+      window.localStorage.removeItem('qofeno_cached_user');
+      window.localStorage.removeItem('qofeno_session_secret');
+      window.localStorage.removeItem('qofeno_avatar_url');
+      window.localStorage.removeItem('qofeno_guest_name');
+    }
     setIsLoading(false);
   }, []);
 
