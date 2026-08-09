@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMagnifyingGlass, faFire, faWandMagicSparkles, faSliders, faChevronDown, faChevronRight, faCheck, faHeart, faGear } from '@fortawesome/free-solid-svg-icons';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -65,6 +65,8 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   const [showSidebar, setShowSidebar] = useState(false);
   const [popularToolSlugs, setPopularToolSlugs] = useState<string[]>([]);
   const [toolViewCounts, setToolViewCounts] = useState<Record<string, number>>({});
+  const [favToast, setFavToast] = useState<{ id: string; isFav: boolean } | null>(null);
+  const favToastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getOrCreateAnonId = () => {
     try {
@@ -202,6 +204,14 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
 
   const toggleFavorite = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+
+    const isNowFav = !favorites.includes(id);
+    if (favToastTimeoutRef.current) clearTimeout(favToastTimeoutRef.current);
+    setFavToast({ id, isFav: isNowFav });
+    favToastTimeoutRef.current = setTimeout(() => {
+      setFavToast(null);
+    }, 1500);
+
     try {
       const user = await account.get();
       if (user && user.$id) {
@@ -597,21 +607,46 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                                 tool.is_coming_soon && "opacity-75 bg-neutral-50/50 border-neutral-200/80 cursor-default"
                               )}
                             >
-                              <div className="absolute top-6 right-6 flex items-center gap-1.5 z-10">
+                              <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
                                 {tool.is_coming_soon ? (
                                   <span className="bg-neutral-200 text-neutral-600 text-[10px] font-black tracking-wider px-2.5 py-0.5 rounded-md shadow-sm">
                                     COMING SOON
                                   </span>
                                 ) : (
                                   <>
+                                    <AnimatePresence>
+                                      {favToast?.id === tool.id && (
+                                        <motion.span
+                                          initial={{ opacity: 0, x: 8, scale: 0.95 }}
+                                          animate={{ opacity: 1, x: 0, scale: 1 }}
+                                          exit={{ opacity: 0, x: 8, scale: 0.95 }}
+                                          transition={{ duration: 0.15 }}
+                                          className={cn(
+                                            "text-[10px] font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap shadow-sm border",
+                                            favToast.isFav
+                                              ? "bg-pink-50 text-pink-600 border-pink-200"
+                                              : "bg-neutral-100 text-neutral-600 border-neutral-200"
+                                          )}
+                                        >
+                                          {favToast.isFav ? "Added to favourites" : "Removed from favourites"}
+                                        </motion.span>
+                                      )}
+                                    </AnimatePresence>
+
                                     <button 
                                       onClick={(e) => toggleFavorite(e, tool.id)}
                                       className={cn(
-                                        "p-1.5 rounded-full transition-colors cursor-pointer",
-                                        favorites.includes(tool.id) ? "bg-pink-100 text-pink-600" : "bg-neutral-100 text-neutral-400 hover:text-pink-600 hover:bg-pink-50"
+                                        "p-1.5 rounded-full transition-all duration-200 cursor-pointer active:scale-90 flex items-center justify-center shrink-0",
+                                        favorites.includes(tool.id) 
+                                          ? "bg-pink-100 text-pink-600 shadow-sm" 
+                                          : "bg-neutral-100 text-neutral-400 hover:text-pink-600 hover:bg-pink-50"
                                       )}
+                                      title={favorites.includes(tool.id) ? "Remove from favourites" : "Add to favourites"}
                                     >
-                                      <FontAwesomeIcon icon={faHeart} className={cn("w-4 h-4", favorites.includes(tool.id) && "fill-current")} />
+                                      <FontAwesomeIcon 
+                                        icon={faHeart} 
+                                        className={cn("w-4 h-4 transition-transform", favorites.includes(tool.id) && "fill-current text-pink-600 scale-110")} 
+                                      />
                                     </button>
                                     {((tool.is_new_until && new Date(tool.is_new_until) > new Date()) || (tool.addedAt ? (Date.now() - new Date(tool.addedAt).getTime() < 7 * 24 * 60 * 60 * 1000) : tool.isNew)) && (
                                       <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
