@@ -45,14 +45,21 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup'; onNavigat
 
   function sanitizeAuthError(msg: string): string {
     if (!msg) return 'Authentication failed. Please try again.';
-    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('cloud.appwrite.io') || msg.includes('fetch')) {
-      return 'Unable to connect to authentication server. Please check your internet connection and try again.';
+    const lower = msg.toLowerCase();
+    if (lower.includes('invalid credentials') || lower.includes('invalid email or password') || lower.includes('user_invalid_credentials')) {
+      return 'Invalid email or password. Please verify your login credentials and try again.';
     }
-    if (msg.includes('Invalid credentials') || msg.includes('user_invalid_credentials') || msg.includes('Invalid email or password')) {
-      return 'Invalid email or password. Please verify your details and try again.';
+    if (lower.includes('user_not_found') || lower.includes('no account found')) {
+      return 'No account found with this email. Please check your email or create a new account.';
     }
-    if (msg.includes('user_already_exists') || msg.includes('already exists')) {
+    if (lower.includes('user_already_exists') || lower.includes('already exists')) {
       return 'An account with this email address already exists. Please sign in instead.';
+    }
+    if (lower.includes('rate limit') || lower.includes('too many requests')) {
+      return 'Too many login attempts. Please wait a moment and try again.';
+    }
+    if (msg === 'Failed to fetch' || msg === 'TypeError: Failed to fetch' || msg.includes('NetworkError')) {
+      return 'Unable to connect to authentication server. Please check your internet connection and try again.';
     }
     return msg.replace(/\(https?:\/\/[^\)]+\)/g, '').replace(/cloud\.appwrite\.io/g, '').trim();
   }

@@ -469,14 +469,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       void ensurePersistentJWT();
       await refreshSession().catch(() => {});
     } catch (err: any) {
+      console.warn('[Auth] Login error:', err);
+      const code = err?.code || err?.status;
+      const type = String(err?.type || '');
       const msg = String(err?.message || err || '');
-      if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('cloud.appwrite.io') || msg.includes('fetch')) {
-        throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');
-      }
-      if (msg.includes('Invalid credentials') || msg.includes('user_invalid_credentials') || msg.includes('invalid credentials')) {
+
+      if (code === 401 || type.includes('invalid_credentials') || msg.toLowerCase().includes('invalid credentials')) {
         throw new Error('Invalid email or password. Please verify your credentials and try again.');
       }
-      throw err;
+      if (code === 404 || type.includes('user_not_found')) {
+        throw new Error('No account found with this email. Please check your email or create an account.');
+      }
+      if (code === 429 || type.includes('rate_limit')) {
+        throw new Error('Too many login attempts. Please wait a moment and try again.');
+      }
+      if (msg === 'Failed to fetch' || msg.includes('NetworkError') || msg === 'TypeError: Failed to fetch') {
+        throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');
+      }
+      throw new Error(msg || 'Sign in failed. Please verify your credentials and try again.');
     }
   }, [refreshSession]);
 
@@ -495,14 +505,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       await refreshSession().catch(() => {});
     } catch (err: any) {
+      console.warn('[Auth] Signup error:', err);
+      const code = err?.code || err?.status;
+      const type = String(err?.type || '');
       const msg = String(err?.message || err || '');
-      if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('cloud.appwrite.io') || msg.includes('fetch')) {
-        throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');
-      }
-      if (msg.includes('user_already_exists') || msg.includes('already exists')) {
+
+      if (code === 409 || type.includes('user_already_exists') || msg.toLowerCase().includes('already exists')) {
         throw new Error('An account with this email address already exists. Please sign in instead.');
       }
-      throw err;
+      if (msg === 'Failed to fetch' || msg.includes('NetworkError') || msg === 'TypeError: Failed to fetch') {
+        throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');
+      }
+      throw new Error(msg || 'Account creation failed. Please check your details and try again.');
     }
   }, [refreshSession]);
 
