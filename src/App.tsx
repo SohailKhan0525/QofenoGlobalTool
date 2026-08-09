@@ -1136,35 +1136,66 @@ export default function App() {
             <div className="hidden lg:block relative" ref={profileContainerRef}>
               <button 
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                className="flex items-center gap-2.5 bg-neutral-100/90 hover:bg-neutral-200/80 px-3.5 py-1.5 rounded-full border border-neutral-200/60 shadow-xs hover:shadow-sm transition-all cursor-pointer group active:scale-[0.98]"
               >
-                <div className="w-6 h-6 rounded-md bg-purple-600 flex items-center justify-center text-white text-[10px] font-bold">{(user?.name || 'User').slice(0, 2).toUpperCase()}</div>
-                <span className="text-sm font-bold text-[#0F0A1E]">{user?.name || 'User'}</span>
+                {user?.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name || 'User'}
+                    className="w-7 h-7 rounded-full object-cover shadow-sm border border-white shrink-0"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-600 flex items-center justify-center text-white text-xs font-black shadow-sm shrink-0">
+                    {(user?.name || 'U').trim().charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="text-xs font-bold text-[#0F0A1E] truncate max-w-[130px]">{user?.name || 'User'}</span>
                 <PlanBadge plan={user?.plan || 'free'} />
-                <FontAwesomeIcon icon={faChevronDown} className="w-3 h-3 text-neutral-500" />
+                <FontAwesomeIcon icon={faChevronDown} className="w-3 h-3 text-neutral-400 group-hover:text-purple-600 transition-colors shrink-0" />
               </button>
               
               <AnimatePresence>
                 {showProfileMenu && (
                   <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute top-full mt-2 right-0 w-44 bg-white border border-neutral-200/80 shadow-xl rounded-2xl p-1.5 z-50 pointer-events-auto"
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full mt-2.5 right-0 w-52 bg-white border border-neutral-200/80 shadow-2xl rounded-2xl p-2 z-50 pointer-events-auto"
                   >
+                    <div className="px-3 py-2 border-b border-neutral-100 mb-1 flex items-center gap-2.5">
+                      {user?.avatarUrl ? (
+                        <img
+                          src={user.avatarUrl}
+                          alt={user.name || 'User'}
+                          className="w-8 h-8 rounded-full object-cover border border-neutral-200 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+                          {(user?.name || 'U').trim().charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-[#0F0A1E] truncate">{user?.name || 'User'}</p>
+                        <p className="text-[10px] text-neutral-400 truncate">{user?.email || ''}</p>
+                      </div>
+                    </div>
+
                     <button 
                       onClick={() => { setShowProfileMenu(false); setActiveTab('settings'); }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold text-neutral-700 hover:bg-neutral-100 rounded-xl transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-neutral-700 hover:bg-purple-50 hover:text-purple-700 rounded-xl transition-colors cursor-pointer"
                     >
-                      <FontAwesomeIcon icon={faGear} className="w-3.5 h-3.5 text-neutral-400" /> Settings
+                      <FontAwesomeIcon icon={faGear} className="w-3.5 h-3.5 text-neutral-400" /> Settings & Profile
                     </button>
+
                     <div className="h-px bg-neutral-100 my-1" />
+
                     <button 
                       onClick={() => {
                         setShowProfileMenu(false);
                         void handleLogout();
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
                     >
                       <FontAwesomeIcon icon={faRightFromBracket} className="w-3.5 h-3.5 text-red-500" /> Log out
                     </button>

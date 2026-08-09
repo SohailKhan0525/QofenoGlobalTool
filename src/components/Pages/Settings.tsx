@@ -1002,7 +1002,7 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
                         />
                       ) : (
                         <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-600 flex items-center justify-center text-white text-2xl font-black shadow-md">
-                          {(user?.name || 'G').slice(0, 1).toUpperCase()}
+                          {(user?.name || 'U').trim().charAt(0).toUpperCase()}
                         </div>
                       )}
                     </div>

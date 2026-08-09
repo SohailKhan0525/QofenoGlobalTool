@@ -23,7 +23,7 @@
       "source": "sohailkhan0525/skills",
       "sourceType": "github",
       "skillPath": "skills/backend-setup-wizard/SKILL.md",
-      "computedHash": "884575abf85ee4c668ad71eb6503fe1c7ebebcf35e21ee0dd930ed227f0577ae"
+      "computedHash": "959d0d0ae6aa41aabc858be50f6dbd699e6a6c9dc53bdd5676c68204574b5bfb"
     },
     "brand-guidelines": {
       "source": "anthropics/skills",
@@ -42,6 +42,12 @@
       "sourceType": "github",
       "skillPath": "skills/frontend-design/SKILL.md",
       "computedHash": "93f53fd1c0352d3d7ec17b8f73d7351bf76f4821e55d123c9d2abc2c53ba48e4"
+    },
+    "frontend-ui-ux-wizard": {
+      "source": "sohailkhan0525/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-ui-ux-wizard/SKILL.md",
+      "computedHash": "6eb59a8b223f0e65674567c687ca5f605dfd91eff8d4d902fd3f87a35e873d79"
     },
     "next-best-practices": {
       "source": "vercel-labs/openreview",
