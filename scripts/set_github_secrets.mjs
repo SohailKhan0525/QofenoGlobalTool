@@ -3,7 +3,7 @@
 // 1) Install dependencies: `npm install libsodium-wrappers node-fetch@2`
 // 2) Create a JSON file with secrets, e.g. `github-secrets.json` in this folder:
 //    {
-//      "VITE_APPWRITE_ENDPOINT": "https://fra.cloud.appwrite.io/v1",
+//      "VITE_APPWRITE_ENDPOINT": "https://cloud.appwrite.io/v1",
 //      "CLOUDFLARE_API_TOKEN": "<token>"
 //    }
 // 3) Run:

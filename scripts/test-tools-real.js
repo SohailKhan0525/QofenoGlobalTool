@@ -9,7 +9,7 @@ dotenv.config();
 dotenv.config({ path: ".env.local" });
 dotenv.config({ path: ".env.server" });
 
-const endpoint = process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1";
+const endpoint = process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1";
 const projectId = process.env.APPWRITE_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID || "69c58725000ef2b43f18";
 const apiKey = process.env.APPWRITE_API_KEY || "standard_de2628e1d388cc087d06c18709188fbba1f70ad9fb89ebb5a629d99a50b5d982c0039ecee34d13c38cf6d9376cc2076c7f38f501b5c235c9ca459dfbbe38a1a715c8fb85bf86405c1e6c322e4f6b8ceb70055f3bf146cf8cb4c8cc6d66e5747d5a8b6c6a28c070f658cd50e0a4caeddf59e59f10889149c0d32ad79457d46998";
 const bucketInputs = process.env.BUCKET_INPUTS || process.env.VITE_APPWRITE_BUCKET_TOOL_INPUTS || "tool_inputs";

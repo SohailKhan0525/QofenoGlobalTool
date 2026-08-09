@@ -37,7 +37,6 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const ENDPOINTS = [
   'https://cloud.appwrite.io/v1',
-  'https://fra.cloud.appwrite.io/v1',
 ];
 const APPWRITE_PROJECT_ID = '69c58725000ef2b43f18';
 const CACHED_USER_KEY = 'qofeno_cached_user';

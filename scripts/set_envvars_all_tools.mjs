@@ -18,14 +18,14 @@ for (const line of envContent.split(/\r?\n/)) {
 }
 
 const client = new Client()
-  .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1')
+  .setEndpoint(process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1')
   .setProject(process.env.APPWRITE_PROJECT_ID)
   .setKey(process.env.APPWRITE_API_KEY);
 
 const functionsApi = new Functions(client);
 
 const REQUIRED_ENV_VARS = {
-  APPWRITE_ENDPOINT: process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1',
+  APPWRITE_ENDPOINT: process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1',
   APPWRITE_PROJECT_ID: process.env.APPWRITE_PROJECT_ID,
   APPWRITE_API_KEY: process.env.APPWRITE_API_KEY,
   DATABASE_ID: process.env.DATABASE_ID || 'qofeno_db',

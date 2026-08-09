@@ -7,7 +7,7 @@ dotenv.config();
 const projId = process.env.APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 const apiKey = process.env.APPWRITE_API_KEY;
 
-const client = new Client().setEndpoint('https://fra.cloud.appwrite.io/v1').setProject(projId).setKey(apiKey);
+const client = new Client().setEndpoint('https://cloud.appwrite.io/v1').setProject(projId).setKey(apiKey);
 const storage = new Storage(client);
 
 async function testDownload() {
@@ -24,9 +24,9 @@ async function testDownload() {
     console.error('Method 1 (SDK getFileDownload): FAILED:', err.message);
   }
 
-  // Method 2: node-fetch to fra.cloud.appwrite.io
+  // Method 2: node-fetch to cloud.appwrite.io
   try {
-    const r1 = await fetch(`https://fra.cloud.appwrite.io/v1/storage/buckets/tool_inputs/files/${fileId}/download`, {
+    const r1 = await fetch(`https://cloud.appwrite.io/v1/storage/buckets/tool_inputs/files/${fileId}/download`, {
       headers: { 'X-Appwrite-Project': projId, 'X-Appwrite-Key': apiKey }
     });
     console.log('Method 2 (fetch fra endpoint): Status', r1.status);

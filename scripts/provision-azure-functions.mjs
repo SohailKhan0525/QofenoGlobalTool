@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const client = new Client()
-  .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1")
+  .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1")
   .setProject(process.env.APPWRITE_PROJECT_ID || "69c58725000ef2b43f18")
   .setKey(process.env.APPWRITE_API_KEY);
 
@@ -12,14 +12,14 @@ const functions = new Functions(client);
 const azureVars = [
   { key: "AZURE_PROCESSOR_URL",       value: process.env.AZURE_PROCESSOR_URL       || "" },
   { key: "QOFENO_CONTAINER_SECRET",   value: process.env.QOFENO_CONTAINER_SECRET   || "e4f9b8c2d1a3e5f7a9b0c2d4e6f8a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5" },
-  { key: "APPWRITE_ENDPOINT",         value: process.env.APPWRITE_ENDPOINT         || "https://fra.cloud.appwrite.io/v1" },
+  { key: "APPWRITE_ENDPOINT",         value: process.env.APPWRITE_ENDPOINT         || "https://cloud.appwrite.io/v1" },
   { key: "APPWRITE_PROJECT_ID",       value: process.env.APPWRITE_PROJECT_ID       || "69c58725000ef2b43f18" },
   { key: "APPWRITE_API_KEY",          value: process.env.APPWRITE_API_KEY          || "" },
   { key: "DATABASE_ID",               value: process.env.DATABASE_ID               || "qofeno_db" },
 ];
 
 const azureCostVars = [
-  { key: "APPWRITE_ENDPOINT",         value: process.env.APPWRITE_ENDPOINT         || "https://fra.cloud.appwrite.io/v1" },
+  { key: "APPWRITE_ENDPOINT",         value: process.env.APPWRITE_ENDPOINT         || "https://cloud.appwrite.io/v1" },
   { key: "APPWRITE_PROJECT_ID",       value: process.env.APPWRITE_PROJECT_ID       || "69c58725000ef2b43f18" },
   { key: "APPWRITE_API_KEY",          value: process.env.APPWRITE_API_KEY          || "" },
   { key: "DATABASE_ID",               value: process.env.DATABASE_ID               || "qofeno_db" },

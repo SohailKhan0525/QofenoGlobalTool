@@ -24,7 +24,7 @@ if (!process.env.APPWRITE_API_KEY) {
   }
 }
 
-const endpoint = process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
+const endpoint = process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 const projectId = process.env.APPWRITE_PROJECT_ID;
 const apiKey = process.env.APPWRITE_API_KEY;
 const databaseId = process.env.DATABASE_ID || 'qofeno_db';

@@ -4,7 +4,7 @@ dotenv.config();
 
 async function main() {
   const client = new Client()
-    .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1")
+    .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1")
     .setProject(process.env.APPWRITE_PROJECT_ID || "69c58725000ef2b43f18")
     .setKey(process.env.APPWRITE_API_KEY);
 

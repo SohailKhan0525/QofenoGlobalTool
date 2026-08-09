@@ -6,7 +6,7 @@ dotenv.config();
 const projectId = process.env.APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 
 const client1 = new Client().setEndpoint('https://cloud.appwrite.io/v1').setProject(projectId);
-const client2 = new Client().setEndpoint('https://fra.cloud.appwrite.io/v1').setProject(projectId);
+const client2 = new Client().setEndpoint('https://cloud.appwrite.io/v1').setProject(projectId);
 
 const storage1 = new Storage(client1);
 const storage2 = new Storage(client2);

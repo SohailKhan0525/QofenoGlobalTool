@@ -8,7 +8,7 @@ const extractedSecret = "46f69e5f87f0242e625e188d61a8baca317db6c8783cf95b7ca634c
 
 async function run() {
   const client = new Client()
-    .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1")
+    .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1")
     .setProject(process.env.APPWRITE_PROJECT_ID || "69c58725000ef2b43f18")
     .setKey(process.env.APPWRITE_API_KEY);
 
@@ -16,7 +16,7 @@ async function run() {
 
   console.log("=== Test 1: Appwrite REST endpoint /account/sessions/token ===");
   try {
-    const res = await fetch("https://fra.cloud.appwrite.io/v1/account/sessions/token", {
+    const res = await fetch("https://cloud.appwrite.io/v1/account/sessions/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -31,7 +31,7 @@ async function run() {
   }
 
   try {
-    const res = await fetch("https://fra.cloud.appwrite.io/v1/account/sessions/token", {
+    const res = await fetch("https://cloud.appwrite.io/v1/account/sessions/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

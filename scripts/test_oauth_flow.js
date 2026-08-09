@@ -4,7 +4,7 @@ dotenv.config();
 
 async function test() {
   const client = new Client()
-    .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1")
+    .setEndpoint(process.env.APPWRITE_ENDPOINT || "https://cloud.appwrite.io/v1")
     .setProject(process.env.APPWRITE_PROJECT_ID || "69c58725000ef2b43f18")
     .setKey(process.env.APPWRITE_API_KEY);
 
@@ -28,7 +28,7 @@ async function test() {
 
   // Test getting account using directGetAccount logic with session.secret
   if (session.secret) {
-    const res = await fetch("https://fra.cloud.appwrite.io/v1/account", {
+    const res = await fetch("https://cloud.appwrite.io/v1/account", {
       headers: {
         "X-Appwrite-Project": "69c58725000ef2b43f18",
         "X-Appwrite-Session": session.secret,

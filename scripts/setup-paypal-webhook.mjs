@@ -54,7 +54,7 @@ async function main() {
   const BASE      = MODE === 'sandbox' ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
   const CLIENT_ID = env.PAYPAL_CLIENT_ID;
   const SECRET    = env.PAYPAL_SECRET || env.PAYPAL_CLIENT_SECRET;
-  const ENDPOINT  = (env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
+  const ENDPOINT  = (env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1').replace(/\/$/, '');
   
   // The paypal-webhook function URL in Appwrite
   // Appwrite function executions endpoint: {endpoint}/functions/{functionId}/executions

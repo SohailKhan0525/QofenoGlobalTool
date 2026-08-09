@@ -6,7 +6,7 @@
 
 import 'dotenv/config';
 
-const ENDPOINT    = process.env.APPWRITE_ENDPOINT  || 'https://fra.cloud.appwrite.io/v1';
+const ENDPOINT    = process.env.APPWRITE_ENDPOINT  || 'https://cloud.appwrite.io/v1';
 const PROJECT_ID  = process.env.APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 const API_KEY     = process.env.APPWRITE_API_KEY    || '';
 const GOOGLE_ID   = process.env.GOOGLE_OAUTH_CLIENT_ID     || '';

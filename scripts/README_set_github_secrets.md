@@ -11,7 +11,7 @@ Prepare secrets file
 Create `scripts/github-secrets.json` with the secrets to add, e.g.:
 
 {
-  "VITE_APPWRITE_ENDPOINT": "https://fra.cloud.appwrite.io/v1",
+  "VITE_APPWRITE_ENDPOINT": "https://cloud.appwrite.io/v1",
   "VITE_APPWRITE_PROJECT_ID": "69c58725000ef2b43f18",
   "CLOUDFLARE_API_TOKEN": "<token>"
 }

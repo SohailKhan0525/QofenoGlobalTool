@@ -199,7 +199,7 @@ export async function routeToAzure({ file_id, file_ids, tool, params, storage, d
 
     // 4. Save output file to Appwrite storage
     const outputBucket = process.env.BUCKET_OUTPUTS || "tool_outputs";
-    const ep = (process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1').replace(/\/$/, '');
+    const ep = (process.env.APPWRITE_ENDPOINT || process.env.VITE_APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1').replace(/\/$/, '');
     const projId = process.env.APPWRITE_PROJECT_ID || process.env.VITE_APPWRITE_PROJECT_ID || '69c58725000ef2b43f18';
 
     const savedFile = await storage.createFile(

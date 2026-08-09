@@ -14,7 +14,7 @@ import dotenv from 'dotenv';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
-const endpoint = process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
+const endpoint = process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
 const projectId = process.env.APPWRITE_PROJECT_ID;
 const apiKey = process.env.APPWRITE_API_KEY;
 
@@ -135,7 +135,7 @@ async function deployTool(slug) {
 
 async function setEnvVars(functionId, slug) {
   const envVars = {
-    APPWRITE_ENDPOINT: process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1',
+    APPWRITE_ENDPOINT: process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1',
     APPWRITE_PROJECT_ID: process.env.APPWRITE_PROJECT_ID,
     APPWRITE_API_KEY: process.env.APPWRITE_API_KEY,
     DATABASE_ID: process.env.DATABASE_ID || 'qofeno_db',

@@ -23,7 +23,7 @@ const dummyMp4 = 'AAAAGGZ0eXBtcDQyAAAAAG1wNDJpc29tAAAAKHV1aWR4PVNDUkVFTlJFQ09SRE
 
 async function main() {
   loadEnv();
-  const endpoint = process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
+  const endpoint = process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
   const projectId = process.env.APPWRITE_PROJECT_ID;
   const apiKey = process.env.APPWRITE_API_KEY;
 

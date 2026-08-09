@@ -7,7 +7,7 @@ dotenv.config();
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function main() {
-  const endpoint = process.env.APPWRITE_ENDPOINT || 'https://fra.cloud.appwrite.io/v1';
+  const endpoint = process.env.APPWRITE_ENDPOINT || 'https://cloud.appwrite.io/v1';
   const projectId = process.env.APPWRITE_PROJECT_ID;
   const apiKey = process.env.APPWRITE_API_KEY;
 
