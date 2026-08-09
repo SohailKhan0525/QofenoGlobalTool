@@ -1132,7 +1132,9 @@ export default function App() {
             </AnimatePresence>
           </div>
 
-          {isAuthenticated ? (
+          {isAuthLoading && !user ? (
+            <div className="hidden lg:block w-28 h-9 rounded-full bg-neutral-200/50 animate-pulse shrink-0" />
+          ) : isAuthenticated ? (
             <div className="hidden lg:block relative" ref={profileContainerRef}>
               <button 
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
