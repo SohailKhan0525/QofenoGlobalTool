@@ -14,6 +14,7 @@ export type AuthUser = {
   $createdAt?: string;
   provider?: string;
   isOAuth?: boolean;
+  avatarUrl?: string;
 };
 
 export type OAuthExchangeResult =
@@ -31,6 +32,7 @@ type AuthContextValue = {
   logout: () => Promise<void>;
   sendPasswordRecovery: (email: string) => Promise<void>;
   createOAuthSession: (provider: 'google' | 'github', redirect?: string) => void;
+  updateUser: (data: Partial<AuthUser>) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -117,6 +119,7 @@ function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
   }
 
   const name = String(raw.prefs?.display_name || raw.name || raw.email || 'User');
+  const avatarUrl = String(raw.prefs?.avatarUrl || raw.prefs?.avatar_url || '');
 
   return {
     id: String(raw.$id || raw.id || ''),
@@ -128,6 +131,7 @@ function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
     $createdAt: created,
     provider,
     isOAuth,
+    avatarUrl,
   };
 }
 
@@ -469,11 +473,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     account.createOAuth2Token(oauthProvider, success, failure);
   }, []);
 
+  const updateUser = useCallback((data: Partial<AuthUser>) => {
+    setUserRef.current(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, ...data };
+      setCachedUser(updated);
+      return updated;
+    });
+  }, []);
+
   return (
     <AuthContext.Provider value={{
       user, isAuthenticated: Boolean(user), isLoading,
       refreshSession, exchangeOAuthToken,
-      login, signup, logout, sendPasswordRecovery, createOAuthSession,
+      login, signup, logout, sendPasswordRecovery, createOAuthSession, updateUser
     }}>
       {children}
     </AuthContext.Provider>

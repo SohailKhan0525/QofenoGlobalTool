@@ -6,7 +6,7 @@ import {
   faSun, faMoon, faDesktop, faEye, faEyeSlash, faDownload,
   faRotateRight, faCalendar, faCircleCheck,
   faArrowUpRightFromSquare, faEnvelope, faRightToBracket, faXmark,
-  faCircleInfo
+  faCircleInfo, faCamera, faCrop, faPlus, faMinus, faTrash
 } from '@fortawesome/free-solid-svg-icons';
 import { account, databases, DATABASE_ID } from '../../lib/qofeno-appwrite';
 import { useAuth } from '../../context/AuthContext';
@@ -186,12 +186,118 @@ function formatBytes(bytes: number): string {
 /* ─── Main Component ──────────────────────────────────── */
 
 export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }) {
-  const { user, isAuthenticated, isLoading: isAuthLoading, refreshSession } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading, refreshSession, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
 
   // Profile
   const [name, setName] = useState(user?.name || '');
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Photo & Crop States
+  const [avatarUrl, setAvatarUrl] = useState<string>(user?.avatarUrl || '');
+  const [selectedPhotoSrc, setSelectedPhotoSrc] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false);
+
+  useEffect(() => {
+    if (user?.avatarUrl) {
+      setAvatarUrl(user.avatarUrl);
+    }
+  }, [user?.avatarUrl]);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileType = file.type.toLowerCase();
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(fileType)) {
+      toast.error("Only PNG and JPG photo formats are supported.");
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Photo size must be under 8MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      if (evt.target?.result) {
+        setSelectedPhotoSrc(evt.target.result as string);
+        setZoomScale(1);
+        setShowCropModal(true);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleSaveCroppedAvatar = async () => {
+    if (!selectedPhotoSrc) return;
+    setIsSavingAvatar(true);
+    try {
+      const img = new Image();
+      img.src = selectedPhotoSrc;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const canvas = document.createElement('canvas');
+      const size = 300;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, size, size);
+
+        const minDim = Math.min(img.width, img.height);
+        const cropSize = minDim / zoomScale;
+        const sx = (img.width - cropSize) / 2;
+        const sy = (img.height - cropSize) / 2;
+
+        ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, size, size);
+      }
+
+      const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+      const currentPrefs = await account.getPrefs().catch(() => ({}));
+      await account.updatePrefs({
+        ...currentPrefs,
+        avatarUrl: croppedDataUrl,
+        avatar_url: croppedDataUrl
+      });
+
+      updateUser({ avatarUrl: croppedDataUrl });
+      setAvatarUrl(croppedDataUrl);
+      setShowCropModal(false);
+      setSelectedPhotoSrc(null);
+      toast.success("Profile picture updated successfully!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save cropped profile picture.");
+    } finally {
+      setIsSavingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      const currentPrefs = await account.getPrefs().catch(() => ({}));
+      await account.updatePrefs({
+        ...currentPrefs,
+        avatarUrl: '',
+        avatar_url: ''
+      });
+      updateUser({ avatarUrl: '' });
+      setAvatarUrl('');
+      toast.success("Profile picture removed.");
+    } catch {
+      toast.error("Failed to remove profile picture.");
+    }
+  };
 
   // Email update dialog
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -689,16 +795,50 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
                 <div>
                   <SectionHeader title="Profile" subtitle="Update your display name and view account info." />
 
-                  {/* Avatar row */}
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-fuchsia-600 flex items-center justify-center text-white text-xl font-bold shadow-md flex-shrink-0">
-                      {(user?.name || 'Guest').slice(0, 1).toUpperCase()}
+                  {/* Avatar & Photo Upload row */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 p-5 bg-neutral-50/80 rounded-2xl border border-neutral-100 mb-8">
+                    <div className="relative group shrink-0">
+                      {avatarUrl || user?.avatarUrl ? (
+                        <img
+                          src={avatarUrl || user?.avatarUrl}
+                          alt={user?.name || 'User'}
+                          className="w-20 h-20 rounded-full object-cover shadow-md border-2 border-white"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-600 flex items-center justify-center text-white text-2xl font-black shadow-md">
+                          {(user?.name || 'G').slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <p className="font-semibold text-neutral-900">{user?.name || 'Guest User'}</p>
-                      <p className="text-sm text-neutral-400">{user?.email || 'Sign in to connect email'}</p>
-                      <div className="mt-1.5">
+
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-base text-neutral-900 truncate">{user?.name || 'Guest User'}</span>
                         <PlanBadge plan={user?.plan || 'free'} />
+                      </div>
+                      <p className="text-xs text-neutral-400">PNG or JPG photo formats supported (up to 8MB). Includes interactive crop.</p>
+                      
+                      <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                        <label className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer inline-flex items-center gap-1.5">
+                          <FontAwesomeIcon icon={faCamera} className="w-3.5 h-3.5" />
+                          Upload Photo
+                          <input
+                            type="file"
+                            accept="image/png, image/jpeg, image/jpg"
+                            className="hidden"
+                            onChange={handlePhotoSelect}
+                          />
+                        </label>
+                        
+                        {(avatarUrl || user?.avatarUrl) && (
+                          <button
+                            type="button"
+                            onClick={handleRemoveAvatar}
+                            className="px-3.5 py-2 bg-white border border-neutral-200 hover:border-red-200 text-neutral-600 hover:text-red-600 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                          >
+                            Remove Photo
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1384,6 +1524,109 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
                 >
                   {deletingAccount ? <FontAwesomeIcon icon={faSpinner} className="fa-spin mr-1.5" /> : null}
                   Confirm Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Crop Photo Modal */}
+      <AnimatePresence>
+        {showCropModal && selectedPhotoSrc && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-[#0F0A1E]/60 backdrop-blur-md z-[110] flex items-center justify-center p-4"
+            onClick={() => setShowCropModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 15 }}
+              className="bg-white border border-neutral-200 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-6 relative"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-neutral-100">
+                <div className="flex items-center gap-2">
+                  <FontAwesomeIcon icon={faCrop} className="w-4 h-4 text-purple-600" />
+                  <h3 className="text-base font-black text-[#0F0A1E]">Crop Profile Picture</h3>
+                </div>
+                <button
+                  onClick={() => setShowCropModal(false)}
+                  className="text-neutral-400 hover:text-neutral-900 font-bold p-1 cursor-pointer"
+                >
+                  <FontAwesomeIcon icon={faXmark} className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="flex flex-col items-center space-y-4">
+                <div className="relative w-64 h-64 rounded-full overflow-hidden border-4 border-purple-600 shadow-xl bg-neutral-100 flex items-center justify-center">
+                  <img
+                    src={selectedPhotoSrc}
+                    alt="Crop preview"
+                    className="max-w-none transition-transform duration-75 object-cover"
+                    style={{
+                      transform: `scale(${zoomScale})`,
+                      width: '100%',
+                      height: '100%'
+                    }}
+                  />
+                  <div className="absolute inset-0 border-[3px] border-white/50 rounded-full pointer-events-none" />
+                </div>
+
+                <div className="w-full space-y-2 pt-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-neutral-600">
+                    <span>Zoom ({Math.round(zoomScale * 100)}%)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setZoomScale(prev => Math.max(1, prev - 0.2))}
+                      className="w-8 h-8 rounded-lg bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-600 text-xs font-bold cursor-pointer"
+                    >
+                      <FontAwesomeIcon icon={faMinus} className="w-3 h-3" />
+                    </button>
+                    <input
+                      type="range"
+                      min="1"
+                      max="3"
+                      step="0.05"
+                      value={zoomScale}
+                      onChange={e => setZoomScale(parseFloat(e.target.value))}
+                      className="flex-1 accent-purple-600 cursor-pointer"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setZoomScale(prev => Math.min(3, prev + 0.2))}
+                      className="w-8 h-8 rounded-lg bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-600 text-xs font-bold cursor-pointer"
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCropModal(false)}
+                  className="flex-1 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isSavingAvatar}
+                  onClick={handleSaveCroppedAvatar}
+                  className="flex-1 py-3 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-purple-600/20"
+                >
+                  {isSavingAvatar ? (
+                    <><FontAwesomeIcon icon={faSpinner} className="w-3.5 h-3.5 animate-spin" /> Saving...</>
+                  ) : (
+                    'Crop & Save'
+                  )}
                 </button>
               </div>
             </motion.div>

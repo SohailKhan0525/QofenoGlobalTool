@@ -1287,8 +1287,8 @@ export default function App() {
               {activeTab === 'payment' && <Payment onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'forgot-password' && <ForgotPassword onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'auth-callback' && <AuthCallback onNavigate={(page) => setActiveTab(page)} />}
-              {activeTab === 'dashboard' && <Profile />}  {/* dashboard redirects to profile */}
-              {activeTab === 'profile' && <Profile />}
+              {activeTab === 'dashboard' && <Profile onNavigate={(page) => setActiveTab(page)} />}
+              {activeTab === 'profile' && <Profile onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'settings' && <SettingsPage onNavigate={(page) => setActiveTab(page)} />}
               {activeTab === 'coming-soon' && <ComingSoon onBack={() => setActiveTab('home')} />}
               {activeTab === 'terms' && <Terms />}
