@@ -524,6 +524,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try { await account.deleteSession('current'); } catch {}
+    try { await account.deleteSessions(); } catch {}
     clearPersistedSession();
     setUserRef.current(null);
     if (typeof window !== 'undefined') {
@@ -532,6 +533,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.localStorage.removeItem('qofeno_session_secret');
       window.localStorage.removeItem('qofeno_avatar_url');
       window.localStorage.removeItem('qofeno_guest_name');
+      window.localStorage.removeItem('appwrite_user_id');
+      window.localStorage.removeItem('isLoggedIn');
+
+      document.cookie.split(';').forEach((c) => {
+        const eqPos = c.indexOf('=');
+        const name = eqPos > -1 ? c.substring(0, eqPos).trim() : c.trim();
+        if (name.startsWith('a_session') || name.includes('session') || name.includes('appwrite')) {
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+        }
+      });
     }
     setIsLoading(false);
   }, []);
