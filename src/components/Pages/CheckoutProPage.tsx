@@ -5,6 +5,7 @@ import { PayPalButton } from '../PayPal/PayPalButton';
 import { SEO } from '../SEO';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { PlanToggle } from '../PlanToggle';
+import { useAuth } from '../../context/AuthContext';
 
 const PRO_FEATURES = [
   { icon: faBolt, text: 'Access to all PRO PDF & Document Tools' },
@@ -25,15 +26,21 @@ const TEAMS_FEATURES = [
 ];
 
 export function CheckoutProPage() {
+  const { isAuthenticated } = useAuth();
   const [isYearly, setIsYearly] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [planType, setPlanType] = useState<'pro' | 'teams'>('pro');
 
   useEffect(() => {
+    if (isAuthenticated) {
+      window.history.replaceState({}, '', '/profile');
+      window.location.href = '/profile';
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     const plan = params.get('plan') || 'pro';
     setPlanType(plan.toLowerCase() === 'teams' ? 'teams' : 'pro');
-  }, []);
+  }, [isAuthenticated]);
 
   const isTeams = planType === 'teams';
   const monthlyPrice = isTeams ? 19 : 11;

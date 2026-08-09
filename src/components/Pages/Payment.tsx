@@ -4,14 +4,22 @@ import { faShieldHalved, faCircleCheck } from '@fortawesome/free-solid-svg-icons
 import { SEO } from '../../components/SEO';
 import { motion } from 'framer-motion';
 import { PlanToggle } from '../PlanToggle';
+import { useAuth } from '../../context/AuthContext';
 
 const PayPalButton = lazy(() => import('../PayPal/PayPalButton').then(m => ({ default: m.PayPalButton })));
 const Turnstile = lazy(() => import('@marsidev/react-turnstile').then(m => ({ default: m.Turnstile })));
 
 export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) {
+  const { isAuthenticated } = useAuth();
   const params = new URLSearchParams(window.location.search);
   const planParam = (params.get('plan') || 'pro').toLowerCase();
   const planType = planParam === 'teams' ? 'teams' : 'pro';
+
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      onNavigate('profile');
+    }
+  }, [isAuthenticated, onNavigate]);
   
   const [isYearly, setIsYearly] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');

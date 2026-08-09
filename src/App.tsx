@@ -447,12 +447,22 @@ export default function App() {
   useEffect(() => {
     if (isAuthLoading) return;
     const route = parseRoute(window.location.pathname, window.location.search);
-    if (['profile', 'payment'].includes(route.page) && !isAuthenticated) {
+
+    // If not logged in, restrict access to profile page
+    if (['profile'].includes(route.page) && !isAuthenticated) {
       const redirect = `${window.location.pathname}${window.location.search}`;
       window.history.replaceState({}, '', `/login?redirect=${encodeURIComponent(redirect)}`);
       setActiveTabState('login');
+      return;
     }
-  }, [isAuthenticated, isAuthLoading]);
+
+    // If ALREADY logged in, authenticated users should never get pricing or checkout pages
+    if (isAuthenticated && ['pricing', 'payment'].includes(route.page)) {
+      window.history.replaceState({}, '', '/profile');
+      setActiveTabState('profile');
+      return;
+    }
+  }, [isAuthenticated, isAuthLoading, activeTab]);
 
   // Watch scroll values to apply navbar background saturates & blur checks
   useEffect(() => {
