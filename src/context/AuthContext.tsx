@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ID, OAuthProvider, Query } from 'appwrite';
-import { account, DATABASE_ID, databases, functions, persistSession, clearPersistedSession } from '../lib/qofeno-appwrite';
+import { account, DATABASE_ID, databases, functions, persistSession, clearPersistedSession, realtime } from '../lib/qofeno-appwrite';
 
 export type AuthPlan = 'free' | 'pro' | 'teams';
 
@@ -443,6 +443,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     void refreshSession();
   }, [refreshSession]);
+
+  // Realtime Appwrite Account & Subscription Sync
+  useEffect(() => {
+    let unsubscribeAccount: any = null;
+    let unsubscribeSub: any = null;
+
+    try {
+      unsubscribeAccount = realtime.subscribe('account', (response) => {
+        if (response.events.some(e => e.includes('.sessions.') || e.includes('.update') || e.includes('.delete'))) {
+          void refreshSession();
+        }
+      });
+
+      if (user?.id) {
+        unsubscribeSub = realtime.subscribe(`databases.${DATABASE_ID}.collections.subscriptions.documents`, (response) => {
+          if (response.payload && (response.payload as any).user_id === user.id) {
+            void refreshSession();
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('[Auth] Realtime subscription error:', e);
+    }
+
+    return () => {
+      if (typeof unsubscribeAccount === 'function') unsubscribeAccount();
+      if (typeof unsubscribeSub === 'function') unsubscribeSub();
+    };
+  }, [refreshSession, user?.id]);
 
   const login = useCallback(async (email: string, password: string) => {
     if (typeof window !== 'undefined') {
