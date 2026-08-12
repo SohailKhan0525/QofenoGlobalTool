@@ -455,13 +455,6 @@ export default function App() {
       setActiveTabState('login');
       return;
     }
-
-    // If ALREADY logged in, authenticated users should never get pricing or checkout pages
-    if (isAuthenticated && ['pricing', 'payment'].includes(route.page)) {
-      window.history.replaceState({}, '', '/profile');
-      setActiveTabState('profile');
-      return;
-    }
   }, [isAuthenticated, isAuthLoading, activeTab]);
 
   // Watch scroll values to apply navbar background saturates & blur checks
