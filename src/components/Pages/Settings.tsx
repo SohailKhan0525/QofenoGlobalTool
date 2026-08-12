@@ -300,11 +300,11 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
 
       if (!lastSlug) {
         try {
-          const rawRv = localStorage.getItem('recently_viewed');
+          const rawRv = localStorage.getItem('recently_viewed') || localStorage.getItem('qofeno_recently_viewed');
           if (rawRv) {
             const parsed = JSON.parse(rawRv);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              lastSlug = typeof parsed[0] === 'string' ? parsed[0] : parsed[0].tool_slug || parsed[0].id;
+              lastSlug = typeof parsed[0] === 'string' ? parsed[0] : (parsed[0].tool_slug || parsed[0].id || parsed[0].slug);
             }
           }
         } catch {}
@@ -320,7 +320,37 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
     };
 
     void loadProfileDashboardData();
-    return () => { cancelled = true; };
+
+    const syncRealtimeHistory = () => {
+      try {
+        const rawRv = localStorage.getItem('recently_viewed') || localStorage.getItem('qofeno_recently_viewed');
+        if (rawRv) {
+          const parsed = JSON.parse(rawRv);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const first = typeof parsed[0] === 'string' ? parsed[0] : (parsed[0].tool_slug || parsed[0].id || parsed[0].slug);
+            if (first) setLastViewedSlug(first);
+          }
+        }
+        const rawHist = localStorage.getItem('qofeno_tool_history');
+        if (rawHist) {
+          const parsedHist = JSON.parse(rawHist);
+          if (Array.isArray(parsedHist)) {
+            setHistoryItems(parsedHist.map((item: any) => typeof item === 'string' ? { tool_slug: item, created_at: new Date().toISOString() } : item));
+          }
+        }
+      } catch {}
+    };
+
+    window.addEventListener('storage', syncRealtimeHistory);
+    window.addEventListener('qofeno_tool_viewed', syncRealtimeHistory);
+    window.addEventListener('qofeno_history_updated', syncRealtimeHistory);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('storage', syncRealtimeHistory);
+      window.removeEventListener('qofeno_tool_viewed', syncRealtimeHistory);
+      window.removeEventListener('qofeno_history_updated', syncRealtimeHistory);
+    };
   }, [user]);
 
   const handleClearToolExecutions = async () => {
@@ -334,9 +364,10 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
       }
       localStorage.removeItem('qofeno_tool_history');
       localStorage.removeItem('recently_viewed');
+      localStorage.removeItem('qofeno_recently_viewed');
       setHistoryItems([]);
       setLastViewedSlug('');
-      toast.success("Tool execution history cleared.");
+      toast.success("Tool execution history cleared in realtime.");
     } catch {
       toast.error("Failed to clear history.");
     }
@@ -348,7 +379,7 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
   const favoritedToolsList = catalogTools.filter(t => likedTools.includes(t.id) || likedTools.includes(t.slug));
   const lastToolObj = lastViewedSlug
     ? catalogTools.find(t => t.id === lastViewedSlug || t.slug === lastViewedSlug)
-    : (historyItems[0] ? catalogTools.find(t => t.id === historyItems[0].tool_slug || t.id === historyItems[0].tool_id) : favoritedToolsList[0] || catalogTools[0]);
+    : (historyItems[0] ? catalogTools.find(t => t.id === historyItems[0].tool_slug || t.id === historyItems[0].tool_id) : null);
   const totalRunsCount = Math.max(usageStats.toolsUsed, historyItems.length);
   const userPlan = user?.plan || 'free';
   const maxUpload = userPlan === 'teams' ? '1 GB' : (userPlan === 'pro' ? '500 MB' : '50 MB');
@@ -867,16 +898,20 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
 
   const handleDeleteAccount = async () => {
     if (deleteConfirmText.toUpperCase() !== 'DELETE') {
-      toast.error('Type DELETE to confirm');
+      toast.error('Type DELETE to confirm account deletion.');
       return;
     }
     setDeletingAccount(true);
     try {
-      await account.deleteSession('current');
-      toast.success('Account deleted. Redirecting…');
-      window.location.href = '/';
+      try { await account.deleteSession('current'); } catch {}
+      try { await account.deleteSessions(); } catch {}
+      localStorage.clear();
+      toast.success('Account session deleted.');
+      setShowDeleteModal(false);
+      window.history.pushState({}, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to delete account');
+      toast.error(err?.message || 'Failed to delete account session.');
       setDeletingAccount(false);
     }
   };

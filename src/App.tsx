@@ -402,12 +402,19 @@ export default function App() {
     };
   }, []);
 
-  // Native CSS transition for theme switch
+  // Native theme switch using dark class
   useEffect(() => {
-    const isDark = theme === 'dark';
-    document.documentElement.style.filter = isDark 
-      ? 'invert(1) hue-rotate(180deg)' 
-      : 'invert(0) hue-rotate(0deg)';
+    const root = document.documentElement;
+    root.style.filter = '';
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else if (theme === 'light') {
+      root.classList.remove('dark');
+    } else {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (isDark) root.classList.add('dark');
+      else root.classList.remove('dark');
+    }
   }, [theme]);
 
   useEffect(() => {
