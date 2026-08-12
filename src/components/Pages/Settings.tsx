@@ -18,6 +18,7 @@ import { PlanBadge } from '../PlanBadge';
 import { cn } from '../../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FALLBACK_TOOLS, useToolCatalog } from '../../lib/toolCatalog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type SettingsTab = 'profile' | 'account' | 'appearance' | 'notifications' | 'billing' | 'privacy' | 'danger';
 
@@ -1499,8 +1500,9 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
                   <SectionHeader title="Billing & Plans" subtitle="Manage your active subscription and payment details." />
 
                   {loadingBilling ? (
-                    <div className="flex items-center gap-2 text-sm text-neutral-400 py-6">
-                      <FontAwesomeIcon icon={faSpinner} className="fa-spin" /> Loading billing info…
+                    <div className="space-y-4 max-w-md py-2">
+                      <Skeleton className="h-48 w-full rounded-2xl" />
+                      <Skeleton className="h-28 w-full rounded-2xl" />
                     </div>
                   ) : (
                     <div className="space-y-4 max-w-md">
