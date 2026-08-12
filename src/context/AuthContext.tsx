@@ -341,87 +341,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = getTokenFromUrl();
       let rawUser: any = null;
 
-      // 1. Immediate token binding if URL contains secret
+      // 1. If URL contains OAuth token params, exchange them for a real session first
       if (token) {
-        if (token.rawSecret.startsWith('ey')) {
-          persistSession(token.rawSecret);
-        } else if (token.secret) {
-          persistSession(token.secret);
-        }
-        try {
-          rawUser = await directGetAccount(token.rawSecret);
-        } catch {}
-
-        if (!rawUser && token.secret) {
-          try {
-            rawUser = await directGetAccount(token.secret);
-          } catch {}
-        }
-      }
-
-      // 2. Try standard account.get()
-      if (!rawUser) {
-        try {
-          rawUser = await account.get();
-        } catch {}
-      }
-
-      // 3. Perform session creation attempts if user is still not resolved
-      if (!rawUser && token) {
-        // Attempt A: account.createSession with extracted secret
         if (token.secret) {
           try {
-            const session = await account.createSession(token.userId, token.secret);
-            if (session && session.secret) {
-              persistSession(session.secret);
-            }
+            const sess = await account.createSession(token.userId, token.secret);
+            if (sess && sess.secret) persistSession(sess.secret);
           } catch (eA) {}
         }
 
-        // Attempt B: account.createSession with rawSecret
         if (!rawUser && token.rawSecret) {
           try {
-            const session = await account.createSession(token.userId, token.rawSecret);
-            if (session && session.secret) {
-              persistSession(session.secret);
-            }
+            const sess = await account.createSession(token.userId, token.rawSecret);
+            if (sess && sess.secret) persistSession(sess.secret);
           } catch (eB) {}
         }
 
-        // Attempt C: directCreateSession with extracted secret
         if (!rawUser && token.secret) {
           try {
-            const session = await directCreateSession(token.userId, token.secret);
-            if (session && session.secret) {
-              persistSession(session.secret);
-            }
+            const sess = await directCreateSession(token.userId, token.secret);
+            if (sess && sess.secret) persistSession(sess.secret);
           } catch (eC) {}
         }
 
-        // Attempt D: directCreateSession with rawSecret
         if (!rawUser && token.rawSecret) {
           try {
-            const session = await directCreateSession(token.userId, token.rawSecret);
-            if (session && session.secret) {
-              persistSession(session.secret);
-            }
+            const sess = await directCreateSession(token.userId, token.rawSecret);
+            if (sess && sess.secret) persistSession(sess.secret);
           } catch (eD) {}
-        }
-
-        // Re-query account after session creation attempts
-        try {
-          rawUser = await account.get();
-        } catch (e1) {
-          if (token.rawSecret) {
-            try { rawUser = await directGetAccount(token.rawSecret); } catch {}
-          }
-          if (!rawUser && token.secret) {
-            try { rawUser = await directGetAccount(token.secret); } catch {}
-          }
         }
       }
 
-      // 4. Resolve user profile if rawUser was fetched
+      // 2. Query account via account.get() or stored session
+      try {
+        rawUser = await account.get();
+      } catch (e1) {
+        const storedSecret = typeof window !== 'undefined' ? localStorage.getItem(SESSION_STORAGE_KEY) : null;
+        if (storedSecret) {
+          try {
+            rawUser = await directGetAccount(storedSecret);
+          } catch (e2) {}
+        }
+      }
+
+      // 3. Resolve user profile if rawUser was fetched
       if (rawUser) {
         cleanTokenFromUrl();
         void ensurePersistentJWT();
@@ -433,7 +396,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { ok: true, user: resolved };
       }
 
-      // 5. Fallback to cached user if present
+      // 4. Fallback to cached user if valid session present
       const cached = getCachedUser();
       if (cached) {
         cleanTokenFromUrl();
@@ -553,10 +516,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const createOAuthSession = useCallback((provider: 'google' | 'github', redirect = '/profile') => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('qofeno_oauth_provider', provider);
+    }
     const success = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
     const failure = `${window.location.origin}/login?error=oauth&redirect=${encodeURIComponent(redirect)}`;
     const oauthProvider = provider === 'google' ? OAuthProvider.Google : OAuthProvider.Github;
-    account.createOAuth2Token(oauthProvider, success, failure);
+    try {
+      account.createOAuth2Session(oauthProvider, success, failure);
+    } catch (e) {
+      account.createOAuth2Token(oauthProvider, success, failure);
+    }
   }, []);
 
   const updateUser = useCallback((data: Partial<AuthUser>) => {
