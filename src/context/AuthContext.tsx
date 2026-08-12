@@ -43,9 +43,15 @@ const ENDPOINTS = [
 const APPWRITE_PROJECT_ID = '69c58725000ef2b43f18';
 const CACHED_USER_KEY = 'qofeno_cached_user';
 const SESSION_STORAGE_KEY = 'qofeno_session_secret';
+const LOGGED_OUT_KEY = 'qofeno_user_logged_out';
 
 function getCachedUser(): AuthUser | null {
   if (typeof window === 'undefined') return null;
+  const isExplicitlyLoggedOut = window.localStorage.getItem(LOGGED_OUT_KEY) === 'true';
+  if (isExplicitlyLoggedOut) {
+    window.localStorage.removeItem(CACHED_USER_KEY);
+    return null;
+  }
   const hasSessionSecret = Boolean(window.localStorage.getItem(SESSION_STORAGE_KEY));
   if (!hasSessionSecret) {
     window.localStorage.removeItem(CACHED_USER_KEY);
@@ -304,6 +310,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSession = useCallback(async (): Promise<AuthUser | null> => {
     setIsLoading(true);
+
+    if (typeof window !== 'undefined' && window.localStorage.getItem(LOGGED_OUT_KEY) === 'true') {
+      try { await account.deleteSession('current'); } catch {}
+      clearPersistedSession();
+      setCachedUser(null);
+      setUserRef.current(null);
+      setIsLoading(false);
+      return null;
+    }
+
     let raw: any = null;
 
     try {
@@ -337,6 +353,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const exchangeOAuthToken = useCallback(async (): Promise<OAuthExchangeResult> => {
     setIsLoading(true);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(LOGGED_OUT_KEY);
+    }
     try {
       const token = getTokenFromUrl();
       let rawUser: any = null;
@@ -426,6 +445,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const login = useCallback(async (email: string, password: string) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(LOGGED_OUT_KEY);
+    }
     try {
       const session = await account.createEmailPasswordSession(email, password);
       if (session && session.secret) {
@@ -456,6 +478,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const signup = useCallback(async (name: string, email: string, password: string) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(LOGGED_OUT_KEY);
+    }
     try {
       await account.create(ID.unique(), email, password, name);
       const session = await account.createEmailPasswordSession(email, password);
@@ -486,11 +511,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refreshSession]);
 
   const logout = useCallback(async () => {
-    try { await account.deleteSession('current'); } catch {}
-    try { await account.deleteSessions(); } catch {}
-    clearPersistedSession();
-    setUserRef.current(null);
     if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LOGGED_OUT_KEY, 'true');
       window.localStorage.removeItem('qofeno_oauth_provider');
       window.localStorage.removeItem('qofeno_cached_user');
       window.localStorage.removeItem('qofeno_session_secret');
@@ -508,6 +530,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       });
     }
+
+    try { await account.deleteSession('current'); } catch {}
+    try { await account.deleteSessions(); } catch {}
+    clearPersistedSession();
+    setUserRef.current(null);
     setIsLoading(false);
   }, []);
 
