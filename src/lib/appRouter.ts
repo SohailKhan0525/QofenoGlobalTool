@@ -112,9 +112,9 @@ export function parseRoute(pathname: string, search = ''): RouteState {
 
 export function getRedirectTarget(search: string) {
   const params = new URLSearchParams(search);
-  const target = params.get('redirect') || '/profile';
-  if (target.includes('/checkout') || target.includes('/payment') || target.includes('/pricing') || target.includes('/upgrade')) {
-    return '/profile';
+  const target = params.get('redirect');
+  if (target && target.startsWith('/')) {
+    return target;
   }
-  return target;
+  return '/profile';
 }

@@ -10,17 +10,11 @@ const PayPalButton = lazy(() => import('../PayPal/PayPalButton').then(m => ({ de
 const Turnstile = lazy(() => import('@marsidev/react-turnstile').then(m => ({ default: m.Turnstile })));
 
 export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const params = new URLSearchParams(window.location.search);
   const planParam = (params.get('plan') || 'pro').toLowerCase();
   const planType = planParam === 'teams' ? 'teams' : 'pro';
 
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      onNavigate('profile');
-    }
-  }, [isAuthenticated, onNavigate]);
-  
   const [isYearly, setIsYearly] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const prefersReduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -37,7 +31,7 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
       />
       
       <div className="max-w-md mx-auto bg-white rounded-[32px] border border-neutral-200/60 p-8 sm:p-10 shadow-2xl shadow-neutral-100">
-        <div className="flex items-center gap-4 mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center shrink-0">
             <FontAwesomeIcon icon={faShieldHalved} className="w-6 h-6 text-purple-600" />
           </div>
@@ -46,6 +40,26 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
             <p className="text-xs text-neutral-400 font-bold uppercase tracking-wider">Choose subscription billing</p>
           </div>
         </div>
+
+        {!isAuthenticated ? (
+          <div className="mb-6 p-4 rounded-2xl bg-purple-50 border border-purple-150 flex items-center justify-between gap-3 shadow-xs">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-purple-900">Not signed in?</p>
+              <p className="text-[11px] text-purple-600 font-medium truncate">Sign in to link Pro to your account</p>
+            </div>
+            <button
+              onClick={() => onNavigate(`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all shrink-0 cursor-pointer"
+            >
+              Sign In
+            </button>
+          </div>
+        ) : (
+          <div className="mb-6 px-4 py-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/60 flex items-center justify-between text-xs font-semibold text-emerald-800">
+            <span className="truncate">Purchasing for: <strong>{user?.email || user?.name || 'Your Account'}</strong></span>
+            <span className="px-2 py-0.5 bg-emerald-600 text-white text-[10px] font-bold rounded-md uppercase">Signed In</span>
+          </div>
+        )}
 
         <div className="mb-8">
           <PlanToggle isYearly={isYearly} onChange={setIsYearly} />
