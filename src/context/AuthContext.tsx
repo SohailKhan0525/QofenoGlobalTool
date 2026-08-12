@@ -481,9 +481,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(LOGGED_OUT_KEY);
     }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+    const cleanName = name.trim();
+
     try {
-      await account.create(ID.unique(), email, password, name);
-      const session = await account.createEmailPasswordSession(email, password);
+      await account.create(ID.unique(), cleanEmail, cleanPassword, cleanName);
+      const session = await account.createEmailPasswordSession(cleanEmail, cleanPassword);
       if (session && session.secret) {
         persistSession(session.secret);
       }
@@ -500,8 +504,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const type = String(err?.type || '');
       const msg = String(err?.message || err || '');
 
-      if (code === 409 || type.includes('user_already_exists') || msg.toLowerCase().includes('already exists')) {
-        throw new Error('An account with this email address already exists. Please sign in instead.');
+      if (code === 409 || type.includes('user_already_exists') || msg.toLowerCase().includes('already exists') || msg.toLowerCase().includes('already registered')) {
+        throw new Error('The given user/email address is already taken up. Please sign in instead.');
       }
       if (msg === 'Failed to fetch' || msg.includes('NetworkError') || msg === 'TypeError: Failed to fetch') {
         throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');

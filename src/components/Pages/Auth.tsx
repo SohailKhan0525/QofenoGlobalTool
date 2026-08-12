@@ -55,8 +55,8 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup'; onNavigat
     if (lower.includes('user_not_found') || lower.includes('no account found')) {
       return 'No account found with this email. Please check your email or create a new account.';
     }
-    if (lower.includes('user_already_exists') || lower.includes('already exists')) {
-      return 'An account with this email address already exists. Please sign in instead.';
+    if (lower.includes('user_already_exists') || lower.includes('already exists') || lower.includes('already registered') || lower.includes('taken up')) {
+      return 'The given user/email address is already taken up. Please sign in instead.';
     }
     if (lower.includes('rate limit') || lower.includes('too many requests')) {
       return 'Too many login attempts. Please wait a moment and try again.';

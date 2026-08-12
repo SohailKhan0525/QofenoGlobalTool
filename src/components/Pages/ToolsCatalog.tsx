@@ -419,28 +419,6 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                 </button>
               ))}
             </div>
-            {popularTags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4 items-center overflow-x-auto pb-1">
-                <span className="text-[10px] font-black uppercase text-neutral-400 tracking-wider shrink-0 mr-1">Popular Tags:</span>
-                {popularTags.map(tag => {
-                  const isSelected = selectedTag === tag;
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() => setSelectedTag(isSelected ? null : tag)}
-                      className={cn(
-                        "shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 cursor-pointer border",
-                        isSelected 
-                          ? "bg-purple-100 text-purple-700 border-purple-200" 
-                          : "bg-white hover:bg-neutral-50 text-neutral-600 border-neutral-200"
-                      )}
-                    >
-                      #{tag}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
 

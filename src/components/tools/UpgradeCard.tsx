@@ -50,7 +50,8 @@ export function UpgradeCard({ toolName = "Pro Tools", onUpgrade }: UpgradeCardPr
           if (onUpgrade) {
             onUpgrade();
           } else {
-            window.location.href = "/checkout/pro";
+            window.history.pushState({}, '', '/checkout/pro');
+            window.dispatchEvent(new PopStateEvent('popstate'));
           }
         }}
         className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-purple-500/15 transition-all active:scale-[0.98] cursor-pointer"
