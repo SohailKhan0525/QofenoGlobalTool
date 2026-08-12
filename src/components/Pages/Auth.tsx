@@ -13,13 +13,15 @@ import { Turnstile } from '@marsidev/react-turnstile';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
+import { SubscriptionConfirmModal } from '../Modals/SubscriptionConfirmModal';
+
 // Get the post-auth redirect target fresh from the URL every time it's needed.
 function getTarget() {
   return new URLSearchParams(window.location.search).get('redirect') || '/profile';
 }
 
 export function Auth({ type, onNavigate }: { type: 'login' | 'signup'; onNavigate: (page: string) => void }) {
-  const { login, signup, createOAuthSession } = useAuth();
+  const { user, login, signup, createOAuthSession } = useAuth();
   const [isLogin, setIsLogin] = useState(type === 'login');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +33,7 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup'; onNavigat
   const [shake, setShake] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
 
   // Show OAuth error returned from Appwrite callback failure URL
   useEffect(() => {
@@ -99,7 +102,12 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup'; onNavigat
           description: 'Your account is ready. Check your inbox to verify your email.',
         });
       }
-      // If we get here, auth succeeded — navigate to the target
+      
+      const isSubscribeIntent = target.includes('/checkout') || target.includes('/payment') || target.includes('/upgrade') || window.location.search.includes('intent=subscribe');
+      if (isSubscribeIntent) {
+        setShowSubscribeModal(true);
+        return;
+      }
       onNavigate(target);
     } catch (e) {
       triggerError(e instanceof Error ? e.message : 'Authentication failed. Please try again.');
@@ -429,6 +437,22 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup'; onNavigat
           </button>
         </p>
       </motion.div>
+
+      <SubscriptionConfirmModal
+        isOpen={showSubscribeModal}
+        userName={name || user?.name || user?.email}
+        onConfirmCheckout={() => {
+          setShowSubscribeModal(false);
+          onNavigate(getTarget());
+        }}
+        onDeclineFree={() => {
+          setShowSubscribeModal(false);
+          toast.success('Welcome to Qofeno Free! 🎉', {
+            description: 'You have full access to all 500+ free online tools.',
+          });
+          onNavigate('/tools');
+        }}
+      />
     </div>
   );
 }

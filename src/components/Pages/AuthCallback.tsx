@@ -6,6 +6,9 @@ import { SEO } from '../../components/SEO';
 import { getRedirectTarget } from '../../lib/appRouter';
 import { useAuth, OAuthExchangeResult } from '../../context/AuthContext';
 
+import { SubscriptionConfirmModal } from '../Modals/SubscriptionConfirmModal';
+import { toast } from 'sonner';
+
 const REASON_LABELS: Record<string, string> = {
   no_token:             'No OAuth token found in the URL',
   create_session_failed:'Token found but session creation failed',
@@ -13,9 +16,10 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => void }) {
-  const { exchangeOAuthToken, createOAuthSession } = useAuth();
+  const { user, exchangeOAuthToken, createOAuthSession } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [result, setResult] = useState<OAuthExchangeResult | null>(null);
+  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const ranRef = useRef(false);
 
   useEffect(() => {
@@ -27,10 +31,15 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
       setResult(r);
       if (r.ok) {
         setStatus('success');
-        setTimeout(() => {
-          const target = getRedirectTarget(window.location.search);
-          onNavigate(target);
-        }, 500);
+        const target = getRedirectTarget(window.location.search);
+        const isSubscribeIntent = target.includes('/checkout') || target.includes('/payment') || target.includes('/upgrade') || window.location.search.includes('intent=subscribe');
+        if (isSubscribeIntent) {
+          setShowSubscribeModal(true);
+        } else {
+          setTimeout(() => {
+            onNavigate(target);
+          }, 500);
+        }
       } else {
         setStatus('error');
       }
@@ -116,6 +125,22 @@ export function AuthCallback({ onNavigate }: { onNavigate: (page: string) => voi
           </>
         )}
       </motion.div>
+
+      <SubscriptionConfirmModal
+        isOpen={showSubscribeModal}
+        userName={user?.name || user?.email}
+        onConfirmCheckout={() => {
+          setShowSubscribeModal(false);
+          onNavigate(getRedirectTarget(window.location.search));
+        }}
+        onDeclineFree={() => {
+          setShowSubscribeModal(false);
+          toast.success('Welcome to Qofeno Free! 🎉', {
+            description: 'You have full access to all 500+ free online tools.',
+          });
+          onNavigate('/tools');
+        }}
+      />
     </div>
   );
 }

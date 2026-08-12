@@ -6,6 +6,8 @@ import { motion } from 'framer-motion';
 import { PlanToggle } from '../PlanToggle';
 import { useAuth } from '../../context/AuthContext';
 
+import { toast } from 'sonner';
+
 const PayPalButton = lazy(() => import('../PayPal/PayPalButton').then(m => ({ default: m.PayPalButton })));
 const Turnstile = lazy(() => import('@marsidev/react-turnstile').then(m => ({ default: m.Turnstile })));
 
@@ -60,6 +62,23 @@ export function Payment({ onNavigate }: { onNavigate: (page: string) => void }) 
             <span className="px-2 py-0.5 bg-emerald-600 text-white text-[10px] font-bold rounded-md uppercase">Signed In</span>
           </div>
         )}
+
+        {/* Free account alternative banner */}
+        <div className="mb-6 p-3.5 rounded-2xl bg-neutral-50 border border-neutral-200/70 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-neutral-800">Want to try Qofeno for free first?</p>
+            <p className="text-[11px] text-neutral-500 font-medium truncate">Explore 500+ free online tools anytime</p>
+          </div>
+          <button
+            onClick={() => {
+              toast.info('Switched to Free Account', { description: 'Enjoy 500+ free online tools!' });
+              onNavigate('tools');
+            }}
+            className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-neutral-700 font-bold text-xs rounded-xl border border-neutral-200/90 shadow-xs transition-all shrink-0 cursor-pointer"
+          >
+            Start Free
+          </button>
+        </div>
 
         <div className="mb-8">
           <PlanToggle isYearly={isYearly} onChange={setIsYearly} />
