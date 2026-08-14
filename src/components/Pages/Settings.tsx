@@ -189,7 +189,7 @@ function formatBytes(bytes: number): string {
 /* ─── Main Component ──────────────────────────────────── */
 
 export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }) {
-  const { user, isAuthenticated, isLoading: isAuthLoading, refreshSession, updateUser } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading, refreshSession, updateUser, deleteAccount } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
 
   // Profile
@@ -904,15 +904,17 @@ export function Settings({ onNavigate }: { onNavigate?: (page: string) => void }
     }
     setDeletingAccount(true);
     try {
-      try { await account.deleteSession('current'); } catch {}
-      try { await account.deleteSessions(); } catch {}
-      localStorage.clear();
-      toast.success('Account session deleted.');
+      await deleteAccount();
+      toast.success('Account permanently deleted.');
       setShowDeleteModal(false);
-      window.history.pushState({}, '', '/');
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      if (onNavigate) {
+        onNavigate('home');
+      } else {
+        window.history.pushState({}, '', '/');
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to delete account session.');
+      toast.error(err?.message || 'Failed to delete account.');
       setDeletingAccount(false);
     }
   };

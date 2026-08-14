@@ -83,6 +83,38 @@ export default async ({ req, res, log, error }) => {
   const databaseId = process.env.DATABASE_ID || 'qofeno_db';
   const now = new Date().toISOString();
 
+  // Handle permanent account deletion via Server API Key
+  if (body.action === 'delete_user' && body.userId) {
+    try {
+      const targetUserId = body.userId;
+      log(`Permanently deleting user ${targetUserId}`);
+
+      // 1. Delete all user database records across collections
+      const collectionsToClean = ['users_meta', 'tool_likes', 'notifications', 'subscriptions', 'tool_executions', 'recently_viewed'];
+      for (const col of collectionsToClean) {
+        try {
+          const docs = await db.listDocuments(databaseId, col, [Query.equal('user_id', targetUserId), Query.limit(100)]);
+          for (const doc of docs.documents) {
+            try { await db.deleteDocument(databaseId, col, doc.$id); } catch {}
+          }
+        } catch {}
+      }
+
+      // 2. Permanently delete user from Appwrite Auth
+      try {
+        await users.delete(targetUserId);
+        log(`Appwrite Auth user ${targetUserId} permanently deleted.`);
+      } catch (userDelErr) {
+        log(`Note on user deletion: ${userDelErr.message}`);
+      }
+
+      return res.json({ ok: true, deleted: true, userId: targetUserId });
+    } catch (err) {
+      error(`Error during delete_user for ${body.userId}: ${err.message}`);
+      return res.json({ ok: false, error: err.message }, 500);
+    }
+  }
+
   // Handle direct client token exchange via Server API Key
   if (body.action === 'exchange_token' && body.userId) {
     try {

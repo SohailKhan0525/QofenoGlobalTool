@@ -30,6 +30,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   sendPasswordRecovery: (email: string) => Promise<void>;
   createOAuthSession: (provider: 'google' | 'github', redirect?: string) => void;
   updateUser: (data: Partial<AuthUser>) => void;
@@ -395,6 +396,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    const currentUserId = user?.id;
+    if (!currentUserId) return;
+
+    setIsLoading(true);
+
+    // 1. Trigger serverless permanent deletion across Appwrite Auth and collections
+    try {
+      await functions.createExecution(
+        'auth-webhook',
+        JSON.stringify({ action: 'delete_user', userId: currentUserId }),
+        false
+      );
+    } catch (fnErr) {
+      console.warn('[Auth] Server user deletion notice:', fnErr);
+    }
+
+    // 2. Direct client collection cleanup fallback
+    try {
+      const collections = ['users_meta', 'tool_likes', 'notifications', 'subscriptions', 'recently_viewed'];
+      for (const col of collections) {
+        try {
+          const docs = await databases.listDocuments(DATABASE_ID, col, [
+            Query.equal('user_id', currentUserId),
+            Query.limit(50),
+          ]);
+          for (const doc of docs.documents) {
+            try { await databases.deleteDocument(DATABASE_ID, col, doc.$id); } catch {}
+          }
+        } catch {}
+      }
+    } catch {}
+
+    // 3. Clear sessions in Appwrite Auth
+    try { await account.deleteSession('current'); } catch {}
+    try { await account.deleteSessions(); } catch {}
+
+    // 4. Clear local cache
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LOGGED_OUT_KEY, 'true');
+      window.localStorage.removeItem('qofeno_oauth_provider');
+      window.localStorage.removeItem('qofeno_avatar_url');
+      window.localStorage.removeItem('qofeno_guest_name');
+      window.localStorage.removeItem('qofeno_likes');
+      window.localStorage.removeItem('recently_viewed');
+    }
+    clearPersistedSession();
+
+    // 5. Update state instantaneously in Realtime with NO page reload needed
+    setUserRef.current(null);
+    setIsLoading(false);
+  }, [user?.id]);
+
   const sendPasswordRecovery = useCallback(async (email: string) => {
     await account.createRecovery(email, `${window.location.origin}/reset-password`);
   }, []);
@@ -425,7 +479,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       user, isAuthenticated: Boolean(user), isLoading,
       refreshSession, exchangeOAuthToken,
-      login, signup, logout, sendPasswordRecovery, createOAuthSession, updateUser,
+      login, signup, logout, deleteAccount, sendPasswordRecovery, createOAuthSession, updateUser,
     }}>
       {children}
     </AuthContext.Provider>

@@ -2,7 +2,7 @@
  * auth-webhook — Called when a new user signs up (Appwrite Auth Event).
  * Creates users_meta record, welcome notification, and sends welcome email via Resend.
  */
-import { Client, Databases, ID, Query } from 'node-appwrite';
+import { Client, Databases, Users, ID, Query } from 'node-appwrite';
 
 function parseBody(req) {
   if (req.bodyRaw && typeof req.bodyRaw === 'string') {
@@ -77,6 +77,48 @@ async function sendWelcomeEmail(userEmail, userName) {
 export default async ({ req, res, log, error }) => {
   const body = parseBody(req);
 
+  const client = new Client()
+    .setEndpoint(process.env.APPWRITE_ENDPOINT)
+    .setProject(process.env.APPWRITE_PROJECT_ID)
+    .setKey(process.env.APPWRITE_API_KEY);
+
+  const db = new Databases(client);
+  const users = new Users(client);
+  const databaseId = process.env.DATABASE_ID;
+  const now = new Date().toISOString();
+
+  // Handle permanent account deletion via Server API Key
+  if (body.action === 'delete_user' && body.userId) {
+    try {
+      const targetUserId = body.userId;
+      log(`Permanently deleting user ${targetUserId}`);
+
+      // 1. Delete all user database records across collections
+      const collectionsToClean = ['users_meta', 'tool_likes', 'notifications', 'subscriptions', 'tool_executions', 'recently_viewed'];
+      for (const col of collectionsToClean) {
+        try {
+          const docs = await db.listDocuments(databaseId, col, [Query.equal('user_id', targetUserId), Query.limit(100)]);
+          for (const doc of docs.documents) {
+            try { await db.deleteDocument(databaseId, col, doc.$id); } catch {}
+          }
+        } catch {}
+      }
+
+      // 2. Permanently delete user from Appwrite Auth
+      try {
+        await users.delete(targetUserId);
+        log(`Appwrite Auth user ${targetUserId} permanently deleted.`);
+      } catch (userDelErr) {
+        log(`Note on user deletion: ${userDelErr.message}`);
+      }
+
+      return res.json({ ok: true, deleted: true, userId: targetUserId });
+    } catch (err) {
+      error(`Error during delete_user for ${body.userId}: ${err.message}`);
+      return res.json({ ok: false, error: err.message }, 500);
+    }
+  }
+
   // Support multiple event payload shapes from Appwrite
   const userId = body.user_id || body.userId || body.$id
     || body.event?.$id || body.user?.$id || body?.payload?.$id
@@ -88,15 +130,6 @@ export default async ({ req, res, log, error }) => {
   if (!userId) {
     return res.json({ success: false, error: 'user_id required' }, 400);
   }
-
-  const client = new Client()
-    .setEndpoint(process.env.APPWRITE_ENDPOINT)
-    .setProject(process.env.APPWRITE_PROJECT_ID)
-    .setKey(process.env.APPWRITE_API_KEY);
-
-  const db = new Databases(client);
-  const databaseId = process.env.DATABASE_ID;
-  const now = new Date().toISOString();
 
   try {
     // Check if user_meta already exists (idempotent)
