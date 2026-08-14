@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
 import { SubscriptionConfirmModal } from '../Modals/SubscriptionConfirmModal';
+import { migrateLikesToAppwrite } from '../../lib/storage-policy';
 
 // Get the post-auth redirect target fresh from the URL every time it's needed.
 function getTarget() {
@@ -101,6 +102,10 @@ export function Auth({ type, onNavigate }: { type: 'login' | 'signup'; onNavigat
         toast.success(`Welcome to Qofeno, ${name.trim().split(' ')[0]}! 🎉`, {
           description: 'Your account is ready. Check your inbox to verify your email.',
         });
+      }
+
+      if (user?.id) {
+        void migrateLikesToAppwrite(user.id);
       }
       
       const isSubscribeIntent = target.includes('/checkout') || target.includes('/payment') || target.includes('/upgrade') || window.location.search.includes('intent=subscribe');
