@@ -8,48 +8,36 @@ import { cn } from '../../lib/utils';
 const SECTIONS = [
   {
     title: "1. Introduction",
-    content: "Welcome to Qofeno. This Privacy Policy explains in plain English how we collect, use, and protect your information when you use our platform and services. Our core principle is that your files belong to you, and we minimize data collection to only what is strictly necessary to provide the service."
+    content: "Welcome to Qofeno, created and maintained by Mohd Zaheer Uddin. This Privacy Policy explains transparently how we collect, use, and protect your information when using our tools platform. Our fundamental principle is that your files belong exclusively to you, and we collect only the minimal data required to provide and secure our services."
   },
   {
     title: "2. Information We Collect",
-    content: "Account information: If you register, we collect your name, email, and a hashed password.\nUsage data: We collect telemetry on which tools you use and when, to help us improve the platform. We NEVER collect the contents of your files.\nFiles: Files are uploaded strictly for processing purposes and are never stored permanently."
+    content: "• Account Information: Name and email address stored securely in Appwrite Auth when you create an account.\n• Usage Data: Telemetry on which tools are executed, duration, and file size metadata stored in Appwrite Database to monitor performance. We NEVER collect file contents.\n• Analytics: Aggregated, anonymized traffic data (pages visited, referrer, country) via Google Analytics 4 (GA4).\n• Error Reports: Technical stack traces and runtime error reports via Sentry to debug and fix application bugs (no personal data transmitted).\n• Payment Data: All payment details are processed and secured exclusively by PayPal. Qofeno never collects or stores credit card or banking details."
   },
   {
-    title: "3. How We Use Your Information",
-    content: "We use your information exclusively to provide tool processing capabilities, manage your account, send you necessary notifications (if opted in), and respond to your direct contact form messages."
-  },
-  {
-    title: "4. File Handling Policy",
+    title: "3. What We Do NOT Collect",
     isHighlighted: true,
-    content: "Files you upload to Qofeno are processed on our servers only. All files are permanently and automatically deleted immediately after processing is complete. We never read, store, sell, or share your files under any circumstances."
+    content: "• Your Uploaded Files: Processed in memory/serverless functions and permanently deleted immediately after processing is complete.\n• Browsing History: We do not track your activity outside of Qofeno.\n• Granular Location: We do not collect GPS or precise device location beyond country-level geolocation for DDoS defense."
   },
   {
-    title: "5. Cookies",
-    content: "We use essential cookies such as `a_session_[projectId]` for login state and Cloudflare's `cf_clearance` for security. We use functional local storage to remember your recent tools. We do NOT use invasive tracking or advertising cookies."
+    title: "4. How We Protect Your Data",
+    content: "• Encryption: All data in transit is encrypted using modern TLS 1.3/HTTPS, and data at rest is encrypted in Appwrite Cloud.\n• Session Security: Authentication sessions use HTTP-only, Secure cookies (a_session_[projectId]) inaccessible to client-side JavaScript, protecting against XSS attacks.\n• Content Security Policy (CSP): Strict CSP headers prevent malicious script execution and data exfiltration.\n• Automated Deletion: Files uploaded for tool operations are purged immediately upon generation of your download link."
   },
   {
-    title: "6. Third-Party Services",
-    content: "To provide our service, we rely on trusted infrastructure: Appwrite (Backend), PayPal (Payments), Resend (Emails), and Cloudflare (Hosting, Security, and Turnstile Captcha)."
+    title: "5. Cookies & Local Storage",
+    content: "We use strictly necessary and security cookies:\n• a_session_[projectId]: Essential Appwrite session cookie (HTTP-only, 30 days) to keep you logged in.\n• __cf_bm & cf_clearance: Essential Cloudflare Bot Management cookies (30 minutes) to prevent DDoS attacks.\n• _ga & _ga_*: Anonymous first-party Google Analytics cookies (opt-out available in Settings).\nWe do NOT use third-party advertising cookies or cross-site tracking trackers."
   },
   {
-    title: "7. Data Retention",
-    content: "Account data is retained while your account is active. Tool usage metadata is retained for 90 days. Files are deleted immediately. Contact messages are retained for up to 1 year."
+    title: "6. Data Retention Policy",
+    content: "• Account Data: Maintained until you choose to delete your account.\n• Tool Execution Metadata: Anonymous execution logs are retained for up to 90 days for reliability analytics.\n• Processed Files: Deleted immediately following processing (never stored permanently).\n• Contact Messages: Retained for up to 1 year to resolve support requests."
   },
   {
-    title: "8. Your Rights",
-    content: "You have the right to access, export, or delete your data at any time via your account settings. For manual requests, please contact us."
+    title: "7. Your Rights (GDPR & Privacy)",
+    content: "Under applicable data protection regulations, you have the right to:\n• Access and export your account data via Settings → Privacy & Data → Download My Data.\n• Delete your account and associated data permanently via Settings → Danger Zone.\n• Opt out of anonymous analytics telemetry in workspace preferences.\n• Contact Mohd Zaheer Uddin directly regarding any privacy questions."
   },
   {
-    title: "9. Children's Privacy",
-    content: "Our services are not directed at children under the age of 13."
-  },
-  {
-    title: "10. Changes to This Policy",
-    content: "If we make significant changes to this policy, we will notify you via the email address associated with your account."
-  },
-  {
-    title: "11. Contact",
-    content: "For any privacy-related inquiries, please contact Mohd Zaheer Uddin via the site's contact form."
+    title: "8. Changes & Contact",
+    content: "If we update this Privacy Policy, we will post the revised date at the top of this page. For privacy inquiries or data requests, please contact Mohd Zaheer Uddin via our Contact page."
   }
 ];
 

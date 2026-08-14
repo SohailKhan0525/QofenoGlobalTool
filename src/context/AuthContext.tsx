@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ID, OAuthProvider, Query } from 'appwrite';
-import { account, DATABASE_ID, databases, functions, persistSession, clearPersistedSession, realtime } from '../lib/qofeno-appwrite';
+import { account, DATABASE_ID, databases, functions, clearPersistedSession, realtime } from '../lib/qofeno-appwrite';
 
 export type AuthPlan = 'free' | 'pro' | 'teams';
 
@@ -37,57 +37,15 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const ENDPOINTS = [
-  'https://cloud.appwrite.io/v1',
-];
-const APPWRITE_PROJECT_ID = '69c58725000ef2b43f18';
-const CACHED_USER_KEY = 'qofeno_cached_user';
-const SESSION_STORAGE_KEY = 'qofeno_session_secret';
+// SECURITY: Only non-sensitive flags stored in localStorage.
+// NO JWT, NO session tokens, NO email, NO name, NO plan.
 const LOGGED_OUT_KEY = 'qofeno_user_logged_out';
-
-function getCachedUser(): AuthUser | null {
-  if (typeof window === 'undefined') return null;
-  const isExplicitlyLoggedOut = window.localStorage.getItem(LOGGED_OUT_KEY) === 'true';
-  if (isExplicitlyLoggedOut) {
-    window.localStorage.removeItem(CACHED_USER_KEY);
-    return null;
-  }
-  const hasSessionSecret = Boolean(window.localStorage.getItem(SESSION_STORAGE_KEY));
-  if (!hasSessionSecret) {
-    window.localStorage.removeItem(CACHED_USER_KEY);
-    return null;
-  }
-  try {
-    const raw = window.localStorage.getItem(CACHED_USER_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object' && parsed.id) {
-        const email = String(parsed.email || '').trim().toLowerCase();
-        if (email !== 'sohailkhannn.0525@gmail.com' && parsed.plan !== 'free') {
-          parsed.plan = 'free';
-        }
-        return parsed as AuthUser;
-      }
-    }
-  } catch {}
-  return null;
-}
-
-function setCachedUser(u: AuthUser | null) {
-  if (typeof window === 'undefined') return;
-  try {
-    if (u) {
-      window.localStorage.setItem(CACHED_USER_KEY, JSON.stringify(u));
-    } else {
-      window.localStorage.removeItem(CACHED_USER_KEY);
-    }
-  } catch {}
-}
+const APPWRITE_PROJECT_ID = '69c58725000ef2b43f18';
 
 async function loadPlan(userId: string, rawUser?: any): Promise<AuthPlan> {
   const email = String(rawUser?.email || '').trim().toLowerCase();
 
-  // Founder account check — exact email match only
+  // Founder account — exact email match only
   if (email === 'sohailkhannn.0525@gmail.com') {
     return 'teams';
   }
@@ -98,7 +56,7 @@ async function loadPlan(userId: string, rawUser?: any): Promise<AuthPlan> {
       Query.equal('user_id', userId),
       Query.limit(1),
     ]);
-    if (docs && docs.documents && docs.documents.length > 0) {
+    if (docs?.documents?.length > 0) {
       const doc = docs.documents[0];
       const plan = String(doc.plan || 'free').toLowerCase();
       const expiresAt = doc.plan_expires_at ? new Date(doc.plan_expires_at).getTime() : null;
@@ -117,13 +75,15 @@ async function loadPlan(userId: string, rawUser?: any): Promise<AuthPlan> {
 
 function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
   const created = String(raw.$createdAt || raw.createdAt || raw.created_at || new Date().toISOString());
-  
+
   let provider = 'email';
   let isOAuth = false;
 
   // 1. Check Appwrite targets array
   if (Array.isArray(raw.targets)) {
-    const oauthTarget = raw.targets.find((t: any) => t.providerType === 'oauth2' || t.provider || t.providerType === 'google' || t.providerType === 'github');
+    const oauthTarget = raw.targets.find(
+      (t: any) => t.providerType === 'oauth2' || t.provider || t.providerType === 'google' || t.providerType === 'github'
+    );
     if (oauthTarget) {
       isOAuth = true;
       provider = String(oauthTarget.provider || oauthTarget.providerType || 'google');
@@ -139,27 +99,33 @@ function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
     }
   }
 
-  // 3. Check passwordUpdate (Appwrite sets passwordUpdate to 0 or empty for OAuth accounts)
+  // 3. OAuth accounts have no password — passwordUpdate is 0/empty
   if (!raw.passwordUpdate || raw.passwordUpdate === 0 || raw.passwordUpdate === '0') {
     isOAuth = true;
   }
 
-  // 4. Check stored local OAuth flag
+  // 4. Check stored local OAuth provider flag (non-sensitive — just provider name string)
   const storedOauth = typeof window !== 'undefined' ? localStorage.getItem('qofeno_oauth_provider') : null;
   if (storedOauth) {
     isOAuth = true;
     if (provider === 'email') provider = storedOauth;
   }
 
-  // 5. Fallback for Google OAuth email accounts or URL params
+  // 5. Google email heuristic
   const rawEmail = String(raw.email || '');
   if (rawEmail.endsWith('@gmail.com') || rawEmail.endsWith('@googlemail.com')) {
     isOAuth = true;
     if (provider === 'email') provider = 'google';
   }
 
-  const name = String(raw.prefs?.display_name || raw.prefs?.name || raw.name || (rawEmail ? rawEmail.split('@')[0] : 'User'));
-  const avatarUrl = String(raw.prefs?.avatarUrl || raw.prefs?.avatar_url || raw.prefs?.avatar || (typeof window !== 'undefined' ? localStorage.getItem('qofeno_avatar_url') || '' : ''));
+  const name = String(
+    raw.prefs?.display_name || raw.prefs?.name || raw.name || (rawEmail ? rawEmail.split('@')[0] : 'User')
+  );
+  // Avatar URL is non-sensitive — storing provider-issued avatar URL is safe
+  const avatarUrl = String(
+    raw.prefs?.avatarUrl || raw.prefs?.avatar_url || raw.prefs?.avatar ||
+    (typeof window !== 'undefined' ? localStorage.getItem('qofeno_avatar_url') || '' : '')
+  );
 
   return {
     id: String(raw.$id || raw.id || ''),
@@ -175,40 +141,16 @@ function toAuthUser(raw: any, plan: AuthPlan = 'free'): AuthUser {
   };
 }
 
-function extractSessionSecret(rawSecret: string): string {
-  if (!rawSecret) return '';
-  if (rawSecret.includes('.')) {
-    try {
-      const parts = rawSecret.split('.');
-      if (parts.length >= 2) {
-        let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-        while (base64.length % 4) {
-          base64 += '=';
-        }
-        const payloadStr = atob(base64);
-        const payload = JSON.parse(payloadStr);
-        if (payload && payload.secret) {
-          return String(payload.secret);
-        }
-      }
-    } catch (e) {
-      console.warn('[Auth] Failed to parse JWT secret:', e);
-    }
-  }
-  return rawSecret;
-}
-
-function getTokenFromUrl(): { userId: string; secret: string; rawSecret: string } | null {
+function getTokenFromUrl(): { userId: string; secret: string } | null {
   if (typeof window === 'undefined') return null;
   const sp = new URLSearchParams(window.location.search);
   const hp = window.location.hash.includes('=')
     ? new URLSearchParams(window.location.hash.replace(/^#/, ''))
     : new URLSearchParams();
-  const rawSecret = sp.get('secret') || hp.get('secret');
+  const secret = sp.get('secret') || hp.get('secret');
   const userId  = sp.get('userId') || sp.get('user_id') || hp.get('userId') || hp.get('user_id');
-  if (!rawSecret || !userId) return null;
-  const secret = extractSessionSecret(rawSecret);
-  return { userId, secret, rawSecret };
+  if (!secret || !userId) return null;
+  return { userId, secret };
 }
 
 function cleanTokenFromUrl() {
@@ -220,90 +162,29 @@ function cleanTokenFromUrl() {
   window.history.replaceState({}, '', clean.toString());
 }
 
+// Direct Appwrite API call — used as fallback when cookie-based SDK call fails
 async function directCreateSession(userId: string, secret: string): Promise<any> {
-  let lastErr: any = null;
-  for (const ep of ENDPOINTS) {
-    try {
-      const res = await fetch(`${ep}/account/sessions/token`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Appwrite-Project': APPWRITE_PROJECT_ID,
-        },
-        body: JSON.stringify({ userId, secret }),
-      });
+  const res = await fetch(`https://cloud.appwrite.io/v1/account/sessions/token`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Appwrite-Project': APPWRITE_PROJECT_ID,
+    },
+    body: JSON.stringify({ userId, secret }),
+  });
 
-      const text = await res.text();
-      if (!res.ok) {
-        let msg = text;
-        try {
-          const parsed = JSON.parse(text);
-          msg = parsed.message || parsed.type || text;
-        } catch {}
-        throw new Error(`[${res.status} ${ep}] ${msg}`);
-      }
-
-      return JSON.parse(text);
-    } catch (err: any) {
-      lastErr = err;
-    }
+  const text = await res.text();
+  if (!res.ok) {
+    let msg = text;
+    try { msg = JSON.parse(text).message || text; } catch {}
+    throw new Error(`[${res.status}] ${msg}`);
   }
-  throw lastErr || new Error('All Appwrite endpoints failed for createSession');
-}
-
-async function directGetAccount(sessionSecret: string): Promise<any> {
-  let lastErr: any = null;
-  const isJWT = sessionSecret.startsWith('ey');
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'X-Appwrite-Project': APPWRITE_PROJECT_ID,
-  };
-  if (isJWT) {
-    headers['X-Appwrite-JWT'] = sessionSecret;
-  } else {
-    headers['X-Appwrite-Session'] = sessionSecret;
-  }
-
-  for (const ep of ENDPOINTS) {
-    try {
-      const res = await fetch(`${ep}/account`, {
-        method: 'GET',
-        credentials: 'include',
-        headers,
-      });
-
-      const text = await res.text();
-      if (!res.ok) {
-        let msg = text;
-        try {
-          const parsed = JSON.parse(text);
-          msg = parsed.message || parsed.type || text;
-        } catch {}
-        throw new Error(`[${res.status} ${ep}] ${msg}`);
-      }
-
-      return JSON.parse(text);
-    } catch (err: any) {
-      lastErr = err;
-    }
-  }
-  throw lastErr || new Error('All Appwrite endpoints failed for getAccount');
-}
-
-async function ensurePersistentJWT(): Promise<string | null> {
-  try {
-    const jwtObj = await account.createJWT();
-    if (jwtObj && jwtObj.jwt) {
-      persistSession(jwtObj.jwt);
-      return jwtObj.jwt;
-    }
-  } catch {}
-  return null;
+  return JSON.parse(text);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]           = useState<AuthUser | null>(() => getCachedUser());
+  const [user, setUser]       = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const setUserRef = useRef(setUser);
   setUserRef.current = setUser;
@@ -311,10 +192,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshSession = useCallback(async (): Promise<AuthUser | null> => {
     setIsLoading(true);
 
+    // If user explicitly logged out — don't attempt to restore session
     if (typeof window !== 'undefined' && window.localStorage.getItem(LOGGED_OUT_KEY) === 'true') {
       try { await account.deleteSession('current'); } catch {}
       clearPersistedSession();
-      setCachedUser(null);
       setUserRef.current(null);
       setIsLoading(false);
       return null;
@@ -323,29 +204,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let raw: any = null;
 
     try {
+      // Primary: Appwrite HTTP-only cookie session
       raw = await account.get();
-    } catch (e1) {
-      const secret = typeof window !== 'undefined' ? window.localStorage.getItem(SESSION_STORAGE_KEY) : null;
-      if (secret) {
-        try {
-          raw = await directGetAccount(secret);
-        } catch (e2) {}
-      }
+    } catch {
+      // Session cookie missing or expired — user is not logged in
     }
 
     if (raw) {
-      void ensurePersistentJWT();
       const plan = await loadPlan(raw.$id || raw.id, raw);
       const resolved = toAuthUser(raw, plan);
       setUserRef.current(resolved);
-      setCachedUser(resolved);
       setIsLoading(false);
       return resolved;
     }
 
-    // No valid session on Appwrite — clear state & cached user completely
+    // No valid session — clear state
     clearPersistedSession();
-    setCachedUser(null);
     setUserRef.current(null);
     setIsLoading(false);
     return null;
@@ -353,74 +227,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const exchangeOAuthToken = useCallback(async (): Promise<OAuthExchangeResult> => {
     setIsLoading(true);
+
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(LOGGED_OUT_KEY);
     }
+
     try {
       const token = getTokenFromUrl();
       let rawUser: any = null;
 
-      // 1. If URL contains OAuth token params, exchange them for a real session first
+      // 1. If URL contains OAuth token — exchange for a session
       if (token) {
-        if (token.secret) {
+        try {
+          await directCreateSession(token.userId, token.secret);
+        } catch (eA) {
           try {
-            const sess = await account.createSession(token.userId, token.secret);
-            if (sess && sess.secret) persistSession(sess.secret);
-          } catch (eA) {}
-        }
-
-        if (!rawUser && token.rawSecret) {
-          try {
-            const sess = await account.createSession(token.userId, token.rawSecret);
-            if (sess && sess.secret) persistSession(sess.secret);
-          } catch (eB) {}
-        }
-
-        if (!rawUser && token.secret) {
-          try {
-            const sess = await directCreateSession(token.userId, token.secret);
-            if (sess && sess.secret) persistSession(sess.secret);
-          } catch (eC) {}
-        }
-
-        if (!rawUser && token.rawSecret) {
-          try {
-            const sess = await directCreateSession(token.userId, token.rawSecret);
-            if (sess && sess.secret) persistSession(sess.secret);
-          } catch (eD) {}
+            await account.createSession(token.userId, token.secret);
+          } catch (eB) {
+            console.warn('[Auth] OAuth token exchange failed:', eB);
+          }
         }
       }
 
-      // 2. Query account via account.get() or stored session
+      // 2. Get account via session cookie (set by createSession above)
       try {
         rawUser = await account.get();
-      } catch (e1) {
-        const storedSecret = typeof window !== 'undefined' ? localStorage.getItem(SESSION_STORAGE_KEY) : null;
-        if (storedSecret) {
-          try {
-            rawUser = await directGetAccount(storedSecret);
-          } catch (e2) {}
-        }
-      }
+      } catch {}
 
-      // 3. Resolve user profile if rawUser was fetched
       if (rawUser) {
         cleanTokenFromUrl();
-        void ensurePersistentJWT();
-
         const plan = await loadPlan(rawUser.$id || rawUser.id, rawUser);
         const resolved = toAuthUser(rawUser, plan);
         setUserRef.current(resolved);
-        setCachedUser(resolved);
         return { ok: true, user: resolved };
-      }
-
-      // 4. Fallback to cached user if valid session present
-      const cached = getCachedUser();
-      if (cached) {
-        cleanTokenFromUrl();
-        setUserRef.current(cached);
-        return { ok: true, user: cached };
       }
 
       return {
@@ -440,36 +279,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Initial session check on mount
   useEffect(() => {
     void refreshSession();
   }, [refreshSession]);
 
-  // Realtime Appwrite Account & Subscription Sync
+  // Appwrite Realtime — live auth + subscription sync
   useEffect(() => {
-    let unsubscribeAccount: any = null;
-    let unsubscribeSub: any = null;
+    let unsubAccount: any = null;
+    let unsubSub: any = null;
 
     try {
-      unsubscribeAccount = realtime.subscribe('account', (response) => {
+      unsubAccount = realtime.subscribe('account', (response) => {
         if (response.events.some(e => e.includes('.sessions.') || e.includes('.update') || e.includes('.delete'))) {
           void refreshSession();
         }
       });
 
       if (user?.id) {
-        unsubscribeSub = realtime.subscribe(`databases.${DATABASE_ID}.collections.subscriptions.documents`, (response) => {
-          if (response.payload && (response.payload as any).user_id === user.id) {
-            void refreshSession();
+        unsubSub = realtime.subscribe(
+          `databases.${DATABASE_ID}.collections.subscriptions.documents`,
+          (response) => {
+            if (response.payload && (response.payload as any).user_id === user.id) {
+              void refreshSession();
+            }
           }
-        });
+        );
       }
     } catch (e) {
       console.warn('[Auth] Realtime subscription error:', e);
     }
 
     return () => {
-      if (typeof unsubscribeAccount === 'function') unsubscribeAccount();
-      if (typeof unsubscribeSub === 'function') unsubscribeSub();
+      if (typeof unsubAccount === 'function') unsubAccount();
+      if (typeof unsubSub === 'function') unsubSub();
     };
   }, [refreshSession, user?.id]);
 
@@ -478,17 +321,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.localStorage.removeItem(LOGGED_OUT_KEY);
     }
     try {
-      const session = await account.createEmailPasswordSession(email, password);
-      if (session && session.secret) {
-        persistSession(session.secret);
-      }
-      void ensurePersistentJWT();
+      // Appwrite sets HTTP-only session cookie automatically
+      await account.createEmailPasswordSession(email, password);
       await refreshSession().catch(() => {});
     } catch (err: any) {
-      console.warn('[Auth] Login error:', err);
       const code = err?.code || err?.status;
       const type = String(err?.type || '');
-      const msg = String(err?.message || err || '');
+      const msg  = String(err?.message || err || '');
 
       if (code === 401 || type.includes('invalid_credentials') || msg.toLowerCase().includes('invalid credentials')) {
         throw new Error('Invalid email or password. Please verify your credentials and try again.');
@@ -499,8 +338,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (code === 429 || type.includes('rate_limit')) {
         throw new Error('Too many login attempts. Please wait a moment and try again.');
       }
-      if (msg === 'Failed to fetch' || msg.includes('NetworkError') || msg === 'TypeError: Failed to fetch') {
-        throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');
+      if (msg === 'Failed to fetch' || msg.includes('NetworkError')) {
+        throw new Error('Unable to connect. Please check your internet connection and try again.');
       }
       throw new Error(msg || 'Sign in failed. Please verify your credentials and try again.');
     }
@@ -510,17 +349,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem(LOGGED_OUT_KEY);
     }
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail    = email.trim().toLowerCase();
     const cleanPassword = password.trim();
-    const cleanName = name.trim();
+    const cleanName     = name.trim();
 
     try {
       await account.create(ID.unique(), cleanEmail, cleanPassword, cleanName);
-      const session = await account.createEmailPasswordSession(cleanEmail, cleanPassword);
-      if (session && session.secret) {
-        persistSession(session.secret);
-      }
-      void ensurePersistentJWT();
+      // Appwrite sets HTTP-only session cookie automatically
+      await account.createEmailPasswordSession(cleanEmail, cleanPassword);
       try {
         await account.createVerification(`${window.location.origin}/auth/callback?redirect=/profile`);
       } catch (e) {
@@ -528,16 +364,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       await refreshSession().catch(() => {});
     } catch (err: any) {
-      console.warn('[Auth] Signup error:', err);
       const code = err?.code || err?.status;
       const type = String(err?.type || '');
-      const msg = String(err?.message || err || '');
+      const msg  = String(err?.message || err || '');
 
       if (code === 409 || type.includes('user_already_exists') || msg.toLowerCase().includes('already exists') || msg.toLowerCase().includes('already registered')) {
         throw new Error('The given user/email address is already taken up. Please sign in instead.');
       }
-      if (msg === 'Failed to fetch' || msg.includes('NetworkError') || msg === 'TypeError: Failed to fetch') {
-        throw new Error('Unable to connect to authentication server. Please check your internet connection and try again.');
+      if (msg === 'Failed to fetch' || msg.includes('NetworkError')) {
+        throw new Error('Unable to connect. Please check your internet connection and try again.');
       }
       throw new Error(msg || 'Account creation failed. Please check your details and try again.');
     }
@@ -545,23 +380,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     if (typeof window !== 'undefined') {
+      // Set the logged-out flag so refreshSession() won't restore session on next visit
       window.localStorage.setItem(LOGGED_OUT_KEY, 'true');
+      // Clean up any non-sensitive UI state
       window.localStorage.removeItem('qofeno_oauth_provider');
-      window.localStorage.removeItem('qofeno_cached_user');
-      window.localStorage.removeItem('qofeno_session_secret');
       window.localStorage.removeItem('qofeno_avatar_url');
       window.localStorage.removeItem('qofeno_guest_name');
-      window.localStorage.removeItem('appwrite_user_id');
-      window.localStorage.removeItem('isLoggedIn');
-
-      document.cookie.split(';').forEach((c) => {
-        const eqPos = c.indexOf('=');
-        const name = eqPos > -1 ? c.substring(0, eqPos).trim() : c.trim();
-        if (name.startsWith('a_session') || name.includes('session') || name.includes('appwrite')) {
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
-          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-        }
-      });
     }
 
     try { await account.deleteSession('current'); } catch {}
@@ -577,6 +401,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const createOAuthSession = useCallback((provider: 'google' | 'github', redirect = '/profile') => {
     if (typeof window !== 'undefined') {
+      // Store OAuth provider name (non-sensitive — just string 'google'/'github')
       localStorage.setItem('qofeno_oauth_provider', provider);
     }
     const success = `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
@@ -584,7 +409,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const oauthProvider = provider === 'google' ? OAuthProvider.Google : OAuthProvider.Github;
     try {
       account.createOAuth2Session(oauthProvider, success, failure);
-    } catch (e) {
+    } catch {
       account.createOAuth2Token(oauthProvider, success, failure);
     }
   }, []);
@@ -592,9 +417,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const updateUser = useCallback((data: Partial<AuthUser>) => {
     setUserRef.current(prev => {
       if (!prev) return null;
-      const updated = { ...prev, ...data };
-      setCachedUser(updated);
-      return updated;
+      return { ...prev, ...data };
     });
   }, []);
 
@@ -602,7 +425,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       user, isAuthenticated: Boolean(user), isLoading,
       refreshSession, exchangeOAuthToken,
-      login, signup, logout, sendPasswordRecovery, createOAuthSession, updateUser
+      login, signup, logout, sendPasswordRecovery, createOAuthSession, updateUser,
     }}>
       {children}
     </AuthContext.Provider>

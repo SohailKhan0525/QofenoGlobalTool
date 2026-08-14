@@ -8,19 +8,19 @@ import { cn } from '../../lib/utils';
 const SECTIONS = [
   {
     title: "1. What Are Cookies?",
-    content: "Cookies are small text files stored on your device when you visit a website. They help the site function correctly, remember your preferences, and provide anonymous usage statistics."
+    content: "Cookies are small text files stored securely on your browser when you visit a website. They allow the site to remember your authentication session, maintain preferences, and provide necessary bot and security protection."
   },
   {
     title: "2. Cookies We Use",
-    content: "We use the following specific cookies and local storage items:\n\n• `a_session_[projectId]` - Appwrite session cookie. (Essential for keeping you logged in).\n• `cf_clearance` - Cloudflare security clearance. (Essential for DDoS protection and Turnstile verification).\n• `qofeno_likes` - Local storage item containing your liked tools. (Functional).\n• `qofeno_recently_viewed` - Local storage item containing your recently viewed tools. (Functional).\n• `qofeno_cookie_consent` - Remembers whether you accepted the cookie banner. (Functional)."
+    content: "1. Essential Cookies (Strictly Necessary — Cannot be Disabled):\n• a_session_[projectId]: Sets and maintains your authenticated user session. Duration: 30 days. Type: HTTP-only, Secure. Set by: Appwrite.\n\n2. Analytics Cookies (Can be Disabled):\n• _ga, _ga_*: Anonymous aggregate usage metrics. Duration: 2 years. Set by: Google Analytics 4. Opt-out available in Settings → Appearance & Privacy.\n\n3. Security Cookies (Bot & DDoS Defense):\n• __cf_bm & cf_clearance: Cloudflare Bot Management and Turnstile clearance tokens to block automated attacks. Duration: 30 minutes. Set by: Cloudflare.\n\nWe do NOT use any third-party tracking or advertising cookies."
   },
   {
-    title: "3. How to Control Cookies",
-    content: "You can control and/or delete cookies as you wish. You can delete all cookies that are already on your computer and you can set most browsers to prevent them from being placed. However, if you do this, you may have to manually adjust some preferences every time you visit Qofeno and some services (like logging in) will not work."
+    title: "3. Local Storage Policy",
+    content: "We use browser local storage exclusively for non-sensitive, non-PII operational data:\n• qofeno_cookie_consent: Remembers that you acknowledged this cookie notice.\n• qofeno_likes: Temporary anonymous tool favorites (migrated to your private Appwrite database upon sign in).\n• qofeno_recently_viewed: Remembers your recent tool shortcuts locally.\n\nWe NEVER store session tokens, passwords, API keys, or personal identifying information (PII) in local storage."
   },
   {
-    title: "4. Contact for Questions",
-    content: "If you have any questions regarding our cookie policy, please reach out via the contact form and direct your inquiry to Mohd Zaheer Uddin."
+    title: "4. Managing Your Cookie Preferences",
+    content: "You can control cookie settings through your browser preferences. Disabling essential cookies may prevent login functionality. If you have questions about our cookie policy, please contact Mohd Zaheer Uddin via the Contact page."
   }
 ];
 

@@ -122,23 +122,16 @@ const secondaryEndpoint = 'https://cloud.appwrite.io/v1';
 export const client = new Client().setEndpoint(primaryEndpoint).setProject(projectId);
 const fallbackClient = new Client().setEndpoint(secondaryEndpoint).setProject(projectId);
 
-// Restore a persisted session so subsequent account.get() calls include the
-// X-Appwrite-Session header even after a page reload. This bypasses both the
-// third-party cookie problem AND the X-Fallback-Cookies mechanism.
-const SESSION_STORAGE_KEY = 'qofeno_session_secret';
+// SECURITY: Session is managed exclusively via Appwrite's HTTP-only cookie.
+// No JWT or session token is stored in localStorage — those are readable by
+// JavaScript and vulnerable to XSS. Appwrite's cookie is HttpOnly + Secure.
 if (typeof window !== 'undefined') {
-  const persisted = window.localStorage.getItem(SESSION_STORAGE_KEY);
-  if (persisted) {
-    try {
-      if (persisted.startsWith('ey')) {
-        client.setJWT(persisted);
-        fallbackClient.setJWT(persisted);
-      } else {
-        client.setSession(persisted);
-        fallbackClient.setSession(persisted);
-      }
-    } catch {}
-  }
+  // Clean up any legacy localStorage keys from prior versions
+  window.localStorage.removeItem('qofeno_session_secret');
+  window.localStorage.removeItem('qofeno_cached_user');
+  window.localStorage.removeItem('qofeno_session_username');
+  window.localStorage.removeItem('appwrite_user_id');
+  window.localStorage.removeItem('isLoggedIn');
 }
 
 export const account = new Account(client);
@@ -149,26 +142,15 @@ export const functions = new Functions(client);
 export const fallbackFunctions = new Functions(fallbackClient);
 export const realtime = new Realtime(client);
 
-export function persistSession(secret: string) {
-  if (!secret) return;
-  window.localStorage.setItem(SESSION_STORAGE_KEY, secret);
-  try {
-    if (secret.startsWith('ey')) {
-      client.setJWT(secret);
-      fallbackClient.setJWT(secret);
-    } else {
-      client.setSession(secret);
-      fallbackClient.setSession(secret);
-    }
-  } catch {}
-}
+// No-op shim: kept for import compatibility. Session is now cookie-only.
+export function persistSession(_secret: string) {}
 
 export function clearPersistedSession() {
-  window.localStorage.removeItem(SESSION_STORAGE_KEY);
-  window.localStorage.removeItem('qofeno_cached_user');
+  // Only clear non-sensitive UI state keys. Session is cleared by Appwrite
+  // when account.deleteSession('current') is called.
   try {
-    client.setSession('');
-    fallbackClient.setSession('');
+    window.localStorage.removeItem('qofeno_session_secret');
+    window.localStorage.removeItem('qofeno_cached_user');
   } catch {}
 }
 
