@@ -255,27 +255,7 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
   };
 
   // Tag list for quick header filters
-  const filterTags = ['All', 'Favorites', 'Free', 'Pro', 'New', 'Popular'];
-
-  // Unique popular tags computation
-  const popularTags = useMemo(() => {
-    const counts: Record<string, number> = {};
-    const sourceTools = tools.length > 0 ? tools : FALLBACK_TOOLS;
-    sourceTools.forEach(tool => {
-      if (Array.isArray(tool.tags)) {
-        tool.tags.forEach(tag => {
-          const t = tag.toLowerCase().trim();
-          if (t && t.length > 1) {
-            counts[t] = (counts[t] || 0) + 1;
-          }
-        });
-      }
-    });
-    return Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .map(entry => entry[0])
-      .slice(0, 16);
-  }, [tools]);
+  const filterTags = ['All', 'Favorites', 'Free', 'Pro', 'New'];
 
   const userPlan = user?.plan || 'free';
   const isFreePlan = !user || userPlan === 'free';
@@ -642,12 +622,6 @@ export function ToolsCatalog({ onNavigate }: ToolsCatalogProps) {
                                       <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
                                         <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                         NEW
-                                      </span>
-                                    )}
-                                    {tool.isPopular && (
-                                      <span className="bg-amber-50 text-amber-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full flex items-center gap-1">
-                                        <FontAwesomeIcon icon={faFire} className="w-3.5 h-3.5 fill-current text-amber-500" />
-                                        POP
                                       </span>
                                     )}
                                     {tool.type === 'Pro' && (

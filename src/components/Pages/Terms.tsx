@@ -7,44 +7,36 @@ import { cn } from '../../lib/utils';
 
 const SECTIONS = [
   {
-    title: "1. Acceptance of Terms",
-    content: "By accessing and using Qofeno, you accept and agree to be bound by the terms and provision of this agreement."
+    title: "1. Acceptance & Operator",
+    content: "By accessing and using Qofeno, you agree to be bound by these Terms of Service. Qofeno is created, operated, and maintained by Mohd Zaheer Uddin."
   },
   {
-    title: "2. Description of Service",
-    content: "Qofeno provides online file processing, format conversion, and data manipulation tools. The service operates primarily on server-side functions and offers both free and paid subscription tiers."
+    title: "2. Free Tools vs Pro Subscriptions",
+    content: "• Free Tools: Standard tools are available to all users with no account required, subject to fair use and standard file size limits.\n• Pro / Teams Tiers: Paid subscriptions billed through PayPal unlock 500MB+ file limits, batch conversions, and priority queues. You may cancel your subscription anytime via your Settings or PayPal dashboard."
   },
   {
-    title: "3. Account Responsibilities",
-    content: "If you create an account, you are responsible for maintaining the security of your credentials and are fully responsible for all activities that occur under the account. You must immediately notify us of any unauthorized uses of your account."
+    title: "3. Refund Policy",
+    content: "We offer a 7-day money-back guarantee on your initial subscription payment if you encounter unresolved technical difficulties. To request a refund, contact us via the contact form with your PayPal transaction ID within 7 days of purchase."
   },
   {
-    title: "4. Free vs Pro Access",
-    content: "Free users may access basic tools anonymously subject to file size limitations (e.g., 50MB max) and standard processing queues. Pro users require an account and an active PayPal subscription, granting access to 500MB limits, premium tools, and priority processing queues."
+    title: "4. Acceptable Use",
+    content: "You agree not to use Qofeno to upload, process, or distribute illegal, infringing, malware, defamatory, or abusive content. Automated abuse, API reverse-engineering without authorization, and DDoS attacks are strictly forbidden and subject to immediate IP bans."
   },
   {
-    title: "5. Acceptable Use",
-    content: "You agree not to use the service to upload, process, or distribute any material that is illegal, defamatory, abusive, or obscene. Automated scraping or reverse-engineering of our serverless APIs without an Enterprise agreement is strictly prohibited and will result in IP bans."
+    title: "5. File Handling & Ownership",
+    content: "You retain 100% intellectual property ownership of all uploaded files. Files are processed securely in temporary runtime environments and permanently deleted immediately upon completion. We never inspect, index, or share your file content."
   },
   {
-    title: "6. File Processing Terms",
-    content: "Your files are processed securely on our serverless infrastructure. They are automatically and permanently deleted immediately after your download link expires or within a maximum of 2 hours. You retain all ownership rights to your files; we claim no intellectual property rights over your uploaded content. We are not liable for any data loss, and you should always keep original backups."
+    title: "6. Service Availability & SLA",
+    content: "Services are provided on an 'as-is' and 'as-available' basis. While we strive for 99.9% uptime across our serverless infrastructure, no service level agreement (SLA) applies to the free tier."
   },
   {
-    title: "7. Payment Terms",
-    content: "Pro subscriptions are billed via PayPal on a recurring monthly or yearly basis. You may cancel your subscription at any time through your billing dashboard. Refunds are evaluated on a case-by-case basis; if you experience persistent technical failures, please contact support within 7 days of the charge."
+    title: "7. Limitation of Liability",
+    content: "To the maximum extent permitted by law, Qofeno and Mohd Zaheer Uddin shall not be liable for indirect, incidental, or consequential damages. Total liability for any claim shall not exceed the amount paid in subscription fees over the preceding 12 months."
   },
   {
-    title: "8. Intellectual Property",
-    content: "The Qofeno name, logo, UI/UX designs, and original source code are the intellectual property of Mohd Zaheer Uddin. You may not copy, reproduce, or distribute the platform's design without permission."
-  },
-  {
-    title: "9. Limitation of Liability",
-    content: "In no event shall Qofeno, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the Service."
-  },
-  {
-    title: "10. Contact",
-    content: "If you have any questions about these Terms, please contact us via the site's contact form."
+    title: "8. Governing Law & Jurisdiction",
+    content: "These Terms are governed by and construed in accordance with the laws of India, the jurisdiction where Mohd Zaheer Uddin is based, without regard to conflict of law principles."
   }
 ];
 
